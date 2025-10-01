@@ -329,8 +329,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        // Sửa: Bỏ các import không cần thiết cho auth
-        import { getAuth, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        // Bổ sung: Import hàm signOut
+        import { getAuth, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDocs, getDoc, updateDoc, deleteDoc, writeBatch, query, serverTimestamp, collectionGroup, limit } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // --- CẤU HÌNH FIREBASE ---
@@ -344,7 +344,7 @@
           measurementId: "G-8G417NNC86"
         };
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app); // Vẫn giữ auth cho các chức năng cần xác thực lại (nếu có)
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
         // --- CẤU HÌNH GOOGLE DRIVE API ---
@@ -413,14 +413,20 @@
         // --- AUTHENTICATION LOGIC ---
         
         // Sửa: Bỏ onAuthStateChanged và gọi trực tiếp các hàm khởi tạo
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Bổ sung: Tự động đăng xuất khi tải trang
+            try {
+                await signOut(auth);
+                console.log("Đã tự động đăng xuất thành công.");
+            } catch (error) {
+                console.error("Lỗi khi tự động đăng xuất:", error);
+            }
+
+            // Tiếp tục quy trình tải trang
             initializeYearDropdown();
             fetchData();
             initializeGoogleClients();
         });
-
-        // Sửa: Xóa logic xử lý form đăng nhập vì nó đã bị ẩn
-        // loginForm.addEventListener('submit', ...);
 
         // --- CÁC HÀM TIỆN ÍCH ---
         const formatNumber = (num) => num?.toLocaleString('vi-VN') || '0';
@@ -464,8 +470,6 @@
 
         function ensureGapiAuthenticated() {
             return new Promise((resolve, reject) => {
-                // Giả định người dùng đã đăng nhập vào Google ở một tab khác
-                // Nếu không, các chức năng liên quan đến Drive sẽ yêu cầu popup
                 if (gapi.client.getToken()) return resolve(gapi.client.getToken());
                 tokenClient.requestAccessToken({ prompt: '' }); 
                 tokenClient.callback = (resp) => {
@@ -963,7 +967,6 @@
             }
         };
 
-        // SỬA LỖI & CẢI TIẾN: Hàm tạo bảng được nâng cấp để xử lý các đối tượng header phức tạp hơn.
         const createModalTable = (headers) => {
             let table = '<table class="modal-table"><thead><tr>';
             headers.forEach(h => {
