@@ -1982,7 +1982,7 @@ window.calculateModalChiPhi = function(input) {
                                     const ggc = grandchild.greatGrandchildren[ggcId];
                                     const ggcPath = `${gcPath}/greatGrandchildren/${ggcId}`;
 
-                                    // 1. Level 5
+                                    // 1. Level 5 (Tính toán chi phí thực hiện từ cấp 5)
                                     let sumL5Actual = 0;
                                     if (ggc.greatGreatGrandchildren) {
                                         Object.keys(ggc.greatGreatGrandchildren).forEach(l5Id => {
@@ -1997,7 +1997,7 @@ window.calculateModalChiPhi = function(input) {
 
                                             updates[`${l5Path}/chiPhiThucHien`] = l5Actual;
                                             updates[`${l5Path}/chiPhi`] = finalChiPhiL5;
-                                            updates[`${l5Path}/keHoachConLai`] = null; // Level 5 không cần
+                                            updates[`${l5Path}/keHoachConLai`] = null; 
                                             if (l5Actual > 0) updates[`${l5Path}/daThucHien`] = true;
                                         });
                                     }
@@ -2008,8 +2008,20 @@ window.calculateModalChiPhi = function(input) {
                                     updates[`${ggcPath}/namPhanBo`] = namPhanBoL4;
                                     updates[`${ggcPath}/capDo`] = capDoL4;
 
+                                    // --- [BỔ SUNG LOGIC MỚI TẠI ĐÂY] ---
                                     let directExecution = 0;
-                                    if (ggc.executions) Object.values(ggc.executions).forEach(ex => directExecution += safeFloat(ex.thanhTien));
+                                    let hasLevel4Link = false; // Biến cờ đánh dấu có link hồ sơ
+
+                                    if (ggc.executions) {
+                                        Object.values(ggc.executions).forEach(ex => {
+                                            directExecution += safeFloat(ex.thanhTien);
+                                            // Kiểm tra nếu có link hồ sơ khác rỗng
+                                            if (ex.hoSoLink && ex.hoSoLink.trim() !== '') {
+                                                hasLevel4Link = true;
+                                            }
+                                        });
+                                    }
+                                    
                                     const totalActualL4 = directExecution + sumL5Actual;
 
                                     const l4JustCalc = calculateJustificationCost(ggc, ggcPath);
@@ -2017,8 +2029,7 @@ window.calculateModalChiPhi = function(input) {
 
                                     const finalPhanBoL4 = Math.round(finalChiPhiL4 / namPhanBoL4);
                                     const cpCap1L4 = calculateCpCap1(finalChiPhiL4, capDoL4);
-
-                                    // [LOGIC PS] Level 4
+                                    
                                     const isPsL4 = String(capDoL4).trim().toLowerCase() === 'ps';
                                     const keHoachConLaiL4 = isPsL4 ? 0 : (finalChiPhiL4 - totalActualL4);
 
@@ -2027,7 +2038,18 @@ window.calculateModalChiPhi = function(input) {
                                     updates[`${ggcPath}/keHoachConLai`] = keHoachConLaiL4;
                                     updates[`${ggcPath}/chiPhiPhanBo`] = finalPhanBoL4;
                                     updates[`${ggcPath}/cpCap1`] = cpCap1L4;
-                                    if(directExecution > 0 || sumL5Actual > 0) updates[`${ggcPath}/daThucHien`] = true;
+
+                                    // --- [CẬP NHẬT LOGIC GẮN CỜ DA_THUC_HIEN] ---
+                                    // Điều kiện 1: Có phát sinh chi phí thực hiện (Level 4 hoặc 5)
+                                    const hasMoney = (directExecution > 0 || sumL5Actual > 0);
+                                    
+                                    // Điều kiện 2: Chi phí = 0 VÀ Có link hồ sơ (Yêu cầu mới)
+                                    const isZeroCostWithLink = (finalChiPhiL4 === 0 && hasLevel4Link);
+
+                                    if(hasMoney || isZeroCostWithLink) {
+                                        updates[`${ggcPath}/daThucHien`] = true;
+                                    }
+                                    // ---------------------------------------------
 
                                     gcTotalThucHien += totalActualL4;
                                     gcTotalPhanBoFromL4 += finalPhanBoL4;
@@ -2050,8 +2072,7 @@ window.calculateModalChiPhi = function(input) {
                                 finalPhanBoL3 = gcTotalPhanBoFromL4;
                                 finalCpCap1L3 = gcTotalCpCap1FromL4;
                             }
-
-                            // [LOGIC PS] Level 3
+                            
                             const capDoL3Check = String(grandchild.capDo || '1');
                             const isPsL3 = capDoL3Check.trim().toLowerCase() === 'ps';
                             const keHoachConLaiL3 = isPsL3 ? 0 : (finalChiPhiL3 - gcTotalThucHien);
@@ -7475,7 +7496,8 @@ async function generateWorksheetWithFormulas() {
 
     // =========================================================================
 
-    const noiDungStyle = (data.chiPhiThucHien > 0) ? 'style="color: #5B77A8;"' : '';
+   // const noiDungStyle = (data.chiPhiThucHien > 0) ? 'style="color: #5B77A8;"' : '';
+   const noiDungStyle = (data.daThucHien === true) ? 'style="color: #5B77A8;"' : '';
     const displayTanSuat = (data.tanSuatTH === 0) ? '-' : (data.tanSuatTH || '');
     const tagNameDisplay = levelName === 'child' ? (data.tagName || '') : '';
 
