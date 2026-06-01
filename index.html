@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Nhập Liệu Kiểm Định</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5; }
+        .layout-container { display: grid; grid-template-columns: 1fr 2.5fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
+        .col-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        @media (max-width: 992px) { .layout-container { grid-template-columns: 1fr; } }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+        h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff; }
+        .form-group { margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        
+        button.primary-btn { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
+        button.primary-btn:hover { background-color: #0056b3; }
+        button.danger-btn { width: 100%; background-color: #dc3545; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
+        button.danger-btn:hover { background-color: #c82333; }
+        button.secondary-btn { width: 100%; background-color: #6c757d; color: white; border: none; padding: 10px; cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.secondary-btn:hover { background-color: #5a6268; }
+        button.warning-btn { width: 100%; background-color: #ffc107; color: #212529; border: none; padding: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.warning-btn:hover { background-color: #e0a800; }
+
+        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+        .text-success { color: green; }
+        .text-danger { color: #dc3545; }
+        .text-warning { color: #d39e00; }
+        
+        .drop-zone { border: 2px dashed #007bff; border-radius: 5px; padding: 30px 20px; text-align: center; cursor: pointer; background-color: #f0f8ff; transition: background-color 0.3s, border-color 0.3s; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .drop-zone.dragover { background-color: #e6f2ff; border-color: #0056b3; }
+        .drop-zone span { pointer-events: none; color: #0056b3; font-weight: bold; }
+        #fileInput { display: none; }
+        .file-list { margin-top: 15px; text-align: left; font-size: 0.9em; color: #333; max-height: 150px; overflow-y: auto; border-top: 1px solid #ddd; padding-top: 10px; display: none; }
+        .btn-clear { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 10px; display: none; }
+        
+        /* Styles cho Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 95%; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column; overflow-y: auto;}
+        .modal-content-sm { max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; border: none; padding: 0; }
+        .btn-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .history-table-container { overflow-y: auto; flex-grow: 1; margin-bottom: 15px;}
+        .history-table { width: 100%; border-collapse: collapse; font-size: 14px;}
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .history-table th { background-color: #f4f4f4; position: sticky; top: 0; }
+        
+        .btn-action { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 2px;}
+        .btn-del { background-color: #dc3545; } .btn-del:hover { background-color: #c82333; }
+        .btn-recreate-row { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;}
+        .btn-recreate-row:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="col-card col-left">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 150px; height: auto;">
+            </div>
+            <h3>Cấu hình hệ thống</h3>
+            <div class="form-group">
+                <label>Chọn Trung tâm kiểm định:</label>
+                <select id="trungTamSelect" onchange="window.updateHistoryIfOpen()"></select>
+            </div>
+            
+            <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
+            <button class="warning-btn" onclick="window.openOldDataModal()">Bổ sung dữ liệu cũ</button>
+        </div>
+
+        <div class="col-card col-main">
+            <h2>Trang Nhập Liệu & Xử Lý File Excel</h2>
+            
+            <div class="form-group">
+                <label>1. Dữ liệu đầu vào (.xls / .xlsx):</label>
+                <div class="drop-zone" id="dropZone">
+                    <span>Thả các file vào đây hoặc Click để chọn file</span>
+                    <input type="file" id="fileInput" multiple accept=".xls,.xlsx">
+                    <div class="file-list" id="fileList"></div>
+                </div>
+                <button type="button" class="btn-clear" id="clearFilesBtn" onclick="window.clearFiles()">Xóa danh sách file</button>
+            </div>
+            <div class="form-group">
+                <label>2. Thời điểm kiểm định (mm/yyyy):</label>
+                <input type="text" id="thoiDiemInput" placeholder="VD: 05/2026" required pattern="^(0[1-9]|1[0-2])\/[0-9]{4}$">
+            </div>
+            <div class="form-group">
+                <label>3. Loại chai (Dành cho Nhập Kiểm định):</label>
+                <select id="loaiChaiInput">
+                    <option value="V12">V12</option>
+                    <option value="V45">V45</option>
+                    <option value="Com">Com</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>4. Tên file kết quả xuất ra:</label>
+                <input type="text" id="fileNameInput" value="KetQua_KiemDinh" placeholder="Nhập tên file">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="primary-btn" onclick="window.processFiles()">Xử Lý KIỂM ĐỊNH (√)</button>
+                <button class="danger-btn" onclick="window.processHuyFiles()">Xử Lý Dữ Liệu HỦY (X)</button>
+            </div>
+            
+            <div id="status"></div>
+        </div>
+
+        <div class="col-card col-right">
+            <h3>Nhật ký hoạt động</h3>
+            <div id="logArea" style="font-size: 13px; color: #444; line-height: 1.6; max-height: 500px; overflow-y: auto;">
+                <i>Sẵn sàng...</i>
+            </div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Lịch sử nhập liệu</h3>
+                <button class="btn-close" onclick="window.closeModal('historyModal')">&times;</button>
+            </div>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>TĐ lập file (Hệ thống)</th>
+                            <th>TĐ kiểm định (User)</th>
+                            <th>Loại chai</th>
+                            <th>Số lượng</th>
+                            <th>Trạng thái</th>
+                            <th style="width: 20%;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+                <div id="historyLoading" style="text-align:center; padding:10px; display:none; color: #007bff;">Đang tải dữ liệu...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="oldDataModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Bổ sung dữ liệu cũ</h3>
+                <button class="btn-close" onclick="window.closeModal('oldDataModal')">&times;</button>
+            </div>
+            <p style="font-size: 14px; color: #555;">Chức năng import trực tiếp dữ liệu cũ vào CSDL. Cột "Kiểm định kỳ tới" được lấy trực tiếp từ file nhập.</p>
+            <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải File Mẫu</button>
+            <button class="primary-btn" onclick="document.getElementById('importOldDataFile').click()">2. Nhập từ Excel</button>
+            <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx" onchange="window.importOldDataFromExcel(event)">
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
+            authDomain: "dulieubanhang-d6156.firebaseapp.com",
+            databaseURL: "https://dulieubanhang-d6156-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dulieubanhang-d6156",
+            storageBucket: "dulieubanhang-d6156.firebasestorage.app",
+            messagingSenderId: "588583798336",
+            appId: "1:588583798336:web:82a240fb3da2f96893c1a5",
+            measurementId: "G-7D51WBK63L"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- GLOBAL HELPERS ---
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+        function addLog(msg) { const logArea = document.getElementById('logArea'); logArea.innerHTML += `<div>- ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
+        function parseDateMMYYYY(str) { const parts = str.split('/'); return new Date(parts[1], parts[0] - 1, 1); }
+        function formatDateMMYYYY(date) { const m = String(date.getMonth() + 1).padStart(2, '0'); const y = date.getFullYear(); return `${m}/${y}`; }
+        function diffMonths(d1, d2) { let months = (d2.getFullYear() - d1.getFullYear()) * 12; months -= d1.getMonth(); months += d2.getMonth(); return months; }
+        function addMonths(date, months) { const d = new Date(date); d.setMonth(d.getMonth() + months); return d; }
+        function toRoman(num) { const roman = {M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1}; let str = ''; for (let i of Object.keys(roman)) { let q = Math.floor(num / roman[i]); num -= q * roman[i]; str += i.repeat(q); } return str; }
+        function formatEpochToLocal(epochMs) {
+            const d = new Date(parseInt(epochMs));
+            const day = String(d.getDate()).padStart(2, '0'); const mon = String(d.getMonth() + 1).padStart(2, '0'); const yr = d.getFullYear();
+            const hr = String(d.getHours()).padStart(2, '0'); const min = String(d.getMinutes()).padStart(2, '0'); const sec = String(d.getSeconds()).padStart(2, '0');
+            return `${hr}:${min}:${sec} - ${day}/${mon}/${yr}`;
+        }
+        function getLCSLength(s1, s2) {
+            if (!s1 || !s2) return 0;
+            let dp = new Array(s2.length + 1).fill(0); let maxLen = 0;
+            for (let i = 1; i <= s1.length; i++) {
+                let prev = 0;
+                for (let j = 1; j <= s2.length; j++) {
+                    let temp = dp[j];
+                    if (s1[i - 1] === s2[j - 1]) { dp[j] = prev + 1; if (dp[j] > maxLen) maxLen = dp[j]; } else dp[j] = 0;
+                    prev = temp;
+                }
+            } return maxLen;
+        }
+
+        const danhSachTrungTam = [
+            { id: "tt1", ten: "Trung tâm kiểm định 1" },
+            { id: "tt2", ten: "Trung tâm kiểm định 2" },
+            { id: "tt3", ten: "Trung tâm kiểm định 3" }
+        ];
+        window.onload = function() {
+            const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
+            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
+        };
+        function getTrungTamDuocChon() { return document.getElementById('trungTamSelect').value; }
+
+        // --- XỬ LÝ KÉO THẢ ---
+        const dropZone = document.getElementById('dropZone'); const fileInput = document.getElementById('fileInput'); const fileList = document.getElementById('fileList'); const clearFilesBtn = document.getElementById('clearFilesBtn');
+        let selectedDataFiles = []; 
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover')); 
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files); });
+        fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) handleFiles(fileInput.files); });
+        function handleFiles(files) { let newFiles = Array.from(files).filter(f => f.name.endsWith('.xls') || f.name.endsWith('.xlsx')); selectedDataFiles = [...selectedDataFiles, ...newFiles]; updateFileList(); }
+        window.clearFiles = function() { selectedDataFiles = []; fileInput.value = ""; updateFileList(); document.getElementById('logArea').innerHTML = "<i>Đã xóa danh sách file...</i>"; }
+        function updateFileList() {
+            if (selectedDataFiles.length === 0) { fileList.style.display = "none"; fileList.innerHTML = ""; clearFilesBtn.style.display = 'none'; return; }
+            fileList.style.display = "block"; fileList.innerHTML = "<strong>Đã nạp " + selectedDataFiles.length + " file:</strong><br>" + selectedDataFiles.map(f => f.name).join("<br>"); clearFilesBtn.style.display = 'inline-block';
+        }
+
+        // ==========================================
+        // QUẢN LÝ LỊCH SỬ NHẬP LIỆU
+        // ==========================================
+        window.openHistoryModal = async function() { document.getElementById('historyModal').style.display = 'flex'; await loadHistoryTable(); }
+        window.updateHistoryIfOpen = function() { if(document.getElementById('historyModal').style.display === 'flex') loadHistoryTable(); }
+
+        async function loadHistoryTable() {
+            const trungTamId = getTrungTamDuocChon();
+            const tbody = document.getElementById('historyTableBody'); const loading = document.getElementById('historyLoading');
+            tbody.innerHTML = ''; loading.style.display = 'block';
+            
+            const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap`));
+            loading.style.display = 'none';
+
+            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có lịch sử nhập liệu nào.</td></tr>'; return; }
+            const data = snap.val();
+            const historyArray = Object.keys(data).map(key => data[key]).sort((a, b) => b.timeStamp - a.timeStamp);
+
+            historyArray.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // Trạng thái Hủy
+                let statusHtml = item.isHuy 
+                    ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' 
+                    : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
+                
+                // Ẩn nút "Tạo lại Excel" nếu là dữ liệu nhập cũ
+                let recreateBtnHtml = item.isOldData ? "" : `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Tạo lại Excel</button>`;
+                
+                tr.innerHTML = `
+                    <td>${formatEpochToLocal(item.timeStamp)}</td>
+                    <td><span style="color:#007bff; font-weight:bold">${item.thoiDiemKD || "N/A"}</span></td>
+                    <td><b>${item.loaiChai}</b></td>
+                    <td>${item.total}</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                        ${recreateBtnHtml}
+                        <button class="btn-action btn-del" onclick="window.deleteHistorySession('${trungTamId}', '${item.timeStamp}')">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteHistorySession = async function(trungTamId, timeStamp) {
+            if(!confirm("CẢNH BÁO: Xóa vĩnh viễn TOÀN BỘ dữ liệu của lần nhập này?")) return;
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (snap.exists()) {
+                    const data = snap.val(); let delUpdates = {};
+                    if (data.paths && Array.isArray(data.paths)) data.paths.forEach(p => { delUpdates[p] = null; });
+                    else if (data.paths) Object.values(data.paths).forEach(p => { delUpdates[p] = null; });
+                    
+                    if (data.stats) {
+                        for(let lc in data.stats) {
+                            for(let rY in data.stats[lc]) {
+                                delUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(-data.stats[lc][rY].total);
+                                delUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(-data.stats[lc][rY].total);
+
+                                for(let yCT in data.stats[lc][rY].byNamCT) {
+                                    delUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-data.stats[lc][rY].byNamCT[yCT]);
+                                    delUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-data.stats[lc][rY].byNamCT[yCT]);
+                                }
+                            }
+                        }
+                    }
+
+                    delUpdates[`${trungTamId}/LichSuNhap/${timeStamp}`] = null;
+                    await update(ref(db), delUpdates);
+                    alert("Đã xóa thành công!"); loadHistoryTable(); 
+                } else alert("Không tìm thấy dữ liệu để xóa.");
+            } catch (err) { alert("Lỗi: " + err.message); }
+        }
+
+        // ==========================================
+        // BỔ SUNG DỮ LIỆU CŨ (TỪ EXCEL)
+        // ==========================================
+        window.openOldDataModal = function() { document.getElementById('oldDataModal').style.display = 'flex'; }
+
+        window.downloadOldDataTemplate = async function() {
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_BoSungDuLieu');
+            ws.addRow(['STT', 'Loại chai (V12/V45/Com)', 'Thời điểm kiểm định (mm/yyyy)', 'Nhà CT', 'Năm CT (mm/yyyy)', 'Mã hiệu', 'Serial', 'Khối lượng', 'Kiểm định lần trước (mm/yyyy)', 'Kiểm định kỳ tới (mm/yyyy)', 'Chai hủy (để trống/k = Không)', 'Lý do hủy']);
+            ws.getRow(1).font = { bold: true }; 
+            ws.columns = [{width: 10},{width: 25},{width: 25},{width: 25},{width: 25},{width: 15},{width: 15},{width: 15},{width: 25},{width: 25},{width: 30},{width: 35}];
+            ws.columns.forEach(column => { column.numFmt = '@'; });
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_BoSung_DuLieuCu.xlsx");
+        }
+
+        window.importOldDataFromExcel = async function(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const trungTamId = getTrungTamDuocChon();
+            document.getElementById('logArea').innerHTML = ""; addLog("Đang đọc file bổ sung dữ liệu cũ...");
+
+            try {
+                const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer());
+                const ws = wb.worksheets[0]; 
+                
+                let updates = {}; let batchPathsList = []; let sessionStats = {}; let sourceStructureUpdates = {};
+                let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
+                let uniqueDates = new Set(); let uniqueLoaiChai = new Set();
+
+                ws.eachRow((row, rowNumber) => {
+                    if(rowNumber === 1) return;
+                    let loaiChaiRaw = String(row.getCell(2).value || "").trim().toLowerCase();
+                    let loaiChai = "";
+                    if (loaiChaiRaw.includes("v12")) loaiChai = "V12";
+                    else if (loaiChaiRaw.includes("v45")) loaiChai = "V45";
+                    else if (loaiChaiRaw.includes("com")) loaiChai = "Com";
+
+                    let recentCheckStr = String(row.getCell(3).value || "").trim();
+                    let nhaCT_orig = String(row.getCell(4).value || "").trim();
+                    let namCT_orig = String(row.getCell(5).value || "").trim();
+                    let maHieu = String(row.getCell(6).value || "").trim();
+                    let serial = String(row.getCell(7).value || "").trim();
+                    let khoiLuong = String(row.getCell(8).value || "").trim();
+                    let lastCheck_orig = String(row.getCell(9).value || "").trim();
+                    let nextDate_orig = String(row.getCell(10).value || "").trim(); 
+                    let voHuyRaw = String(row.getCell(11).value || "").trim().toLowerCase(); 
+                    let lyDoHuy = String(row.getCell(12).value || "").trim(); 
+
+                    if (!loaiChai || !recentCheckStr || !nhaCT_orig || !namCT_orig) { console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); errorCount++; return; }
+
+                    uniqueDates.add(recentCheckStr); uniqueLoaiChai.add(loaiChai);
+                    let voHuy = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
+
+                    const namCT_id = namCT_orig.replace(/\//g, '-'); 
+                    const rY = recentCheckStr.split('/')[1]; const yCT = namCT_orig.split('/')[1];
+                    let nhaCT_id = nhaCT_orig.replace(/\//g, '-');
+
+                    sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
+                    sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
+
+                    const nextDate_str = nextDate_orig; 
+                    const lastCheck_id = lastCheck_orig.replace(/\//g, '-');
+
+                    const newChaiKey = push(child(ref(db), 'temp')).key;
+                    const dataPath = `${trungTamId}/${loaiChai}/${namCT_id}/${nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    
+                    let chaiData = { maHieu, serial, khoiLuong, lastCheck: lastCheck_id, lastCheckOriginal: lastCheck_orig, timeStamp: batchTimestamp, voHuy: voHuy, recentCheck: recentCheckStr, nextDate: nextDate_str, nhaCT: nhaCT_orig, namCT: namCT_orig };
+                    if (voHuy) chaiData.lyDoHuy = lyDoHuy; 
+
+                    updates[dataPath] = chaiData; batchPathsList.push(dataPath); validCount++;
+
+                    if(yCT && rY) {
+                        if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
+                        if(!sessionStats[loaiChai][rY]) sessionStats[loaiChai][rY] = { total: 0, byNamCT: {} };
+                        sessionStats[loaiChai][rY].total += 1;
+                        if(!sessionStats[loaiChai][rY].byNamCT[yCT]) sessionStats[loaiChai][rY].byNamCT[yCT] = 0;
+                        sessionStats[loaiChai][rY].byNamCT[yCT] += 1;
+                    }
+                });
+
+                if(validCount > 0) {
+                    for(let lc in sessionStats) {
+                        for(let rY in sessionStats[lc]) {
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            
+                            for(let yy in sessionStats[lc][rY].byNamCT) {
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                            }
+                        }
+                    }
+                    Object.assign(updates, sourceStructureUpdates);
+
+                    let finalThoiDiemKD = uniqueDates.size === 1 ? Array.from(uniqueDates)[0] : "Nhiều thời điểm";
+                    let finalLoaiChai = uniqueLoaiChai.size === 1 ? Array.from(uniqueLoaiChai)[0] : "Hỗn hợp";
+
+                    updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                        loaiChai: finalLoaiChai, total: validCount, timeStamp: batchTimestamp, 
+                        thoiDiemKD: finalThoiDiemKD, paths: batchPathsList, stats: sessionStats, isOldData: true 
+                    };
+
+                    addLog(`Đang đẩy ${validCount} dòng dữ liệu lên RTDB...`);
+                    let chunkUpdates = {}; let count = 0; let promises = [];
+                    for(let k in updates) { chunkUpdates[k] = updates[k]; count++; if(count >= 400) { promises.push(update(ref(db), chunkUpdates)); chunkUpdates = {}; count = 0; } }
+                    if(count > 0) promises.push(update(ref(db), chunkUpdates));
+                    await Promise.all(promises);
+
+                    let msg = `Đã bổ sung ${validCount} chai thành công!`;
+                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu thông tin)`;
+                    alert(msg); addLog(msg);
+                } else alert("Không có dữ liệu hợp lệ để nhập.");
+                
+                window.closeModal('oldDataModal');
+            } catch (err) { console.error(err); alert("Lỗi khi nhập file: " + err.message); }
+            e.target.value = "";
+        }
+
+        // ==========================================
+        // XỬ LÝ CHÍNH & ĐỒNG BỘ KIỂM ĐỊNH BÌNH THƯỜNG
+        // ==========================================
+        window.processFiles = async function() {
+            const dataFiles = selectedDataFiles; 
+            const thoiDiemStr = document.getElementById('thoiDiemInput').value;
+            const loaiChai = document.getElementById('loaiChaiInput').value;
+            let outputFileName = document.getElementById('fileNameInput').value.trim() || 'KetQua_KiemDinh';
+            const statusDiv = document.getElementById('status');
+            const trungTamId = getTrungTamDuocChon();
+            
+            if (dataFiles.length === 0) { alert("Vui lòng chọn ít nhất 1 file dữ liệu!"); return; }
+            if (!thoiDiemStr.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Vui lòng nhập đúng định dạng mm/yyyy (VD: 05/2026)"); return; }
+
+            statusDiv.innerHTML = "<span style='color: blue;'>Đang trích xuất và kiểm tra dữ liệu...</span>";
+            document.getElementById('logArea').innerHTML = ""; addLog("Đang đọc nội dung file...");
+
+            let templateDataBuffer;
+            try {
+                addLog("Đang tải file mẫu (sample.xlsx) từ máy chủ...");
+                const response = await fetch('sample.xlsx');
+                if (!response.ok) throw new Error("Không tìm thấy file sample.xlsx");
+                templateDataBuffer = await response.arrayBuffer();
+            } catch (err) { alert("Lỗi tải file mẫu: " + err.message); return; }
+
+            try {
+                const timeParts = thoiDiemStr.split('/');
+                const mm = timeParts[0]; const yyyy = timeParts[1];
+                let xx = ""; let bbb = "";
+                if (loaiChai === "V12") { xx = "12"; bbb = "26.5"; } else if (loaiChai === "V45") { xx = "45"; bbb = "99"; } else if (loaiChai === "Com") { xx = "Com"; bbb = "24.5"; }
+
+                let taphopDataRaw = []; let newFileLogs = []; let sourceStructureUpdates = {}; 
+                const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+                const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
+
+                for (let file of dataFiles) {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, {type: 'array'});
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        if (sheetName.toLowerCase().includes(loaiChai.toLowerCase()) && !sheetName.toLowerCase().includes("hủy") && !sheetName.toLowerCase().includes("h\u1EE7y")) {
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                            let currentSerialString = ""; let hasData = false;
+
+                            for (let i = 1; i < rows.length; i++) {
+                                if (rows[i][2]) {
+                                    taphopDataRaw.push(rows[i]);
+                                    const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
+
+                                    const nCT_orig = String(rows[i][2]).trim(); const nCT_id = nCT_orig.replace(/\//g, '-');
+                                    let nhCT_orig = String(rows[i][1]).trim(); let nhCT_id = nhCT_orig.replace(/\//g, '-');
+                                    if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
+
+                                    if(!existingNhaCT[nhCT_id]) {
+                                        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
+                                        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+                                    }
+                                    sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_initialized`] = true;
+                                }
+                            }
+                            if (hasData) newFileLogs.push({ fileName: file.name, sheetName: sheetName, serialString: currentSerialString });
+                        }
+                    });
+                }
+                addLog(`Trích xuất thành công ${taphopDataRaw.length} dòng dữ liệu hợp lệ.`);
+                
+                const thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr);
+                let tren20Nam = []; let duoi20Nam = [];
+
+                taphopDataRaw.forEach(row => {
+                    const strC = String(row[2]).trim();
+                    if (strC.includes('/')) {
+                        const dateC = parseDateMMYYYY(strC); const diff = diffMonths(dateC, thoiDiemKiemDinh);
+                        let newDate;
+                        if (diff >= 288) newDate = addMonths(dateC, 311); else if (diff >= 240 && diff <= 287) newDate = addMonths(thoiDiemKiemDinh, 24);
+                        else if (diff >= 204 && diff <= 239) newDate = addMonths(dateC, 264); else newDate = addMonths(thoiDiemKiemDinh, 60);
+
+                        row[0] = formatDateMMYYYY(newDate); row[7] = "√";
+                        if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row);
+                    }
+                });
+
+                const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a[2]) - parseDateMMYYYY(b[2]));
+                sortData(tren20Nam); sortData(duoi20Nam);
+                let taphopData = [...tren20Nam, ...duoi20Nam]; 
+
+                addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
+                const snapshot = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
+                let pastRecords = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    for (let ts in data) { for (let key in data[ts]) pastRecords.push(data[ts][key]); }
+                }
+
+                let dupFiles = [];
+                for (let nh of newFileLogs) { if (pastRecords.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
+                if (dupFiles.length > 0) {
+                    if (!confirm("Cảnh báo: Các file sau đã từng được xử lý:\n- " + dupFiles.join("\n- ") + "\n\nNhấn OK để tiếp tục.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                    addLog("Bỏ qua cảnh báo trùng tên file.");
+                }
+
+                let serialWarningTriggered = false; let dupDetails = "";
+                for (let nh of newFileLogs) {
+                    if (serialWarningTriggered) break; 
+                    for (let pr of pastRecords) {
+                        if (!nh.serialString || !pr.serialString) continue;
+                        let lcsLen = getLCSLength(nh.serialString, pr.serialString);
+                        if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
+                            serialWarningTriggered = true; dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}")`; break;
+                        }
+                    }
+                }
+                if (serialWarningTriggered) {
+                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã lập hồ sơ (Trùng chuỗi Serial).\n\nNhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                    addLog("Bỏ qua cảnh báo trùng Serial.");
+                }
+
+                statusDiv.innerHTML = "<span class='text-warning'>Đang đồng bộ dữ liệu lên Firebase RTDB...</span>";
+                const batchTimestamp = Date.now().toString(); 
+                let updates = {}; let batchPathsList = []; let sessionStats = {}; let opCount = 0; let promises = [];
+
+                Object.assign(updates, sourceStructureUpdates);
+                const recentYear = yyyy; 
+
+                for (let row of taphopData) {
+                    const nextDate_str = String(row[0] || "").trim(); const nhaCT_orig = String(row[1] || "").trim(); 
+                    const namCT_orig = String(row[2] || "").trim(); const lastCheck_orig = String(row[6] || "").trim(); 
+
+                    const namCT_id = namCT_orig.replace(/\//g, '-'); const yCT = namCT_orig.split('/')[1];
+                    let nhaCT_id = nhaCT_orig.replace(/\//g, '-'); if (!nhaCT_id) nhaCT_id = "Chua_Xac_Dinh";
+                    
+                    const maHieu = String(row[3] || "").trim(); const serial = String(row[4] || "").trim();
+                    const khoiLuong = String(row[5] || "").trim(); const lastCheck_id = lastCheck_orig.replace(/\//g, '-');
+
+                    const newChaiKey = push(child(ref(db), 'temp')).key;
+                    const dataPath = `${trungTamId}/${loaiChai}/${namCT_id}/${nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    
+                    updates[dataPath] = { maHieu, serial, khoiLuong, lastCheck: lastCheck_id, lastCheckOriginal: lastCheck_orig, timeStamp: batchTimestamp, voHuy: false, recentCheck: thoiDiemStr, nextDate: nextDate_str, nhaCT: nhaCT_orig, namCT: namCT_orig };
+                    batchPathsList.push(dataPath); 
+
+                    if(yCT) {
+                        if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
+                        if(!sessionStats[loaiChai][recentYear]) sessionStats[loaiChai][recentYear] = { total: 0, byNamCT: {} };
+                        sessionStats[loaiChai][recentYear].total += 1;
+                        if(!sessionStats[loaiChai][recentYear].byNamCT[yCT]) sessionStats[loaiChai][recentYear].byNamCT[yCT] = 0;
+                        sessionStats[loaiChai][recentYear].byNamCT[yCT] += 1;
+                    }
+
+                    opCount++;
+                    if (opCount >= 300) { promises.push(update(ref(db), updates)); updates = {}; opCount = 0; }
+                }
+
+                for(let lc in sessionStats) {
+                    for(let rY in sessionStats[lc]) {
+                        updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                        updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                        for(let yy in sessionStats[lc][rY].byNamCT) {
+                            updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                            updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                        }
+                    }
+                }
+
+                newFileLogs.forEach(nh => {
+                    const pushKey = push(child(ref(db), 'temp')).key;
+                    const logPath = `${trungTamId}/${loaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                    updates[logPath] = nh; batchPathsList.push(logPath); 
+                });
+
+                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { loaiChai: loaiChai, total: taphopData.length, timeStamp: batchTimestamp, thoiDiemKD: thoiDiemStr, paths: batchPathsList, stats: sessionStats, isHuy: false };
+                
+                if (Object.keys(updates).length > 0) promises.push(update(ref(db), updates));
+                await Promise.all(promises);
+                addLog(`Đồng bộ CSDL hoàn tất.`);
+
+                // --- TẠO VÀ XUẤT FILE EXCEL KIỂM ĐỊNH ---
+                statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel...</span>";
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                function appendFooter(ws, destRow) {
+                    if (!ghichuSheet) return;
+                    if (ghichuSheet._node && ghichuSheet._node.children) {
+                        const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                        if (mergeCellsNode && mergeCellsNode.children) {
+                            mergeCellsNode.children.forEach(mergeCell => {
+                                const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                                if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { ws.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
+                            });
+                        }
+                    }
+                    const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
+                    for (let r = 11; r <= 23; r++) {
+                        let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) ws.row(currentDestRow).height(h);
+                        for (let c = 1; c <= 20; c++) {
+                            const srcCell = ghichuSheet.cell(r, c); const dstCell = ws.cell(currentDestRow, c);
+                            if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value());
+                            let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } });
+                            styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {}
+                        }
+                    }
+                }
+
+                function buildSheet(sheetName, data) {
+                    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+                    const aaa = data.length; let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                    const grouped = data.reduce((acc, row) => { (acc[row[0]] = acc[row[0]] || []).push(row); return acc; }, {});
+                    let destRow = 10; let groupNum = 1;
+                    const setThinBorders = (cell, noLeft, noRight) => { let borderObj = { top: { style: "thin" }, bottom: { style: "thin" } }; if (!noLeft) borderObj.left = { style: "thin" }; if (!noRight) borderObj.right = { style: "thin" }; try { cell.style("border", borderObj); } catch(e) { } };
+
+                    for (let key in grouped) {
+                        const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
+                        let parts = key.split('/'); let gMonth = parts[0]; let gYear = parts[1];
+                        sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                        for(let c = 1; c <= 16; c++) { if (c === 1) setThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) setThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) setThinBorders(sheet.cell(destRow, c), true, false); else setThinBorders(sheet.cell(destRow, c), true, true); }
+                        for (let k = 0; k < N1; k++) {
+                            const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 1).value(groupData[k][col]);
+                            if (k < N2) { sheet.cell(r, 9).value(N1 + k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 9).value(groupData[N1 + k][col]); }
+                            for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) setThinBorders(currentCell, false, true); else if (c === 5 || c === 13) setThinBorders(currentCell, true, false); else setThinBorders(currentCell, false, false); }
+                        }
+                        destRow += N1 + 1; groupNum++;
+                    }
+                    appendFooter(sheet, destRow);
+                }
+
+                buildSheet("tren20nam", tren20Nam); buildSheet("duoi20nam", duoi20Nam);
+                if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync();
+                if (!outputFileName.toLowerCase().endsWith('.xlsx')) outputFileName += '.xlsx'; saveAs(blob, outputFileName);
+                addLog("Xuất file Excel thành công!"); statusDiv.innerHTML = "<span class='text-success'>Hoàn thành! Hệ thống đã ghi nhận CSDL và tải file về máy.</span>";
+
+            } catch (error) { console.error(error); addLog(`LỖI: ${error.message}`); statusDiv.innerHTML = `<span class='text-danger'>Lỗi hệ thống: ${error.message}</span>`; }
+        }
+
+        // ==========================================
+        // XỬ LÝ DỮ LIỆU HỦY (TỪ EXCEL)
+        // ==========================================
+        window.processHuyFiles = async function() {
+            const dataFiles = selectedDataFiles; 
+            const thoiDiemStr = document.getElementById('thoiDiemInput').value;
+            let outputFileName = document.getElementById('fileNameInput').value.trim() || 'KetQua_Huy_KiemDinh';
+            const statusDiv = document.getElementById('status');
+            const trungTamId = getTrungTamDuocChon();
+            
+            if (dataFiles.length === 0) { alert("Vui lòng chọn ít nhất 1 file dữ liệu!"); return; }
+            if (!thoiDiemStr.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Vui lòng nhập đúng định dạng mm/yyyy (VD: 05/2026)"); return; }
+
+            statusDiv.innerHTML = "<span style='color: blue;'>Đang trích xuất dữ liệu HỦY...</span>";
+            document.getElementById('logArea').innerHTML = ""; 
+            addLog("Đang đọc nội dung file...");
+
+            let templateDataBuffer;
+            try {
+                addLog("Đang tải file mẫu (samplehuy.xlsx)...");
+                const response = await fetch('samplehuy.xlsx');
+                if (!response.ok) throw new Error("Không tìm thấy file samplehuy.xlsx");
+                templateDataBuffer = await response.arrayBuffer();
+            } catch (err) { alert("Lỗi tải file mẫu: " + err.message); return; }
+
+            try {
+                let taphopDataHuy = []; let newFileLogs = []; let sourceStructureUpdates = {};
+                let overallLoaiChai = "Hỗn hợp"; let loaiChaiSet = new Set();
+                let xx = ""; let bbb = "";
+
+                const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+                const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
+
+                for (let file of dataFiles) {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, {type: 'array'});
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        let sName = sheetName.toLowerCase();
+                        if (sName.includes("hủy") || sName.includes("huỷ")) {
+                            
+                            let loaiChaiSheet = "";
+                            if (sName.includes("v12")) loaiChaiSheet = "V12";
+                            else if (sName.includes("v45")) loaiChaiSheet = "V45";
+                            else if (sName.includes("com")) loaiChaiSheet = "Com";
+
+                            if(loaiChaiSheet) loaiChaiSet.add(loaiChaiSheet);
+
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                            let currentSerialString = ""; let hasData = false;
+
+                            for (let i = 1; i < rows.length; i++) {
+                                if (rows[i][2]) {
+                                    const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
+
+                                    const nCT_orig = String(rows[i][2]).trim(); 
+                                    let nCT_id = "KhongXacDinh";
+                                    if (/^\d{2}\/\d{4}$/.test(nCT_orig)) { nCT_id = nCT_orig.replace(/\//g, '-'); }
+
+                                    let nhCT_orig = String(rows[i][1]).trim(); let nhCT_id = nhCT_orig.replace(/\//g, '-');
+                                    if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
+
+                                    taphopDataHuy.push({
+                                        loaiChai: loaiChaiSheet || "V12", 
+                                        nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id,
+                                        namCT_orig: nCT_orig, namCT_id: nCT_id,
+                                        maHieu: String(rows[i][3] || "").trim(),
+                                        serial: sr,
+                                        lyDoHuy: String(rows[i][5] || "").trim()
+                                    });
+
+                                    if(!existingNhaCT[nhCT_id]) {
+                                        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
+                                        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+                                    }
+                                }
+                            }
+                            if (hasData) newFileLogs.push({ fileName: file.name, sheetName: sheetName, serialString: currentSerialString });
+                        }
+                    });
+                }
+                
+                if(taphopDataHuy.length === 0) { alert("Không tìm thấy dữ liệu Hủy hợp lệ trong file!"); return; }
+                addLog(`Trích xuất thành công ${taphopDataHuy.length} dòng dữ liệu Hủy.`);
+
+                if(loaiChaiSet.size === 1) {
+                    overallLoaiChai = Array.from(loaiChaiSet)[0];
+                    if (overallLoaiChai === "V12") { xx = "12"; bbb = "26.5"; } 
+                    else if (overallLoaiChai === "V45") { xx = "45"; bbb = "99"; } 
+                    else if (overallLoaiChai === "Com") { xx = "Com"; bbb = "24.5"; }
+                } else if(loaiChaiSet.size > 1) {
+                    overallLoaiChai = "Hỗn hợp";
+                    xx = "12"; bbb = "26.5"; // Mặc định cho header
+                }
+
+                // Kiểm tra trùng Serial trên toàn bộ lịch sử
+                addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
+                let allHistoryPath = [];
+                for(let lc of ['V12', 'V45', 'Com']) {
+                    const snap = await get(child(ref(db), `${trungTamId}/${lc}/LichSuFile`));
+                    if(snap.exists()) {
+                        let d = snap.val();
+                        for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); }
+                    }
+                }
+
+                let serialWarningTriggered = false; let dupDetails = "";
+                for (let nh of newFileLogs) {
+                    if (serialWarningTriggered) break; 
+                    for (let pr of allHistoryPath) {
+                        if (!nh.serialString || !pr.serialString) continue;
+                        let lcsLen = getLCSLength(nh.serialString, pr.serialString);
+                        if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
+                            serialWarningTriggered = true; dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}")`; break;
+                        }
+                    }
+                }
+                if (serialWarningTriggered) {
+                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã lập hồ sơ (Trùng chuỗi Serial).\n\nNhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                    addLog("Bỏ qua cảnh báo trùng Serial.");
+                }
+
+                statusDiv.innerHTML = "<span class='text-warning'>Đang đồng bộ dữ liệu Hủy lên Firebase RTDB...</span>";
+                const batchTimestamp = Date.now().toString(); 
+                let updates = {}; let batchPathsList = []; let opCount = 0; let promises = [];
+
+                Object.assign(updates, sourceStructureUpdates);
+
+                for (let d of taphopDataHuy) {
+                    const newChaiKey = push(child(ref(db), 'temp')).key;
+                    const dataPath = `${trungTamId}/${d.loaiChai}/${d.namCT_id}/${d.nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    
+                    updates[dataPath] = { 
+                        maHieu: d.maHieu, serial: d.serial, khoiLuong: "", lastCheck: "", lastCheckOriginal: "", nextDate: "",
+                        timeStamp: batchTimestamp, voHuy: true, lyDoHuy: d.lyDoHuy, recentCheck: thoiDiemStr, 
+                        nhaCT: d.nhaCT_orig, namCT: d.namCT_orig 
+                    };
+                    batchPathsList.push(dataPath); 
+
+                    opCount++;
+                    if (opCount >= 300) { promises.push(update(ref(db), updates)); updates = {}; opCount = 0; }
+                }
+
+                newFileLogs.forEach(nh => {
+                    const pushKey = push(child(ref(db), 'temp')).key;
+                    // Mặc dù là hỗn hợp, ghi log vào nhánh overallLoaiChai (hoặc V12 nếu hỗn hợp)
+                    const targetLc = overallLoaiChai === "Hỗn hợp" ? "V12" : overallLoaiChai;
+                    const logPath = `${trungTamId}/${targetLc}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                    updates[logPath] = nh; batchPathsList.push(logPath); 
+                });
+
+                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                    loaiChai: overallLoaiChai, total: taphopDataHuy.length, timeStamp: batchTimestamp, 
+                    thoiDiemKD: thoiDiemStr, paths: batchPathsList, isHuy: true 
+                };
+                
+                if (Object.keys(updates).length > 0) promises.push(update(ref(db), updates));
+                await Promise.all(promises);
+                addLog(`Đồng bộ dữ liệu Hủy hoàn tất.`);
+
+                // --- TẠO VÀ XUẤT FILE EXCEL HỦY (`samplehuy.xlsx`) ---
+                statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel Hủy...</span>";
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
+                
+let activeSheet = workbook.sheet("vohuy");
+
+if (!activeSheet) {
+    activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+}
+
+if (!activeSheet) {
+    alert("LỖI: File mẫu samplehuy.xlsx không có sheet dữ liệu hợp lệ!");
+    return;
+}
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                const timeParts = thoiDiemStr.split('/'); const mm = timeParts[0]; const yyyy = timeParts[1];
+                const aaa = taphopDataHuy.length;
+
+                // Thay thế tiêu đề A3, A5, A6 theo mẫu Huy
+                let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+
+                let destRow = 13; 
+                const setThinBorders = (cell) => { try { cell.style("border", { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }); } catch(e) { } };
+
+                for (let k = 0; k < taphopDataHuy.length; k++) {
+                    let r = destRow + k;
+                    let d = taphopDataHuy[k];
+                    activeSheet.cell(r, 1).value(k + 1);
+                    activeSheet.cell(r, 2).value(d.nhaCT_orig);
+                    activeSheet.cell(r, 3).value(d.namCT_orig);
+                    activeSheet.cell(r, 4).value(d.maHieu);
+                    activeSheet.cell(r, 5).value(d.serial);
+                    activeSheet.cell(r, 7).value("X");
+                    activeSheet.cell(r, 8).value(d.lyDoHuy);
+
+                    for (let c = 1; c <= 8; c++) {
+                        const currentCell = activeSheet.cell(r, c);
+                        currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 });
+                        setThinBorders(currentCell);
+                    }
+                }
+                destRow += taphopDataHuy.length;
+
+                // Nối footer
+                if (ghichuSheet && ghichuSheet._node && ghichuSheet._node.children) {
+                    const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                    if (mergeCellsNode && mergeCellsNode.children) {
+                        mergeCellsNode.children.forEach(mergeCell => {
+                            const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                            if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { activeSheet.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
+                        });
+                    }
+                }
+                const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
+                for (let r = 11; r <= 23; r++) {
+                    if(!ghichuSheet) break;
+                    let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) activeSheet.row(currentDestRow).height(h);
+                    for (let c = 1; c <= 20; c++) {
+                        const srcCell = ghichuSheet.cell(r, c); const dstCell = activeSheet.cell(currentDestRow, c);
+                        if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value());
+                        let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } });
+                        styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {}
+                    }
+                }
+
+                if (ghichuSheet) ghichuSheet.delete(); 
+                const blob = await workbook.outputAsync();
+                if (!outputFileName.toLowerCase().endsWith('.xlsx')) outputFileName += '.xlsx'; 
+                saveAs(blob, `Huy_${outputFileName}`);
+                addLog("Xuất file Excel Hủy thành công!"); statusDiv.innerHTML = "<span class='text-success'>Hoàn thành! Hệ thống đã ghi nhận CSDL và tải file về máy.</span>";
+
+            } catch (error) { console.error(error); addLog(`LỖI: ${error.message}`); statusDiv.innerHTML = `<span class='text-danger'>Lỗi hệ thống: ${error.message}</span>`; }
+        }
+
+        // --- HÀM TÁI TẠO FILE TỪ CSDL (XỬ LÝ CẢ KIỂM ĐỊNH VÀ HỦY) ---
+        window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
+            const loading = document.getElementById('historyLoading'); loading.innerText = 'Đang tải dữ liệu từ CSDL...'; loading.style.display = 'block';
+
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (!snap.exists()) { alert("Dữ liệu gốc của lần nhập này không còn tồn tại!"); loading.style.display = 'none'; return; }
+                const summary = snap.val(); let dataPaths = [];
+                if (summary.paths && Array.isArray(summary.paths)) dataPaths = summary.paths; else if (summary.paths) dataPaths = Object.values(summary.paths);
+                dataPaths = dataPaths.filter(p => p.includes('/DanhSachChai/'));
+                let fetchedDocs = []; loading.innerText = `Đang trích xuất ${dataPaths.length} chai...`;
+
+                for (let i = 0; i < dataPaths.length; i += 100) { const chunk = dataPaths.slice(i, i + 100); const chunkSnaps = await Promise.all(chunk.map(p => get(child(ref(db), p)))); chunkSnaps.forEach(s => { if(s.exists()) fetchedDocs.push(s.val()); }); }
+
+                loading.innerText = 'Đang tải file mẫu từ máy chủ...';
+                let templateDataBuffer;
+                const templateFileName = isHuy ? 'samplehuy.xlsx' : 'sample.xlsx';
+                const response = await fetch(templateFileName);
+                if (!response.ok) throw new Error(`Không tìm thấy file ${templateFileName}`);
+                templateDataBuffer = await response.arrayBuffer();
+
+                const thoiDiemStr = summary.thoiDiemKD; const loaiChai = summary.loaiChai; 
+                let thoiDiemKiemDinh = null;
+                if(thoiDiemStr && thoiDiemStr !== "Nhiều thời điểm") { thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr); }
+
+                let lC_check = loaiChai.toLowerCase();
+                let xx = "12"; let bbb = "26.5"; 
+                if (lC_check.includes("v45")) { xx = "45"; bbb = "99"; } 
+                else if (lC_check.includes("com")) { xx = "Com"; bbb = "24.5"; }
+                
+                const timeParts = thoiDiemStr.split('/'); const mm = timeParts[0] || "mm"; const yyyy = timeParts[1] || "yyyy";
+                const aaa = fetchedDocs.length;
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                if (isHuy) {
+                    // Logic Tái tạo File Hủy
+                    const activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+
+                    let destRow = 13; 
+                    const setThinBorders = (cell) => { try { cell.style("border", { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }); } catch(e) { } };
+
+                    for (let k = 0; k < fetchedDocs.length; k++) {
+                        let r = destRow + k; let d = fetchedDocs[k];
+                        activeSheet.cell(r, 1).value(k + 1);
+                        activeSheet.cell(r, 2).value(d.nhaCT || "");
+                        activeSheet.cell(r, 3).value(d.namCT || "");
+                        activeSheet.cell(r, 4).value(d.maHieu || "");
+                        activeSheet.cell(r, 5).value(d.serial || "");
+                        activeSheet.cell(r, 7).value("X");
+                        activeSheet.cell(r, 8).value(d.lyDoHuy || "");
+
+                        for (let c = 1; c <= 8; c++) { const currentCell = activeSheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); setThinBorders(currentCell); }
+                    }
+                    destRow += fetchedDocs.length;
+
+                    if (ghichuSheet && ghichuSheet._node && ghichuSheet._node.children) {
+                        const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                        if (mergeCellsNode && mergeCellsNode.children) {
+                            mergeCellsNode.children.forEach(mergeCell => {
+                                const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                                if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { activeSheet.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
+                            });
+                        }
+                    }
+                    const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
+                    for (let r = 11; r <= 23; r++) {
+                        if(!ghichuSheet) break;
+                        let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) activeSheet.row(currentDestRow).height(h);
+                        for (let c = 1; c <= 20; c++) {
+                            const srcCell = ghichuSheet.cell(r, c); const dstCell = activeSheet.cell(currentDestRow, c);
+                            if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value());
+                            let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } });
+                            styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {}
+                        }
+                    }
+                } else {
+                    // Logic Tái tạo File Kiểm định
+                    let tren20Nam = []; let duoi20Nam = [];
+                    fetchedDocs.forEach(d => {
+                        let row = []; row[0] = d.nextDate || ""; row[1] = d.nhaCT || ""; row[2] = d.namCT || ""; row[3] = d.maHieu || ""; row[4] = d.serial || ""; row[5] = d.khoiLuong || ""; row[6] = d.lastCheckOriginal || ""; row[7] = "√";
+                        if (row[2]) { 
+                            let mKiemDinh = thoiDiemKiemDinh; if(!mKiemDinh && d.recentCheck) mKiemDinh = parseDateMMYYYY(d.recentCheck);
+                            if(mKiemDinh) { const dateC = parseDateMMYYYY(row[2]); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
+                        } else { duoi20Nam.push(row); }
+                    });
+
+                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a[2]) - parseDateMMYYYY(b[2])); sortData(tren20Nam); sortData(duoi20Nam);
+
+                    function appendFooter(ws, destRow) {
+                        if (!ghichuSheet) return;
+                        if (ghichuSheet._node && ghichuSheet._node.children) {
+                            const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                            if (mergeCellsNode && mergeCellsNode.children) { mergeCellsNode.children.forEach(mergeCell => { const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/); if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { ws.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } } }); }
+                        }
+                        const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
+                        for (let r = 11; r <= 23; r++) { let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) ws.row(currentDestRow).height(h); for (let c = 1; c <= 20; c++) { const srcCell = ghichuSheet.cell(r, c); const dstCell = ws.cell(currentDestRow, c); if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value()); let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } }); styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {} } }
+                    }
+
+                    function buildSheet(sheetName, data) {
+                        if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+                        let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        const grouped = data.reduce((acc, row) => { (acc[row[0]] = acc[row[0]] || []).push(row); return acc; }, {});
+                        let destRow = 10; let groupNum = 1;
+                        const setThinBorders = (cell, noLeft, noRight) => { let borderObj = { top: { style: "thin" }, bottom: { style: "thin" } }; if (!noLeft) borderObj.left = { style: "thin" }; if (!noRight) borderObj.right = { style: "thin" }; try { cell.style("border", borderObj); } catch(e) { } };
+
+                        for (let key in grouped) {
+                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
+                            let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
+                            sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            for(let c = 1; c <= 16; c++) { if (c === 1) setThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) setThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) setThinBorders(sheet.cell(destRow, c), true, false); else setThinBorders(sheet.cell(destRow, c), true, true); }
+                            for (let k = 0; k < N1; k++) {
+                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 1).value(groupData[k][col]);
+                                if (k < N2) { sheet.cell(r, 9).value(N1 + k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 9).value(groupData[N1 + k][col]); }
+                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) setThinBorders(currentCell, false, true); else if (c === 5 || c === 13) setThinBorders(currentCell, true, false); else setThinBorders(currentCell, false, false); }
+                            }
+                            destRow += N1 + 1; groupNum++;
+                        }
+                        appendFooter(sheet, destRow);
+                    }
+
+                    buildSheet("tren20nam", tren20Nam); buildSheet("duoi20nam", duoi20Nam);
+                }
+
+                if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
+                let prefix = isHuy ? "Recreated_Huy_" : "Recreated_BBKD_";
+                saveAs(blob, `${prefix}${loaiChai}_${timeStamp}.xlsx`); 
+                loading.style.display = 'none'; alert("Hoàn thành! File đã được tái tạo và tải xuống.");
+            } catch (err) { console.error(err); alert("Lỗi khi tạo lại file: " + err.message); loading.style.display = 'none'; }
+        }
+    </script>
+</body>
+</html>
