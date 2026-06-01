@@ -9,10 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     
     <style>
-      body {
-    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5;
-} 
-	  /* body { font-family: Tahoma, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5; } */
+        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5; }
         .layout-container { display: grid; grid-template-columns: 1fr 2.5fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
         .col-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         @media (max-width: 992px) { .layout-container { grid-template-columns: 1fr; } }
@@ -71,7 +68,7 @@
             <div style="text-align: center; margin-bottom: 20px;">
                 <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 150px; height: auto;">
             </div>
-            <h3>Hệ thống</h3>
+            <h3>Cấu hình hệ thống</h3>
             <div class="form-group">
                 <label>Chọn Trung tâm kiểm định:</label>
                 <select id="trungTamSelect" onchange="window.updateHistoryIfOpen()"></select>
@@ -82,7 +79,7 @@
         </div>
 
         <div class="col-card col-main">
-            <h2>TRANG NHẬP DỮ LIỆU KIỂM ĐỊNH</h2>
+            <h2>Trang Nhập Liệu & Xử Lý File Excel</h2>
             
             <div class="form-group">
                 <label>1. Dữ liệu đầu vào (.xls / .xlsx):</label>
@@ -116,10 +113,10 @@
 
             <div class="form-group">
                 <label>4. Tên file kết quả xuất ra:</label>
-                <input type="text" id="fileNameInput" value="DanhSach" placeholder="Nhập tên file">
+                <input type="text" id="fileNameInput" value="KetQua_KiemDinh" placeholder="Nhập tên file">
             </div>
 
-            <button class="primary-btn" onclick="window.runProcess()" id="mainProcessBtn">Xử Lý Kiểm định (√)</button>
+            <button class="primary-btn" onclick="window.runProcess()" id="mainProcessBtn">Xử Lý KIỂM ĐỊNH (√)</button>
             <div id="status"></div>
         </div>
 
@@ -131,26 +128,7 @@
         </div>
     </div>
 
-<!-- MODAL ĐĂNG NHẬP (Chặn toàn màn hình) -->
-    <div id="loginModal" class="modal-overlay" style="display: flex; background: #eef2f5; z-index: 9999;">
-        <div class="col-card" style="width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-            <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 180px; height: auto; margin-bottom: 20px;">
-            <h3 style="border:none; color:#333; margin-bottom: 20px;">ĐĂNG NHẬP HỆ THỐNG</h3>
-            <div class="form-group" style="text-align: left;">
-                <label>Tài khoản (Email):</label>
-                <!-- Tự động xóa chuỗi ẩn danh khi click vào ô để nhập tài khoản khác -->
-                <input type="text" id="loginEmail" value="ttkd****@****.vn" onfocus="if(this.value==='ttkd****@****.vn') this.value='';">
-            </div>
-            <div class="form-group" style="text-align: left;">
-                <label>Mật khẩu:</label>
-                <input type="password" id="loginPass" onkeypress="if(event.key === 'Enter') window.loginFirebase()">
-            </div>
-            <div id="loginError" style="color: red; font-size: 13px; margin-bottom: 10px; display: none;"></div>
-            <button class="primary-btn" onclick="window.loginFirebase()">ĐĂNG NHẬP</button>
-        </div>
-    </div>
-    
-	<div id="historyModal" class="modal-overlay">
+    <div id="historyModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Lịch sử nhập liệu</h3>
@@ -181,8 +159,8 @@
                 <h3>Bổ sung dữ liệu cũ</h3>
                 <button class="btn-close" onclick="window.closeModal('oldDataModal')">&times;</button>
             </div>
-            <p style="font-size: 14px; color: #555;">Chức năng nhập trực tiếp dữ liệu cũ vào Cơ sở dữ liệu.</p>
-            <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải mẫu Excel</button>
+            <p style="font-size: 14px; color: #555;">Chức năng import trực tiếp dữ liệu cũ vào CSDL. Cột "Kiểm định kỳ tới" được lấy trực tiếp từ file nhập.</p>
+            <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải File Mẫu</button>
             <button class="primary-btn" onclick="document.getElementById('importOldDataFile').click()">2. Nhập từ Excel</button>
             <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx" onchange="window.importOldDataFromExcel(event)">
         </div>
@@ -191,7 +169,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-		import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
@@ -205,75 +182,6 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-		const auth = getAuth(app);
-
-        // Bảng phân quyền Trung tâm
-        const userCenterMap = {
-            "namdinh@pvgaslpg.com.vn": "tt1",
-            "ttkdnamdinh@pvgaslpg.com.vn": "tt2",
-            "ttkd3@pvgaslpg.com.vn": "tt3",
-            "admin@pvgaslpg.com.vn": "admin",
-            "quantri@pvgaslpg.com.vn": "admin"
-        };
-
-        // Hàm xử lý phân quyền dropdown sau khi đăng nhập
-        window.applyUserRole = function(email) {
-            const role = userCenterMap[email];
-            const ttSelect = document.getElementById('trungTamSelect');
-            
-            if (role === "admin") {
-                ttSelect.disabled = false; // Admin được chọn tùy ý
-            } else if (role) {
-                ttSelect.value = role;
-                ttSelect.disabled = true; // Khóa lựa chọn của TT
-            } else {
-                ttSelect.disabled = true; // Mặc định khóa nếu ko xác định
-            }
-            document.getElementById('loginModal').style.display = 'none';
-            addLog(`Đã xác thực tài khoản: ${email}`);
-        };
-
-        // Lắng nghe trạng thái đăng nhập
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.applyUserRole(user.email);
-            } else {
-                document.getElementById('loginModal').style.display = 'flex'; // Khóa trang web
-            }
-        });
-
-        // Hàm xử lý khi bấm nút Đăng nhập
-        window.loginFirebase = function() {
-            let email = document.getElementById('loginEmail').value.trim();
-            const pass = document.getElementById('loginPass').value;
-            const errorDiv = document.getElementById('loginError');
-            
-            // Dịch ngược lại email nếu dùng tài khoản che khuất
-            if(email === 'ttkd****@****.vn') {
-                email = 'ttkdnamdinh@pvgaslpg.com.vn';
-            }
-            
-            if(!email || !pass) {
-                errorDiv.innerText = "Vui lòng nhập đủ tài khoản và mật khẩu!";
-                errorDiv.style.display = "block";
-                return;
-            }
-            
-            errorDiv.style.display = "none";
-            document.getElementById('loginModal').querySelector('.primary-btn').innerText = "Đang xử lý...";
-            
-            signInWithEmailAndPassword(auth, email, pass)
-                .then((userCredential) => {
-                    document.getElementById('loginModal').querySelector('.primary-btn').innerText = "ĐĂNG NHẬP";
-                    // Việc đóng Modal sẽ do onAuthStateChanged tự động lo
-                })
-                .catch((error) => {
-                    console.error(error);
-                    errorDiv.innerText = "Sai tài khoản hoặc mật khẩu!";
-                    errorDiv.style.display = "block";
-                    document.getElementById('loginModal').querySelector('.primary-btn').innerText = "ĐĂNG NHẬP";
-                });
-        };
 
         // --- GLOBAL HELPERS CHUNG ---
         window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
@@ -345,17 +253,14 @@
         };
 
         const danhSachTrungTam = [
-            { id: "tt1", ten: "Trung tâm kiểm định TQT" },
-            { id: "tt2", ten: "TT kiểm định Nam Định" },
+            { id: "tt1", ten: "Trung tâm kiểm định 1" },
+            { id: "tt2", ten: "Trung tâm kiểm định 2" },
             { id: "tt3", ten: "Trung tâm kiểm định 3" }
         ];
         
         window.onload = function() {
             const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
-            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}">${tt.ten}</option>`; });
-            
-            // Thiết lập lại quyền nếu Firebase Auth Load xong trước HTML
-            if(auth.currentUser) window.applyUserRole(auth.currentUser.email);
+            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
             
             // Hiệu ứng đổi màu nút xử lý khi bấm tích Chai Hủy
             document.getElementById('isHuyCheckbox').addEventListener('change', function() {
@@ -839,9 +744,8 @@
                     appendFooterSafe(activeSheet, ghichuSheet, destRow);
                 } else {
                     function buildSheet(sheetName, data) {
-    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
-    const aaa = data.length; // BỔ SUNG DÒNG NÀY
-    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+                        let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
@@ -954,9 +858,8 @@
                     const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig)); sortData(tren20Nam); sortData(duoi20Nam);
 
                     function buildSheet(sheetName, data) {
-    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
-    const aaa = data.length; // BỔ SUNG DÒNG NÀY
-    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+                        let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
