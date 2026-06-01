@@ -19,7 +19,7 @@
         label { display: block; margin-bottom: 8px; font-weight: bold; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         
-        button.primary-btn { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
+        button.primary-btn { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px; transition: background 0.2s;}
         button.primary-btn:hover { background-color: #0056b3; }
         button.danger-btn { width: 100%; background-color: #dc3545; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
         button.danger-btn:hover { background-color: #c82333; }
@@ -87,28 +87,33 @@
                 </div>
                 <button type="button" class="btn-clear" id="clearFilesBtn" onclick="window.clearFiles()">Xóa danh sách file</button>
             </div>
+            
             <div class="form-group">
                 <label>2. Thời điểm kiểm định (mm/yyyy):</label>
                 <input type="text" id="thoiDiemInput" placeholder="VD: 05/2026" required pattern="^(0[1-9]|1[0-2])\/[0-9]{4}$">
             </div>
-            <div class="form-group">
-                <label>3. Loại chai (Dành cho Nhập Kiểm định):</label>
-                <select id="loaiChaiInput">
-                    <option value="V12">V12</option>
-                    <option value="V45">V45</option>
-                    <option value="Com">Com</option>
-                </select>
+            
+            <div class="form-group" style="display: flex; gap: 15px; align-items: center; background: #eef9f0; border: 1px solid #28a745;">
+                <div style="flex: 1;">
+                    <label>3. Loại chai:</label>
+                    <select id="loaiChaiInput" style="border-color: #28a745;">
+                        <option value="V12">V12</option>
+                        <option value="V45">V45</option>
+                        <option value="Com">Com</option>
+                    </select>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 10px;">
+                    <label for="isHuyCheckbox" style="margin-bottom: 5px; font-weight:bold; color: #dc3545; cursor: pointer;">Chai hủy</label>
+                    <input type="checkbox" id="isHuyCheckbox" style="width: 22px; height: 22px; cursor: pointer; accent-color: #dc3545;">
+                </div>
             </div>
+
             <div class="form-group">
                 <label>4. Tên file kết quả xuất ra:</label>
                 <input type="text" id="fileNameInput" value="KetQua_KiemDinh" placeholder="Nhập tên file">
             </div>
 
-            <div style="display:flex; gap:10px;">
-                <button class="primary-btn" onclick="window.processFiles()">Xử Lý KIỂM ĐỊNH (√)</button>
-                <button class="danger-btn" onclick="window.processHuyFiles()">Xử Lý Dữ Liệu HỦY (X)</button>
-            </div>
-            
+            <button class="primary-btn" onclick="window.runProcess()" id="mainProcessBtn">Xử Lý KIỂM ĐỊNH (√)</button>
             <div id="status"></div>
         </div>
 
@@ -207,10 +212,24 @@
             { id: "tt2", ten: "Trung tâm kiểm định 2" },
             { id: "tt3", ten: "Trung tâm kiểm định 3" }
         ];
+        
         window.onload = function() {
             const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
             danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
+            
+            // Hiệu ứng đổi màu nút xử lý khi bấm tích Chai Hủy
+            document.getElementById('isHuyCheckbox').addEventListener('change', function() {
+                const btn = document.getElementById('mainProcessBtn');
+                if(this.checked) {
+                    btn.innerHTML = "Xử Lý Dữ Liệu HỦY (X)";
+                    btn.style.backgroundColor = "#dc3545";
+                } else {
+                    btn.innerHTML = "Xử Lý KIỂM ĐỊNH (√)";
+                    btn.style.backgroundColor = "#007bff";
+                }
+            });
         };
+        
         function getTrungTamDuocChon() { return document.getElementById('trungTamSelect').value; }
 
         // --- XỬ LÝ KÉO THẢ ---
@@ -227,6 +246,17 @@
             if (selectedDataFiles.length === 0) { fileList.style.display = "none"; fileList.innerHTML = ""; clearFilesBtn.style.display = 'none'; return; }
             fileList.style.display = "block"; fileList.innerHTML = "<strong>Đã nạp " + selectedDataFiles.length + " file:</strong><br>" + selectedDataFiles.map(f => f.name).join("<br>"); clearFilesBtn.style.display = 'inline-block';
         }
+
+        // ==========================================
+        // ĐIỀU HƯỚNG NÚT XỬ LÝ CHÍNH
+        // ==========================================
+        window.runProcess = function() {
+            if (document.getElementById('isHuyCheckbox').checked) {
+                window.processHuyFiles();
+            } else {
+                window.processFiles();
+            }
+        };
 
         // ==========================================
         // QUẢN LÝ LỊCH SỬ NHẬP LIỆU
@@ -249,12 +279,10 @@
             historyArray.forEach(item => {
                 const tr = document.createElement('tr');
                 
-                // Trạng thái Hủy
                 let statusHtml = item.isHuy 
                     ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' 
                     : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
                 
-                // Ẩn nút "Tạo lại Excel" nếu là dữ liệu nhập cũ
                 let recreateBtnHtml = item.isOldData ? "" : `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Tạo lại Excel</button>`;
                 
                 tr.innerHTML = `
@@ -309,9 +337,11 @@
 
         window.downloadOldDataTemplate = async function() {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_BoSungDuLieu');
+            
             ws.addRow(['STT', 'Loại chai (V12/V45/Com)', 'Thời điểm kiểm định (mm/yyyy)', 'Nhà CT', 'Năm CT (mm/yyyy)', 'Mã hiệu', 'Serial', 'Khối lượng', 'Kiểm định lần trước (mm/yyyy)', 'Kiểm định kỳ tới (mm/yyyy)', 'Chai hủy (để trống/k = Không)', 'Lý do hủy']);
             ws.getRow(1).font = { bold: true }; 
             ws.columns = [{width: 10},{width: 25},{width: 25},{width: 25},{width: 25},{width: 15},{width: 15},{width: 15},{width: 25},{width: 25},{width: 30},{width: 35}];
+            
             ws.columns.forEach(column => { column.numFmt = '@'; });
             const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_BoSung_DuLieuCu.xlsx");
         }
@@ -327,15 +357,17 @@
                 
                 let updates = {}; let batchPathsList = []; let sessionStats = {}; let sourceStructureUpdates = {};
                 let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
+                
                 let uniqueDates = new Set(); let uniqueLoaiChai = new Set();
 
                 ws.eachRow((row, rowNumber) => {
                     if(rowNumber === 1) return;
+                    
                     let loaiChaiRaw = String(row.getCell(2).value || "").trim().toLowerCase();
                     let loaiChai = "";
-                    if (loaiChaiRaw.includes("v12")) loaiChai = "V12";
-                    else if (loaiChaiRaw.includes("v45")) loaiChai = "V45";
-                    else if (loaiChaiRaw.includes("com")) loaiChai = "Com";
+                    if (loaiChaiRaw === "v12") loaiChai = "V12";
+                    else if (loaiChaiRaw === "v45") loaiChai = "V45";
+                    else if (loaiChaiRaw === "com") loaiChai = "Com";
 
                     let recentCheckStr = String(row.getCell(3).value || "").trim();
                     let nhaCT_orig = String(row.getCell(4).value || "").trim();
@@ -351,8 +383,8 @@
                     if (!loaiChai || !recentCheckStr || !nhaCT_orig || !namCT_orig) { console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); errorCount++; return; }
 
                     uniqueDates.add(recentCheckStr); uniqueLoaiChai.add(loaiChai);
-                    let voHuy = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
 
+                    let voHuy = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
                     const namCT_id = namCT_orig.replace(/\//g, '-'); 
                     const rY = recentCheckStr.split('/')[1]; const yCT = namCT_orig.split('/')[1];
                     let nhaCT_id = nhaCT_orig.replace(/\//g, '-');
@@ -371,7 +403,7 @@
 
                     updates[dataPath] = chaiData; batchPathsList.push(dataPath); validCount++;
 
-                    if(yCT && rY) {
+                    if(yCT && rY && !voHuy) {
                         if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
                         if(!sessionStats[loaiChai][rY]) sessionStats[loaiChai][rY] = { total: 0, byNamCT: {} };
                         sessionStats[loaiChai][rY].total += 1;
@@ -409,9 +441,9 @@
                     await Promise.all(promises);
 
                     let msg = `Đã bổ sung ${validCount} chai thành công!`;
-                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu thông tin)`;
+                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu dữ liệu hoặc sai Loại chai)`;
                     alert(msg); addLog(msg);
-                } else alert("Không có dữ liệu hợp lệ để nhập.");
+                } else { alert("Không có dữ liệu hợp lệ để nhập."); }
                 
                 window.closeModal('oldDataModal');
             } catch (err) { console.error(err); alert("Lỗi khi nhập file: " + err.message); }
@@ -419,7 +451,7 @@
         }
 
         // ==========================================
-        // XỬ LÝ CHÍNH & ĐỒNG BỘ KIỂM ĐỊNH BÌNH THƯỜNG
+        // XỬ LÝ CHÍNH - NHÁNH KIỂM ĐỊNH BÌNH THƯỜNG
         // ==========================================
         window.processFiles = async function() {
             const dataFiles = selectedDataFiles; 
@@ -432,16 +464,17 @@
             if (dataFiles.length === 0) { alert("Vui lòng chọn ít nhất 1 file dữ liệu!"); return; }
             if (!thoiDiemStr.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Vui lòng nhập đúng định dạng mm/yyyy (VD: 05/2026)"); return; }
 
-            statusDiv.innerHTML = "<span style='color: blue;'>Đang trích xuất và kiểm tra dữ liệu...</span>";
-            document.getElementById('logArea').innerHTML = ""; addLog("Đang đọc nội dung file...");
+            statusDiv.innerHTML = `<span style='color: blue;'>Đang trích xuất và xử lý dữ liệu KIỂM ĐỊNH...</span>`;
+            document.getElementById('logArea').innerHTML = ""; 
+            addLog(`Bắt đầu quy trình KIỂM ĐỊNH...`);
 
             let templateDataBuffer;
             try {
-                addLog("Đang tải file mẫu (sample.xlsx) từ máy chủ...");
+                addLog(`Đang tải file mẫu (sample.xlsx) từ máy chủ...`);
                 const response = await fetch('sample.xlsx');
-                if (!response.ok) throw new Error("Không tìm thấy file sample.xlsx");
+                if (!response.ok) throw new Error(`Không tìm thấy file sample.xlsx`);
                 templateDataBuffer = await response.arrayBuffer();
-            } catch (err) { alert("Lỗi tải file mẫu: " + err.message); return; }
+            } catch (err) { alert("Lỗi tải file mẫu: " + err.message); statusDiv.innerHTML = `<span class='text-danger'>Lỗi: ${err.message}</span>`; return; }
 
             try {
                 const timeParts = thoiDiemStr.split('/');
@@ -458,19 +491,27 @@
                     const workbook = XLSX.read(data, {type: 'array'});
 
                     workbook.SheetNames.forEach(sheetName => {
-                        if (sheetName.toLowerCase().includes(loaiChai.toLowerCase()) && !sheetName.toLowerCase().includes("hủy") && !sheetName.toLowerCase().includes("h\u1EE7y")) {
+                        let sName = sheetName.toLowerCase();
+                        
+                        if (sName.includes(loaiChai.toLowerCase()) && !sName.includes("hủy") && !sName.includes("huỷ")) {
                             const sheet = workbook.Sheets[sheetName];
                             const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
                             let currentSerialString = ""; let hasData = false;
 
                             for (let i = 1; i < rows.length; i++) {
                                 if (rows[i][2]) {
-                                    taphopDataRaw.push(rows[i]);
                                     const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
 
                                     const nCT_orig = String(rows[i][2]).trim(); const nCT_id = nCT_orig.replace(/\//g, '-');
                                     let nhCT_orig = String(rows[i][1]).trim(); let nhCT_id = nhCT_orig.replace(/\//g, '-');
                                     if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
+
+                                    let dRow = { nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id, namCT_orig: nCT_orig, namCT_id: nCT_id, maHieu: String(rows[i][3] || "").trim(), serial: sr };
+                                    
+                                    dRow.khoiLuong = String(rows[i][5] || "").trim();
+                                    dRow.lastCheck_orig = String(rows[i][6] || "").trim();
+
+                                    taphopDataRaw.push(dRow);
 
                                     if(!existingNhaCT[nhCT_id]) {
                                         sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
@@ -483,38 +524,42 @@
                         }
                     });
                 }
-                addLog(`Trích xuất thành công ${taphopDataRaw.length} dòng dữ liệu hợp lệ.`);
                 
-                const thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr);
-                let tren20Nam = []; let duoi20Nam = [];
+                if(taphopDataRaw.length === 0) {
+                    alert(`Không tìm thấy dữ liệu Kiểm định hợp lệ trong file (Dựa trên loại chai ${loaiChai} bạn đã chọn)!`);
+                    statusDiv.innerHTML = `<span class='text-danger'>Không có dữ liệu</span>`;
+                    return;
+                }
+                addLog(`Trích xuất thành công ${taphopDataRaw.length} dòng.`);
 
+                let taphopData = [];
+                const thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr);
+
+                let tren20Nam = []; let duoi20Nam = [];
                 taphopDataRaw.forEach(row => {
-                    const strC = String(row[2]).trim();
+                    const strC = String(row.namCT_orig).trim();
                     if (strC.includes('/')) {
                         const dateC = parseDateMMYYYY(strC); const diff = diffMonths(dateC, thoiDiemKiemDinh);
                         let newDate;
                         if (diff >= 288) newDate = addMonths(dateC, 311); else if (diff >= 240 && diff <= 287) newDate = addMonths(thoiDiemKiemDinh, 24);
                         else if (diff >= 204 && diff <= 239) newDate = addMonths(dateC, 264); else newDate = addMonths(thoiDiemKiemDinh, 60);
 
-                        row[0] = formatDateMMYYYY(newDate); row[7] = "√";
+                        row.nextDate_str = formatDateMMYYYY(newDate); row.tick = "√";
                         if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row);
                     }
                 });
-
-                const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a[2]) - parseDateMMYYYY(b[2]));
+                const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig));
                 sortData(tren20Nam); sortData(duoi20Nam);
-                let taphopData = [...tren20Nam, ...duoi20Nam]; 
+                taphopData = [...tren20Nam, ...duoi20Nam]; 
 
                 addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
-                const snapshot = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
-                let pastRecords = [];
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    for (let ts in data) { for (let key in data[ts]) pastRecords.push(data[ts][key]); }
-                }
+                let allHistoryPath = [];
+                
+                const snap = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
+                if(snap.exists()) { let d = snap.val(); for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); } }
 
                 let dupFiles = [];
-                for (let nh of newFileLogs) { if (pastRecords.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
+                for (let nh of newFileLogs) { if (allHistoryPath.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
                 if (dupFiles.length > 0) {
                     if (!confirm("Cảnh báo: Các file sau đã từng được xử lý:\n- " + dupFiles.join("\n- ") + "\n\nNhấn OK để tiếp tục.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
                     addLog("Bỏ qua cảnh báo trùng tên file.");
@@ -523,7 +568,7 @@
                 let serialWarningTriggered = false; let dupDetails = "";
                 for (let nh of newFileLogs) {
                     if (serialWarningTriggered) break; 
-                    for (let pr of pastRecords) {
+                    for (let pr of allHistoryPath) {
                         if (!nh.serialString || !pr.serialString) continue;
                         let lcsLen = getLCSLength(nh.serialString, pr.serialString);
                         if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
@@ -539,26 +584,23 @@
                 statusDiv.innerHTML = "<span class='text-warning'>Đang đồng bộ dữ liệu lên Firebase RTDB...</span>";
                 const batchTimestamp = Date.now().toString(); 
                 let updates = {}; let batchPathsList = []; let sessionStats = {}; let opCount = 0; let promises = [];
-
                 Object.assign(updates, sourceStructureUpdates);
                 const recentYear = yyyy; 
 
-                for (let row of taphopData) {
-                    const nextDate_str = String(row[0] || "").trim(); const nhaCT_orig = String(row[1] || "").trim(); 
-                    const namCT_orig = String(row[2] || "").trim(); const lastCheck_orig = String(row[6] || "").trim(); 
-
-                    const namCT_id = namCT_orig.replace(/\//g, '-'); const yCT = namCT_orig.split('/')[1];
-                    let nhaCT_id = nhaCT_orig.replace(/\//g, '-'); if (!nhaCT_id) nhaCT_id = "Chua_Xac_Dinh";
-                    
-                    const maHieu = String(row[3] || "").trim(); const serial = String(row[4] || "").trim();
-                    const khoiLuong = String(row[5] || "").trim(); const lastCheck_id = lastCheck_orig.replace(/\//g, '-');
-
+                for (let d of taphopData) {
                     const newChaiKey = push(child(ref(db), 'temp')).key;
-                    const dataPath = `${trungTamId}/${loaiChai}/${namCT_id}/${nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    const dataPath = `${trungTamId}/${loaiChai}/${d.namCT_id}/${d.nhaCT_id}/DanhSachChai/${newChaiKey}`;
                     
-                    updates[dataPath] = { maHieu, serial, khoiLuong, lastCheck: lastCheck_id, lastCheckOriginal: lastCheck_orig, timeStamp: batchTimestamp, voHuy: false, recentCheck: thoiDiemStr, nextDate: nextDate_str, nhaCT: nhaCT_orig, namCT: namCT_orig };
-                    batchPathsList.push(dataPath); 
+                    let chaiObj = { 
+                        maHieu: d.maHieu, serial: d.serial, timeStamp: batchTimestamp, voHuy: false, 
+                        recentCheck: thoiDiemStr, nhaCT: d.nhaCT_orig, namCT: d.namCT_orig,
+                        khoiLuong: d.khoiLuong, lastCheckOriginal: d.lastCheck_orig, 
+                        lastCheck: d.lastCheck_orig.replace(/\//g, '-'), nextDate: d.nextDate_str
+                    };
 
+                    updates[dataPath] = chaiObj; batchPathsList.push(dataPath); 
+
+                    const yCT = d.namCT_orig.split('/')[1];
                     if(yCT) {
                         if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
                         if(!sessionStats[loaiChai][recentYear]) sessionStats[loaiChai][recentYear] = { total: 0, byNamCT: {} };
@@ -588,13 +630,12 @@
                     updates[logPath] = nh; batchPathsList.push(logPath); 
                 });
 
-                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { loaiChai: loaiChai, total: taphopData.length, timeStamp: batchTimestamp, thoiDiemKD: thoiDiemStr, paths: batchPathsList, stats: sessionStats, isHuy: false };
+                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { loaiChai: loaiChai, total: taphopData.length, timeStamp: batchTimestamp, thoiDiemKD: thoiDiemStr, paths: batchPathsList, isHuy: false, stats: sessionStats };
                 
                 if (Object.keys(updates).length > 0) promises.push(update(ref(db), updates));
                 await Promise.all(promises);
                 addLog(`Đồng bộ CSDL hoàn tất.`);
 
-                // --- TẠO VÀ XUẤT FILE EXCEL KIỂM ĐỊNH ---
                 statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel...</span>";
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
                 const ghichuSheet = workbook.sheet("ghichu");
@@ -625,7 +666,7 @@
                 function buildSheet(sheetName, data) {
                     if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
                     const aaa = data.length; let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
-                    const grouped = data.reduce((acc, row) => { (acc[row[0]] = acc[row[0]] || []).push(row); return acc; }, {});
+                    const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                     let destRow = 10; let groupNum = 1;
                     const setThinBorders = (cell, noLeft, noRight) => { let borderObj = { top: { style: "thin" }, bottom: { style: "thin" } }; if (!noLeft) borderObj.left = { style: "thin" }; if (!noRight) borderObj.right = { style: "thin" }; try { cell.style("border", borderObj); } catch(e) { } };
 
@@ -653,11 +694,12 @@
         }
 
         // ==========================================
-        // XỬ LÝ DỮ LIỆU HỦY (TỪ EXCEL)
+        // XỬ LÝ CHÍNH - NHÁNH HỦY TỪ FILE
         // ==========================================
         window.processHuyFiles = async function() {
             const dataFiles = selectedDataFiles; 
             const thoiDiemStr = document.getElementById('thoiDiemInput').value;
+            const loaiChai = document.getElementById('loaiChaiInput').value; // Lấy đích danh từ Dropdown
             let outputFileName = document.getElementById('fileNameInput').value.trim() || 'KetQua_Huy_KiemDinh';
             const statusDiv = document.getElementById('status');
             const trungTamId = getTrungTamDuocChon();
@@ -679,8 +721,11 @@
 
             try {
                 let taphopDataHuy = []; let newFileLogs = []; let sourceStructureUpdates = {};
-                let overallLoaiChai = "Hỗn hợp"; let loaiChaiSet = new Set();
                 let xx = ""; let bbb = "";
+
+                if (loaiChai === "V12") { xx = "12"; bbb = "26.5"; } 
+                else if (loaiChai === "V45") { xx = "45"; bbb = "99"; } 
+                else if (loaiChai === "Com") { xx = "Com"; bbb = "24.5"; }
 
                 const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
                 const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
@@ -691,15 +736,9 @@
 
                     workbook.SheetNames.forEach(sheetName => {
                         let sName = sheetName.toLowerCase();
-                        if (sName.includes("hủy") || sName.includes("huỷ")) {
+                        // Sheet phải thỏa mãn: có chữ "hủy" VÀ chứa chữ định danh loại chai (V12, V45, Com)
+                        if ((sName.includes("hủy") || sName.includes("huỷ")) && sName.includes(loaiChai.toLowerCase())) {
                             
-                            let loaiChaiSheet = "";
-                            if (sName.includes("v12")) loaiChaiSheet = "V12";
-                            else if (sName.includes("v45")) loaiChaiSheet = "V45";
-                            else if (sName.includes("com")) loaiChaiSheet = "Com";
-
-                            if(loaiChaiSheet) loaiChaiSet.add(loaiChaiSheet);
-
                             const sheet = workbook.Sheets[sheetName];
                             const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
                             let currentSerialString = ""; let hasData = false;
@@ -716,7 +755,7 @@
                                     if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
 
                                     taphopDataHuy.push({
-                                        loaiChai: loaiChaiSheet || "V12", 
+                                        loaiChai: loaiChai, // Ép cứng theo Dropdown
                                         nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id,
                                         namCT_orig: nCT_orig, namCT_id: nCT_id,
                                         maHieu: String(rows[i][3] || "").trim(),
@@ -735,28 +774,20 @@
                     });
                 }
                 
-                if(taphopDataHuy.length === 0) { alert("Không tìm thấy dữ liệu Hủy hợp lệ trong file!"); return; }
+                if(taphopDataHuy.length === 0) { 
+                    alert(`Không tìm thấy dữ liệu Hủy (Dựa trên loại chai ${loaiChai} bạn chọn) hợp lệ trong file!`); 
+                    statusDiv.innerHTML = `<span class='text-danger'>Không có dữ liệu</span>`;
+                    return; 
+                }
                 addLog(`Trích xuất thành công ${taphopDataHuy.length} dòng dữ liệu Hủy.`);
 
-                if(loaiChaiSet.size === 1) {
-                    overallLoaiChai = Array.from(loaiChaiSet)[0];
-                    if (overallLoaiChai === "V12") { xx = "12"; bbb = "26.5"; } 
-                    else if (overallLoaiChai === "V45") { xx = "45"; bbb = "99"; } 
-                    else if (overallLoaiChai === "Com") { xx = "Com"; bbb = "24.5"; }
-                } else if(loaiChaiSet.size > 1) {
-                    overallLoaiChai = "Hỗn hợp";
-                    xx = "12"; bbb = "26.5"; // Mặc định cho header
-                }
-
-                // Kiểm tra trùng Serial trên toàn bộ lịch sử
                 addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
                 let allHistoryPath = [];
-                for(let lc of ['V12', 'V45', 'Com']) {
-                    const snap = await get(child(ref(db), `${trungTamId}/${lc}/LichSuFile`));
-                    if(snap.exists()) {
-                        let d = snap.val();
-                        for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); }
-                    }
+                // Chỉ check trùng ở loại chai được chọn
+                const snap = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
+                if(snap.exists()) {
+                    let d = snap.val();
+                    for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); }
                 }
 
                 let serialWarningTriggered = false; let dupDetails = "";
@@ -783,7 +814,7 @@
 
                 for (let d of taphopDataHuy) {
                     const newChaiKey = push(child(ref(db), 'temp')).key;
-                    const dataPath = `${trungTamId}/${d.loaiChai}/${d.namCT_id}/${d.nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    const dataPath = `${trungTamId}/${loaiChai}/${d.namCT_id}/${d.nhaCT_id}/DanhSachChai/${newChaiKey}`;
                     
                     updates[dataPath] = { 
                         maHieu: d.maHieu, serial: d.serial, khoiLuong: "", lastCheck: "", lastCheckOriginal: "", nextDate: "",
@@ -798,14 +829,12 @@
 
                 newFileLogs.forEach(nh => {
                     const pushKey = push(child(ref(db), 'temp')).key;
-                    // Mặc dù là hỗn hợp, ghi log vào nhánh overallLoaiChai (hoặc V12 nếu hỗn hợp)
-                    const targetLc = overallLoaiChai === "Hỗn hợp" ? "V12" : overallLoaiChai;
-                    const logPath = `${trungTamId}/${targetLc}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                    const logPath = `${trungTamId}/${loaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`;
                     updates[logPath] = nh; batchPathsList.push(logPath); 
                 });
 
                 updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
-                    loaiChai: overallLoaiChai, total: taphopDataHuy.length, timeStamp: batchTimestamp, 
+                    loaiChai: loaiChai, total: taphopDataHuy.length, timeStamp: batchTimestamp, 
                     thoiDiemKD: thoiDiemStr, paths: batchPathsList, isHuy: true 
                 };
                 
@@ -817,28 +846,20 @@
                 statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel Hủy...</span>";
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
                 
-let activeSheet = workbook.sheet("vohuy");
-
-if (!activeSheet) {
-    activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
-}
-
-if (!activeSheet) {
-    alert("LỖI: File mẫu samplehuy.xlsx không có sheet dữ liệu hợp lệ!");
-    return;
-}
+                let activeSheet = workbook.sheet("vohuy");
+                if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+                if (!activeSheet) { alert("LỖI: File mẫu samplehuy.xlsx không có sheet dữ liệu hợp lệ!"); return; }
+                
                 const ghichuSheet = workbook.sheet("ghichu");
-
                 const timeParts = thoiDiemStr.split('/'); const mm = timeParts[0]; const yyyy = timeParts[1];
                 const aaa = taphopDataHuy.length;
 
-                // Thay thế tiêu đề A3, A5, A6 theo mẫu Huy
                 let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                 let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                 let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
 
                 let destRow = 13; 
-                const setThinBorders = (cell) => { try { cell.style("border", { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }); } catch(e) { } };
+                const borderFull = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
 
                 for (let k = 0; k < taphopDataHuy.length; k++) {
                     let r = destRow + k;
@@ -854,30 +875,31 @@ if (!activeSheet) {
                     for (let c = 1; c <= 8; c++) {
                         const currentCell = activeSheet.cell(r, c);
                         currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 });
-                        setThinBorders(currentCell);
+                        currentCell.style("border", borderFull);
                     }
                 }
                 destRow += taphopDataHuy.length;
 
-                // Nối footer
-                if (ghichuSheet && ghichuSheet._node && ghichuSheet._node.children) {
-                    const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
-                    if (mergeCellsNode && mergeCellsNode.children) {
-                        mergeCellsNode.children.forEach(mergeCell => {
-                            const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
-                            if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { activeSheet.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
-                        });
+                // Nối footer an toàn
+                if (ghichuSheet) {
+                    if (ghichuSheet._node && ghichuSheet._node.children) {
+                        const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                        if (mergeCellsNode && mergeCellsNode.children) {
+                            mergeCellsNode.children.forEach(mergeCell => {
+                                const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                                if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { activeSheet.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
+                            });
+                        }
                     }
-                }
-                const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
-                for (let r = 11; r <= 23; r++) {
-                    if(!ghichuSheet) break;
-                    let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) activeSheet.row(currentDestRow).height(h);
-                    for (let c = 1; c <= 20; c++) {
-                        const srcCell = ghichuSheet.cell(r, c); const dstCell = activeSheet.cell(currentDestRow, c);
-                        if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value());
-                        let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } });
-                        styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {}
+                    const safeStyles = ["bold", "italic", "underline", "fontSize", "fontFamily", "horizontalAlignment", "verticalAlignment", "wrapText"];
+                    for (let r = 11; r <= 23; r++) {
+                        let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) activeSheet.row(currentDestRow).height(h);
+                        for (let c = 1; c <= 20; c++) {
+                            const srcCell = ghichuSheet.cell(r, c); const dstCell = activeSheet.cell(currentDestRow, c);
+                            if (srcCell.formula()) dstCell.formula(srcCell.formula()); else if (srcCell.value() !== undefined && srcCell.value() !== null) dstCell.value(srcCell.value());
+                            safeStyles.forEach(key => { let val = srcCell.style(key); if (val !== undefined && typeof val !== 'object') dstCell.style(key, val); });
+                            dstCell.style("horizontalAlignment", "left"); 
+                        }
                     }
                 }
 
@@ -925,17 +947,48 @@ if (!activeSheet) {
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
                 const ghichuSheet = workbook.sheet("ghichu");
 
+                const borderFull = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+
+                // HÀM COPY FOOTER AN TOÀN
+                const appendFooterSafe = (ws, ghichuSheet, destRow) => {
+                    if (!ghichuSheet) return;
+                    if (ghichuSheet._node && ghichuSheet._node.children) {
+                        const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                        if (mergeCellsNode && mergeCellsNode.children) {
+                            mergeCellsNode.children.forEach(mergeCell => {
+                                const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                                if (match) { 
+                                    let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); 
+                                    if (r1 >= 11 && r2 <= 23) { 
+                                        let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); 
+                                        try { ws.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} 
+                                    } 
+                                }
+                            });
+                        }
+                    }
+                    const safeStyles = ["bold", "italic", "underline", "fontSize", "fontFamily", "horizontalAlignment", "verticalAlignment", "wrapText"];
+                    for (let r = 11; r <= 23; r++) {
+                        let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) ws.row(currentDestRow).height(h);
+                        for (let c = 1; c <= 20; c++) {
+                            const srcCell = ghichuSheet.cell(r, c); const dstCell = ws.cell(currentDestRow, c);
+                            if (srcCell.formula()) dstCell.formula(srcCell.formula()); else if (srcCell.value() !== undefined && srcCell.value() !== null) dstCell.value(srcCell.value());
+                            safeStyles.forEach(key => { let val = srcCell.style(key); if (val !== undefined && typeof val !== 'object') dstCell.style(key, val); });
+                            dstCell.style("horizontalAlignment", "left"); 
+                        }
+                    }
+                };
+
                 if (isHuy) {
-                    // Logic Tái tạo File Hủy
-                    const activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
-    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    let activeSheet = workbook.sheet("vohuy");
+                    if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+                    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    
                     let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
 
                     let destRow = 13; 
-                    const setThinBorders = (cell) => { try { cell.style("border", { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }); } catch(e) { } };
-
                     for (let k = 0; k < fetchedDocs.length; k++) {
                         let r = destRow + k; let d = fetchedDocs[k];
                         activeSheet.cell(r, 1).value(k + 1);
@@ -946,76 +999,58 @@ if (!activeSheet) {
                         activeSheet.cell(r, 7).value("X");
                         activeSheet.cell(r, 8).value(d.lyDoHuy || "");
 
-                        for (let c = 1; c <= 8; c++) { const currentCell = activeSheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); setThinBorders(currentCell); }
+                        for (let c = 1; c <= 8; c++) { 
+                            const currentCell = activeSheet.cell(r, c); 
+                            currentCell.style("fontFamily", "Times New Roman"); 
+                            currentCell.style("fontSize", 12); 
+                            currentCell.style("border", borderFull); 
+                        }
                     }
                     destRow += fetchedDocs.length;
-
-                    if (ghichuSheet && ghichuSheet._node && ghichuSheet._node.children) {
-                        const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
-                        if (mergeCellsNode && mergeCellsNode.children) {
-                            mergeCellsNode.children.forEach(mergeCell => {
-                                const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
-                                if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { activeSheet.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } }
-                            });
-                        }
-                    }
-                    const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
-                    for (let r = 11; r <= 23; r++) {
-                        if(!ghichuSheet) break;
-                        let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) activeSheet.row(currentDestRow).height(h);
-                        for (let c = 1; c <= 20; c++) {
-                            const srcCell = ghichuSheet.cell(r, c); const dstCell = activeSheet.cell(currentDestRow, c);
-                            if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value());
-                            let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } });
-                            styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {}
-                        }
-                    }
+                    appendFooterSafe(activeSheet, ghichuSheet, destRow);
                 } else {
-                    // Logic Tái tạo File Kiểm định
                     let tren20Nam = []; let duoi20Nam = [];
                     fetchedDocs.forEach(d => {
-                        let row = []; row[0] = d.nextDate || ""; row[1] = d.nhaCT || ""; row[2] = d.namCT || ""; row[3] = d.maHieu || ""; row[4] = d.serial || ""; row[5] = d.khoiLuong || ""; row[6] = d.lastCheckOriginal || ""; row[7] = "√";
-                        if (row[2]) { 
+                        let row = { nhaCT_orig: d.nhaCT||"", namCT_orig: d.namCT||"", maHieu: d.maHieu||"", serial: d.serial||"", khoiLuong: d.khoiLuong||"", lastCheck_orig: d.lastCheckOriginal||"", nextDate_str: d.nextDate||"", tick: "√" };
+                        if (d.namCT) { 
                             let mKiemDinh = thoiDiemKiemDinh; if(!mKiemDinh && d.recentCheck) mKiemDinh = parseDateMMYYYY(d.recentCheck);
-                            if(mKiemDinh) { const dateC = parseDateMMYYYY(row[2]); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
+                            if(mKiemDinh) { const dateC = parseDateMMYYYY(d.namCT); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
                         } else { duoi20Nam.push(row); }
                     });
 
-                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a[2]) - parseDateMMYYYY(b[2])); sortData(tren20Nam); sortData(duoi20Nam);
-
-                    function appendFooter(ws, destRow) {
-                        if (!ghichuSheet) return;
-                        if (ghichuSheet._node && ghichuSheet._node.children) {
-                            const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
-                            if (mergeCellsNode && mergeCellsNode.children) { mergeCellsNode.children.forEach(mergeCell => { const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/); if (match) { let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); if (r1 >= 11 && r2 <= 23) { let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); try { ws.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} } } }); }
-                        }
-                        const styleKeys = ["bold", "italic", "underline", "strikethrough", "fontSize", "fontFamily", "fontColor", "horizontalAlignment", "verticalAlignment", "wrapText", "shrinkToFit", "textDirection", "textRotation", "fill", "border", "numberFormat"];
-                        for (let r = 11; r <= 23; r++) { let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) ws.row(currentDestRow).height(h); for (let c = 1; c <= 20; c++) { const srcCell = ghichuSheet.cell(r, c); const dstCell = ws.cell(currentDestRow, c); if (srcCell.formula()) dstCell.formula(srcCell.formula()); else dstCell.value(srcCell.value()); let styleObj = {}; styleKeys.forEach(key => { let val = srcCell.style(key); if (val !== undefined) { if (val !== null && typeof val === 'object') styleObj[key] = JSON.parse(JSON.stringify(val)); else styleObj[key] = val; } }); styleObj.horizontalAlignment = "left"; try { dstCell.style(styleObj); } catch(e) {} } }
-                    }
+                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig)); sortData(tren20Nam); sortData(duoi20Nam);
+                    const borderNoLeft = { top: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+                    const borderNoRight = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } };
+                    const borderTopBottom = { top: { style: "thin" }, bottom: { style: "thin" } };
+                    const applyThinBorders = (cell, noLeft, noRight) => { if (!noLeft && !noRight) cell.style("border", borderFull); else if (noLeft && !noRight) cell.style("border", borderNoLeft); else if (!noLeft && noRight) cell.style("border", borderNoRight); else cell.style("border", borderTopBottom); };
 
                     function buildSheet(sheetName, data) {
                         if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
                         let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
-                        const grouped = data.reduce((acc, row) => { (acc[row[0]] = acc[row[0]] || []).push(row); return acc; }, {});
+                        const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
-                        const setThinBorders = (cell, noLeft, noRight) => { let borderObj = { top: { style: "thin" }, bottom: { style: "thin" } }; if (!noLeft) borderObj.left = { style: "thin" }; if (!noRight) borderObj.right = { style: "thin" }; try { cell.style("border", borderObj); } catch(e) { } };
 
                         for (let key in grouped) {
                             const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
                             let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
                             sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
-                            for(let c = 1; c <= 16; c++) { if (c === 1) setThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) setThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) setThinBorders(sheet.cell(destRow, c), true, false); else setThinBorders(sheet.cell(destRow, c), true, true); }
+                            for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
+                            
                             for (let k = 0; k < N1; k++) {
-                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 1).value(groupData[k][col]);
-                                if (k < N2) { sheet.cell(r, 9).value(N1 + k + 1); for (let col = 1; col <= 7; col++) sheet.cell(r, col + 9).value(groupData[N1 + k][col]); }
-                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) setThinBorders(currentCell, false, true); else if (c === 5 || c === 13) setThinBorders(currentCell, true, false); else setThinBorders(currentCell, false, false); }
+                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); 
+                                sheet.cell(r, 2).value(groupData[k].nhaCT_orig); sheet.cell(r, 3).value(groupData[k].namCT_orig); sheet.cell(r, 4).value(groupData[k].maHieu); sheet.cell(r, 5).value(groupData[k].serial); sheet.cell(r, 6).value(groupData[k].khoiLuong); sheet.cell(r, 7).value(groupData[k].lastCheck_orig); sheet.cell(r, 8).value(groupData[k].tick);
+                                if (k < N2) { 
+                                    sheet.cell(r, 9).value(N1 + k + 1); 
+                                    sheet.cell(r, 10).value(groupData[N1 + k].nhaCT_orig); sheet.cell(r, 11).value(groupData[N1 + k].namCT_orig); sheet.cell(r, 12).value(groupData[N1 + k].maHieu); sheet.cell(r, 13).value(groupData[N1 + k].serial); sheet.cell(r, 14).value(groupData[N1 + k].khoiLuong); sheet.cell(r, 15).value(groupData[N1 + k].lastCheck_orig); sheet.cell(r, 16).value(groupData[N1 + k].tick);
+                                }
+                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); else applyThinBorders(currentCell, false, false); }
                             }
                             destRow += N1 + 1; groupNum++;
                         }
-                        appendFooter(sheet, destRow);
+                        appendFooterSafe(sheet, ghichuSheet, destRow);
                     }
-
-                    buildSheet("tren20nam", tren20Nam); buildSheet("duoi20nam", duoi20Nam);
+                    buildSheet("tren20nam", taphopData.filter(x => tren20Nam.includes(x))); 
+                    buildSheet("duoi20nam", taphopData.filter(x => duoi20Nam.includes(x)));
                 }
 
                 if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
