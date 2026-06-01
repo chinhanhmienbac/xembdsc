@@ -116,7 +116,7 @@
                 <input type="text" id="fileNameInput" value="KetQua_KiemDinh" placeholder="Nhập tên file">
             </div>
 
-            <button class="primary-btn" onclick="window.processFiles()" id="mainProcessBtn">Xử Lý KIỂM ĐỊNH (√)</button>
+            <button class="primary-btn" onclick="window.runProcess()" id="mainProcessBtn">Xử Lý KIỂM ĐỊNH (√)</button>
             <div id="status"></div>
         </div>
 
@@ -183,7 +183,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- GLOBAL HELPERS ---
+        // --- GLOBAL HELPERS CHUNG ---
         window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
         function addLog(msg) { const logArea = document.getElementById('logArea'); logArea.innerHTML += `<div>- ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
         function parseDateMMYYYY(str) { const parts = str.split('/'); return new Date(parts[1], parts[0] - 1, 1); }
@@ -262,7 +262,7 @@
             const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
             danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
             
-            // Hiệu ứng đổi màu nút xử lý
+            // Hiệu ứng đổi màu nút xử lý khi bấm tích Chai Hủy
             document.getElementById('isHuyCheckbox').addEventListener('change', function() {
                 const btn = document.getElementById('mainProcessBtn');
                 if(this.checked) {
@@ -291,6 +291,13 @@
             if (selectedDataFiles.length === 0) { fileList.style.display = "none"; fileList.innerHTML = ""; clearFilesBtn.style.display = 'none'; return; }
             fileList.style.display = "block"; fileList.innerHTML = "<strong>Đã nạp " + selectedDataFiles.length + " file:</strong><br>" + selectedDataFiles.map(f => f.name).join("<br>"); clearFilesBtn.style.display = 'inline-block';
         }
+
+        // ==========================================
+        // ĐIỀU HƯỚNG NÚT XỬ LÝ CHÍNH
+        // ==========================================
+        window.runProcess = function() {
+            window.processFiles();
+        };
 
         // ==========================================
         // QUẢN LÝ LỊCH SỬ NHẬP LIỆU
@@ -486,7 +493,7 @@
         }
 
         // ==========================================
-        // XỬ LÝ CHÍNH - TÍCH HỢP KIỂM ĐỊNH & HỦY
+        // XỬ LÝ CHÍNH - NHÁNH KIỂM ĐỊNH HOẶC HỦY
         // ==========================================
         window.processFiles = async function() {
             const isHuy = document.getElementById('isHuyCheckbox').checked;
@@ -588,12 +595,12 @@
                 addLog(`Trích xuất thành công ${taphopDataRaw.length} dòng.`);
 
                 let taphopData = [];
+                let tren20Nam = []; let duoi20Nam = [];
                 const thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr);
 
                 if (isHuy) {
                     taphopData = taphopDataRaw; 
                 } else {
-                    let tren20Nam = []; let duoi20Nam = [];
                     taphopDataRaw.forEach(row => {
                         const strC = String(row.namCT_orig).trim();
                         if (strC.includes('/')) {
@@ -617,11 +624,13 @@
                 const snap = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
                 if(snap.exists()) { let d = snap.val(); for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); } }
 
-                let dupFiles = [];
-                for (let nh of newFileLogs) { if (allHistoryPath.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
-                if (dupFiles.length > 0) {
-                    if (!confirm("Cảnh báo: Các file sau đã từng được xử lý:\n- " + dupFiles.join("\n- ") + "\n\nNhấn OK để tiếp tục.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
-                    addLog("Bỏ qua cảnh báo trùng tên file.");
+                if (!isHuy) {
+                    let dupFiles = [];
+                    for (let nh of newFileLogs) { if (allHistoryPath.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
+                    if (dupFiles.length > 0) {
+                        if (!confirm("Cảnh báo: Các file sau đã từng được xử lý:\n- " + dupFiles.join("\n- ") + "\n\nNhấn OK để tiếp tục.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                        addLog("Bỏ qua cảnh báo trùng tên file.");
+                    }
                 }
 
                 let serialWarningTriggered = false; let dupDetails = "";
@@ -700,15 +709,13 @@
                 await Promise.all(promises);
                 addLog(`Đồng bộ CSDL hoàn tất.`);
 
-                // --- TẠO EXCEL ---
+                // --- TẠO VÀ XUẤT FILE EXCEL ---
                 statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel...</span>";
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
                 const ghichuSheet = workbook.sheet("ghichu");
 
                 if (isHuy) {
-                    let activeSheet = workbook.sheet("vohuy");
-                    if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
-                    if (!activeSheet) { alert("LỖI: File mẫu samplehuy.xlsx không có sheet dữ liệu hợp lệ!"); return; }
+                    const activeSheet = workbook.sheet(0);
                     const aaa = taphopData.length;
                     
                     let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
@@ -761,8 +768,8 @@
                         }
                         appendFooterSafe(sheet, ghichuSheet, destRow);
                     }
-                    buildSheet("tren20nam", taphopData.filter(x => tren20Nam.includes(x))); 
-                    buildSheet("duoi20nam", taphopData.filter(x => duoi20Nam.includes(x)));
+                    buildSheet("tren20nam", tren20Nam); 
+                    buildSheet("duoi20nam", duoi20Nam);
                 }
 
                 if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
@@ -875,8 +882,8 @@
                         }
                         appendFooterSafe(sheet, ghichuSheet, destRow);
                     }
-                    buildSheet("tren20nam", taphopData.filter(x => tren20Nam.includes(x))); 
-                    buildSheet("duoi20nam", taphopData.filter(x => duoi20Nam.includes(x)));
+                    buildSheet("tren20nam", tren20Nam); 
+                    buildSheet("duoi20nam", duoi20Nam);
                 }
 
                 if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
