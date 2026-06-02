@@ -710,7 +710,7 @@
                     const rY = recentCheckStr.split('/')[1]; const yCT = namCT_orig.split('/')[1];
                     let nhaCT_id = nhaCT_orig.replace(/\//g, '-');
 
-                //    sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
+                    sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
                     sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
 
                     const nextDate_str = nextDate_orig; 
@@ -929,10 +929,10 @@
 
                                     taphopDataRaw.push(dRow);
 
-                        //            if(!existingNhaCT[nhCT_id]) {
-                       //                 sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
-                        //                existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
-                        //            }
+                                    if(!existingNhaCT[nhCT_id]) {
+                                        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
+                                        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+                                    }
                                     sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_initialized`] = true;
                                 }
                             }
