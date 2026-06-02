@@ -521,11 +521,16 @@
                 let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
                 
                 let uniqueDates = new Set(); let uniqueLoaiChai = new Set();
-				// Object để gom chuỗi Serial theo từng Loại chai
-				let serialStringsByLoaiChai = {};
+                let serialStringsByLoaiChai = {};
+
+                // --- BẮT ĐẦU: LOGIC PRE-SCAN TỰ ĐỘNG ĐIỀN DỮ LIỆU ---
+                let rowData = [];
+                let firstLoaiChai = null, isLoaiChaiConsistent = true, missingLoaiChai = false;
+                let firstRecentCheck = null, isRecentCheckConsistent = true, missingRecentCheck = false;
+                let firstNextDate = null, isNextDateConsistent = true, missingNextDate = false;
 
                 ws.eachRow((row, rowNumber) => {
-                    if(rowNumber === 1) return;
+                    if(rowNumber === 1) return; // Bỏ qua Header
                     
                     let loaiChaiRaw = String(row.getCell(2).value || "").trim().toLowerCase();
                     let loaiChai = "";
@@ -534,17 +539,81 @@
                     else if (loaiChaiRaw === "com") loaiChai = "Com";
 
                     let recentCheckStr = String(row.getCell(3).value || "").trim();
-                    let nhaCT_orig = String(row.getCell(4).value || "").trim();
-                    let namCT_orig = String(row.getCell(5).value || "").trim();
-                    let maHieu = String(row.getCell(6).value || "").trim();
-                    let serial = String(row.getCell(7).value || "").trim();
-                    let khoiLuong = String(row.getCell(8).value || "").trim();
-                    let lastCheck_orig = String(row.getCell(9).value || "").trim();
                     let nextDate_orig = String(row.getCell(10).value || "").trim(); 
-                    let voHuyRaw = String(row.getCell(11).value || "").trim().toLowerCase(); 
-                    let lyDoHuy = String(row.getCell(12).value || "").trim(); 
 
-                    if (!loaiChai || !recentCheckStr || !nhaCT_orig || !namCT_orig) { console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); errorCount++; return; }
+                    // Kiểm tra đồng nhất: Loại chai
+                    if (!loaiChai) missingLoaiChai = true;
+                    else {
+                        if (!firstLoaiChai) firstLoaiChai = loaiChai;
+                        else if (loaiChai !== firstLoaiChai) isLoaiChaiConsistent = false;
+                    }
+
+                    // Kiểm tra đồng nhất: Thời điểm kiểm định
+                    if (!recentCheckStr) missingRecentCheck = true;
+                    else {
+                        if (!firstRecentCheck) firstRecentCheck = recentCheckStr;
+                        else if (recentCheckStr !== firstRecentCheck) isRecentCheckConsistent = false;
+                    }
+
+                    // Kiểm tra đồng nhất: Kiểm định kỳ tới
+                    if (!nextDate_orig) missingNextDate = true;
+                    else {
+                        if (!firstNextDate) firstNextDate = nextDate_orig;
+                        else if (nextDate_orig !== firstNextDate) isNextDateConsistent = false;
+                    }
+
+                    rowData.push({
+                        rowNumber: rowNumber,
+                        loaiChai: loaiChai,
+                        recentCheckStr: recentCheckStr,
+                        nhaCT_orig: String(row.getCell(4).value || "").trim(),
+                        namCT_orig: String(row.getCell(5).value || "").trim(),
+                        maHieu: String(row.getCell(6).value || "").trim(),
+                        serial: String(row.getCell(7).value || "").trim(),
+                        khoiLuong: String(row.getCell(8).value || "").trim(),
+                        lastCheck_orig: String(row.getCell(9).value || "").trim(),
+                        nextDate_orig: nextDate_orig,
+                        voHuyRaw: String(row.getCell(11).value || "").trim().toLowerCase(),
+                        lyDoHuy: String(row.getCell(12).value || "").trim()
+                    });
+                });
+
+                // Xác nhận tự động điền nếu có dữ liệu trống nhưng phần có dữ liệu lại đồng nhất
+                let msgParts = [];
+                let autoFillLoaiChai = missingLoaiChai && isLoaiChaiConsistent && firstLoaiChai;
+                let autoFillRecentCheck = missingRecentCheck && isRecentCheckConsistent && firstRecentCheck;
+                let autoFillNextDate = missingNextDate && isNextDateConsistent && firstNextDate;
+
+                if (autoFillLoaiChai) msgParts.push(`Loại chai (${firstLoaiChai})`);
+                if (autoFillRecentCheck) msgParts.push(`TĐ kiểm định (${firstRecentCheck})`);
+                if (autoFillNextDate) msgParts.push(`KĐ kỳ tới (${firstNextDate})`);
+
+                if (msgParts.length > 0) {
+                    if (confirm(`Hệ thống phát hiện ${msgParts.join(', ')} bị bỏ trống ở một số dòng nhưng đồng nhất ở các dòng có dữ liệu.\nBạn có muốn TỰ ĐỘNG ĐIỀN các dữ liệu này cho TOÀN BỘ các chai bị trống trong bảng không?\n\n- Nhấn OK để TỰ ĐỘNG ĐIỀN.\n- Nhấn Cancel để dừng lại và tự sửa file.`)) {
+                        rowData.forEach(r => {
+                            if (!r.loaiChai && autoFillLoaiChai) r.loaiChai = firstLoaiChai;
+                            if (!r.recentCheckStr && autoFillRecentCheck) r.recentCheckStr = firstRecentCheck;
+                            if (!r.nextDate_orig && autoFillNextDate) r.nextDate_orig = firstNextDate;
+                        });
+                        addLog(`Đã tự động điền ${msgParts.join(', ')} cho các dòng trống.`);
+                    } else {
+                        addLog("Đã hủy nhập liệu để người dùng sửa file.");
+                        document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>";
+                        e.target.value = "";
+                        return; // Dừng tiến trình
+                    }
+                }
+                // --- KẾT THÚC LOGIC PRE-SCAN ---
+
+                // Xử lý đẩy dữ liệu (Quét qua mảng rowData đã được xử lý)
+                for (let r of rowData) {
+                    let { rowNumber, loaiChai, recentCheckStr, nhaCT_orig, namCT_orig, maHieu, serial, khoiLuong, lastCheck_orig, nextDate_orig, voHuyRaw, lyDoHuy } = r;
+
+                    if (!loaiChai || !recentCheckStr || !nhaCT_orig || !namCT_orig) { 
+                        console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); 
+                        errorCount++; 
+                        continue; 
+                    }
 
                     uniqueDates.add(recentCheckStr); uniqueLoaiChai.add(loaiChai);
 
@@ -574,82 +643,65 @@
                         if(!sessionStats[loaiChai][rY].byNamCT[yCT]) sessionStats[loaiChai][rY].byNamCT[yCT] = 0;
                         sessionStats[loaiChai][rY].byNamCT[yCT] += 1;
                     }
-                // BỔ SUNG: Khởi tạo và cộng dồn chuỗi Serial
-    if (!serialStringsByLoaiChai[loaiChai]) serialStringsByLoaiChai[loaiChai] = "";
-    serialStringsByLoaiChai[loaiChai] += serial;
-				});
-				
+
+                    // Gom chuỗi Serial
+                    if (!serialStringsByLoaiChai[loaiChai]) serialStringsByLoaiChai[loaiChai] = "";
+                    serialStringsByLoaiChai[loaiChai] += serial;
+                }
 
                 if(validCount > 0) {
-    // ==========================================
-                // BẮT ĐẦU: KIỂM TRA TRÙNG LẶP SERIAL
-                // ==========================================
-                let serialWarningTriggered = false; 
-                let dupDetails = "";
-                let newFileLogsObj = {}; // Chuẩn bị cấu trúc dữ liệu giống hệt newFileLogs
+                    // ==========================================
+                    // KIỂM TRA TRÙNG LẶP SERIAL (Giới hạn ngày)
+                    // ==========================================
+                    let serialWarningTriggered = false; 
+                    let dupDetails = "";
+                    let newFileLogsObj = {}; 
+                    const actualSheetName = ws.name; 
 
-                // Lấy tên sheet thực tế (thư viện ExcelJS)
-                const actualSheetName = ws.name; 
-
-                // Khởi tạo Object cấu trúc chuẩn cho từng Loại chai
-                for (let lc of uniqueLoaiChai) {
-                    if (serialStringsByLoaiChai[lc]) {
-                        newFileLogsObj[lc] = {
-                            fileName: file.name,
-                            sheetName: actualSheetName,
-                            serialString: serialStringsByLoaiChai[lc]
-                        };
-                    }
-                }
-
-                addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
-                
-                // Fetch và so sánh giống hệt cơ chế của window.processFiles
-                for (let lc of uniqueLoaiChai) {
-                    if (serialWarningTriggered) break;
-                    let nh = newFileLogsObj[lc];
-                    if (!nh) continue;
-
-                    let allHistoryPath = [];
-                    // Tính mốc thời gian chốt chặn
-                    const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
-                    const snap = await get(child(ref(db), `${trungTamId}/${lc}/LichSuFile`));
-                    
-                    if(snap.exists()) { 
-                        let d = snap.val(); 
-                        for(let ts in d) { 
-                            // Chỉ lấy các node có timeStamp >= mốc thời gian chốt chặn
-                            if (parseInt(ts) >= timeThreshold) {
-                                for(let k in d[ts]) allHistoryPath.push(d[ts][k]); 
-                            }
-                        } 
-                    }
-
-                    for (let pr of allHistoryPath) {
-                        if (!nh.serialString || !pr.serialString) continue;
-                        let lcsLen = getLCSLength(nh.serialString, pr.serialString);
-                        if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
-                            serialWarningTriggered = true; 
-                            // Kết hợp cả loại chai vào thông báo cho rõ ràng
-                            dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}" - Chai ${lc})`; 
-                            break;
+                    for (let lc of uniqueLoaiChai) {
+                        if (serialStringsByLoaiChai[lc]) {
+                            newFileLogsObj[lc] = { fileName: file.name, sheetName: actualSheetName, serialString: serialStringsByLoaiChai[lc] };
                         }
                     }
-                }
 
-                if (serialWarningTriggered) {
-                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để hủy bỏ. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { 
-                        addLog("Đã hủy thao tác.");
-                        e.target.value = "";
-                        return; // Hủy toàn bộ, không nạp lên RTDB
+                    addLog(`Đang kiểm tra trùng lặp trên CSDL (Giới hạn ${DAYS_TO_CHECK_DUPLICATE} ngày)...`);
+                    const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
+                    
+                    for (let lc of uniqueLoaiChai) {
+                        if (serialWarningTriggered) break;
+                        let nh = newFileLogsObj[lc];
+                        if (!nh) continue;
+
+                        let allHistoryPath = [];
+                        const snap = await get(child(ref(db), `${trungTamId}/${lc}/LichSuFile`));
+                        if(snap.exists()) { 
+                            let d = snap.val(); 
+                            for(let ts in d) { 
+                                if (parseInt(ts) >= timeThreshold) {
+                                    for(let k in d[ts]) allHistoryPath.push(d[ts][k]); 
+                                }
+                            } 
+                        }
+
+                        for (let pr of allHistoryPath) {
+                            if (!nh.serialString || !pr.serialString) continue;
+                            let lcsLen = getLCSLength(nh.serialString, pr.serialString);
+                            if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
+                                serialWarningTriggered = true; 
+                                dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}" - Chai ${lc})`; 
+                                break;
+                            }
+                        }
                     }
-                    addLog("Bỏ qua cảnh báo trùng Serial (Dữ liệu bổ sung).");
-                }
-                // ==========================================
-                // KẾT THÚC: KIỂM TRA TRÙNG LẶP SERIAL
-                // ==========================================
 
-    // ... [Code hiện tại: Cập nhật thống kê sessionStats] ...
+                    if (serialWarningTriggered) {
+                        if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để hủy bỏ. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { 
+                            addLog("Đã hủy thao tác."); document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; e.target.value = ""; return; 
+                        }
+                        addLog("Bỏ qua cảnh báo trùng Serial.");
+                    }
+                    // ==========================================
+
                     for(let lc in sessionStats) {
                         for(let rY in sessionStats[lc]) {
                             updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
@@ -661,20 +713,16 @@
                             }
                         }
                     }
-                    // ==========================================
-                // ĐẨY CHUỖI MỚI VÀO NODE LichSuFile
-                // ==========================================
-                for (let lc of uniqueLoaiChai) {
-                    let nh = newFileLogsObj[lc];
-                    if (nh) {
-                        const pushKey = push(child(ref(db), 'temp')).key;
-                        const logPath = `${trungTamId}/${lc}/LichSuFile/${batchTimestamp}/${pushKey}`;
-                        updates[logPath] = nh; 
-                        batchPathsList.push(logPath); 
+                    Object.assign(updates, sourceStructureUpdates);
+
+                    for (let lc of uniqueLoaiChai) {
+                        let nh = newFileLogsObj[lc];
+                        if (nh) {
+                            const pushKey = push(child(ref(db), 'temp')).key;
+                            const logPath = `${trungTamId}/${lc}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                            updates[logPath] = nh; batchPathsList.push(logPath); 
+                        }
                     }
-                }
-                // ==========================================
-					Object.assign(updates, sourceStructureUpdates);
 
                     let finalThoiDiemKD = uniqueDates.size === 1 ? Array.from(uniqueDates)[0] : "Nhiều thời điểm";
                     let finalLoaiChai = uniqueLoaiChai.size === 1 ? Array.from(uniqueLoaiChai)[0] : "Hỗn hợp";
@@ -691,7 +739,7 @@
                     await Promise.all(promises);
 
                     let msg = `Đã bổ sung ${validCount} chai thành công!`;
-                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu dữ liệu hoặc sai Loại chai)`;
+                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu dữ liệu bắt buộc)`;
                     alert(msg); addLog(msg);
                 } else { alert("Không có dữ liệu hợp lệ để nhập."); }
                 
