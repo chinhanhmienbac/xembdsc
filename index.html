@@ -326,6 +326,81 @@
                 }
             } return maxLen;
         }
+		// --- HÀM CẢNH VỆ SỬA LỖI ĐỊNH DẠNG NGÀY THÁNG ---
+        window.fixDateString = function(val, fieldName, rowNum) {
+            if (!val) return val;
+            val = String(val).trim();
+            
+            // 5. Tự động sửa m/yyyy thành 0m/yyyy (Không cần hỏi)
+            if (/^\d\/\d{4}$/.test(val)) {
+                val = "0" + val;
+            }
+            
+            // Kiểm tra nếu đã hoàn toàn chuẩn mm/yyyy
+            let currentYear = new Date().getFullYear();
+            if (/^\d{2}\/\d{4}$/.test(val)) {
+                let parts = val.split('/');
+                let m = parseInt(parts[0]);
+                let y = parseInt(parts[1]);
+                if (m >= 1 && m <= 12 && y >= 1999 && y <= currentYear + 5) {
+                    return val;
+                }
+            }
+
+            let originalVal = val;
+            let suggested = val;
+
+            // 3. myyyy (Ví dụ: 52020)
+            if (/^\d{5}$/.test(val)) {
+                let m = val.substring(0, 1);
+                let y = val.substring(1);
+                suggested = "0" + m + "/" + y;
+            } 
+            // 4. mm/yy (Ví dụ: 05/20)
+            else if (/^\d{1,2}\/\d{2}$/.test(val)) {
+                let parts = val.split('/');
+                let m = parts[0].length === 1 ? "0" + parts[0] : parts[0];
+                let y = "20" + parts[1];
+                suggested = m + "/" + y;
+            }
+            // Xử lý các dạng có dấu / nhưng sai số
+            else if (val.includes('/')) {
+                let parts = val.split('/');
+                let mmStr = parts[0].trim();
+                let yyStr = parts[1] ? parts[1].trim() : "";
+                
+                let mm = parseInt(mmStr);
+                let yy = parseInt(yyStr);
+
+                if (!isNaN(mm)) {
+                    // 1. mm > 12 hoặc mm == 0
+                    if (mm > 12) mmStr = "0" + String(mm).slice(-1);
+                    else if (mm === 0) mmStr = "10";
+                    else if (mmStr.length === 1) mmStr = "0" + mm;
+                }
+                
+                if (!isNaN(yy)) {
+                    // 2. yyyy trước 1999 hoặc quá 5 năm so với năm hiện tại
+                    if (yy < 1999 && yy > 99) yyStr = "1999";
+                    else if (yy > currentYear + 5) yyStr = String(currentYear);
+                }
+                
+                if (!isNaN(mm) && !isNaN(yy)) {
+                    suggested = mmStr + "/" + yyStr;
+                }
+            }
+
+            let msg = `Dòng ${rowNum}: Cột [${fieldName}] sai định dạng ("${originalVal}").\nQuy ước bắt buộc: mm/yyyy.\n\nHệ thống đề xuất sửa thành: ${suggested}\n\n- Nhấn OK để chấp nhận đề xuất (hoặc tự gõ lại).\n- Nhấn Cancel để HỦY TOÀN BỘ quá trình nhập và tự sửa trong file Excel.`;
+            let userInput = prompt(msg, suggested);
+            
+            if (userInput === null) {
+                throw new Error("USER_CANCELLED");
+            }
+            
+            // Đề phòng user gõ lại theo thói quen m/yyyy
+            if (/^\d\/\d{4}$/.test(userInput)) userInput = "0" + userInput;
+            return userInput;
+        }
 
         // --- CẤU TRÚC ĐỊNH DẠNG EXCEL DÙNG CHUNG ---
         const borderFull = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
@@ -538,8 +613,21 @@
                     else if (loaiChaiRaw === "v45") loaiChai = "V45";
                     else if (loaiChaiRaw === "com") loaiChai = "Com";
 
-                    let recentCheckStr = String(row.getCell(3).value || "").trim();
-                    let nextDate_orig = String(row.getCell(10).value || "").trim(); 
+                    // Gắn Cảnh vệ vào các trường ngày tháng
+                    let recentCheckStrRaw = String(row.getCell(3).value || "").trim();
+                    let recentCheckStr = recentCheckStrRaw ? window.fixDateString(recentCheckStrRaw, "Thời điểm kiểm định", rowNumber) : "";
+                    
+                    let namCT_orig_raw = String(row.getCell(5).value || "").trim();
+                    let namCT_orig = namCT_orig_raw ? window.fixDateString(namCT_orig_raw, "Năm CT", rowNumber) : "";
+
+                    let lastCheck_orig_raw = String(row.getCell(9).value || "").trim();
+                    let lastCheck_orig = lastCheck_orig_raw ? window.fixDateString(lastCheck_orig_raw, "Kiểm định lần trước", rowNumber) : "";
+
+                    let nextDate_orig_raw = String(row.getCell(10).value || "").trim(); 
+                    let nextDate_orig = nextDate_orig_raw ? window.fixDateString(nextDate_orig_raw, "Kiểm định kỳ tới", rowNumber) : "";
+
+                    let voHuyRaw = String(row.getCell(11).value || "").trim().toLowerCase(); 
+                    let lyDoHuy = String(row.getCell(12).value || "").trim();
 
                     // Kiểm tra đồng nhất: Loại chai
                     if (!loaiChai) missingLoaiChai = true;
@@ -744,9 +832,16 @@
                 } else { alert("Không có dữ liệu hợp lệ để nhập."); }
                 
                 window.closeModal('oldDataModal');
-            } catch (err) { console.error(err); alert("Lỗi khi nhập file: " + err.message); }
-            e.target.value = "";
-        }
+            } catch (err) { 
+                console.error(err); 
+                if (err.message === "USER_CANCELLED") {
+                    addLog("Đã hủy thao tác do người dùng từ chối sửa lỗi định dạng.");
+                    document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy nhập liệu.</span>";
+                } else {
+                    alert("Lỗi khi nhập file: " + err.message); 
+                }
+            }
+		}
 
         // ==========================================
         // XỬ LÝ CHÍNH - NHÁNH KIỂM ĐỊNH HOẶC HỦY
@@ -815,19 +910,21 @@
                                 if (rows[i][2]) {
                                     const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
 
-                                    const nCT_orig = String(rows[i][2]).trim(); 
+                                    const nCT_orig_raw = String(rows[i][2]).trim(); 
+                                    let nCT_orig = nCT_orig_raw ? window.fixDateString(nCT_orig_raw, "Năm CT", i + 1) : "";
+
                                     let nCT_id = isHuy && !(/^\d{2}\/\d{4}$/.test(nCT_orig)) ? "KhongXacDinh" : nCT_orig.replace(/\//g, '-');
                                     let nhCT_orig = String(rows[i][1]).trim(); let nhCT_id = nhCT_orig.replace(/\//g, '-');
                                     if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
 
-                                    // Lấy dữ liệu an toàn
                                     let dRow = { nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id, namCT_orig: nCT_orig, namCT_id: nCT_id, maHieu: String(rows[i][3] || "").trim(), serial: sr };
                                     
                                     if(isHuy) {
                                         dRow.lyDoHuy = String(rows[i][5] || "").trim();
                                     } else {
                                         dRow.khoiLuong = String(rows[i][5] || "").trim();
-                                        dRow.lastCheck_orig = String(rows[i][6] || "").trim();
+                                        let lastCheck_raw = String(rows[i][6] || "").trim();
+                                        dRow.lastCheck_orig = lastCheck_raw ? window.fixDateString(lastCheck_raw, "Kiểm định lần trước", i + 1) : "";
                                     }
 
                                     taphopDataRaw.push(dRow);
@@ -1161,7 +1258,16 @@
                 let prefix = isHuy ? "Recreated_Huy_" : "Recreated_BBKD_";
                 saveAs(blob, `${prefix}${loaiChai}_${timeStamp}.xlsx`); 
                 loading.style.display = 'none'; alert("Hoàn thành! File đã được tái tạo và tải xuống.");
-            } catch (err) { console.error(err); alert("Lỗi khi tạo lại file: " + err.message); loading.style.display = 'none'; }
+            } catch (error) { 
+                console.error(error); 
+                if (error.message === "USER_CANCELLED") {
+                    addLog("Đã hủy thao tác do người dùng từ chối sửa lỗi định dạng.");
+                    statusDiv.innerHTML = `<span class='text-danger'>Đã hủy nhập liệu.</span>`;
+                } else {
+                    addLog(`LỖI: ${error.message}`); 
+                    statusDiv.innerHTML = `<span class='text-danger'>Lỗi hệ thống: ${error.message}</span>`; 
+                }
+            }
         }
     </script>
 </body>
