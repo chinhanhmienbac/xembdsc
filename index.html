@@ -139,12 +139,12 @@
             <div class="form-group" style="text-align: left;">
                 <label>Tài khoản (Email):</label>
                 <!-- Tự động xóa chuỗi ẩn danh khi click vào ô để nhập tài khoản khác -->
-                <input type="text" id="loginEmail" value="ttkd****@****.vn" onfocus="if(this.value==='ttkd****@****.vn') this.value='';">
-            </div>
+                <input type="text" id="loginEmail" value="ttkd****@*****.vn" autocomplete="off" spellcheck="false" onfocus="if(this.value==='ttkd****@*****.vn') this.value='';">
+</div>
             <div class="form-group" style="text-align: left;">
                 <label>Mật khẩu:</label>
                 <input type="password" id="loginPass" onkeypress="if(event.key === 'Enter') window.loginFirebase()">
-            </div>
+</div>
             <div id="loginError" style="color: red; font-size: 13px; margin-bottom: 10px; display: none;"></div>
             <button class="primary-btn" onclick="window.loginFirebase()">ĐĂNG NHẬP</button>
         </div>
@@ -160,8 +160,8 @@
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th>TĐ lập file (Hệ thống)</th>
-                            <th>TĐ kiểm định (User)</th>
+                            <th>Thời điểm nhập liệu</th>
+                            <th>Thời điểm kiểm định</th>
                             <th>Loại chai</th>
                             <th>Số lượng</th>
                             <th>Trạng thái</th>
@@ -191,7 +191,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-		import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+		import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
@@ -206,6 +206,18 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 		const auth = getAuth(app);
+		
+        // ===== CẤU HÌNH MỚI BỔ SUNG =====
+        // 1. Số ngày quét lùi về trước để tìm chuỗi trùng (có thể đổi thành 100, 300...)
+        const DAYS_TO_CHECK_DUPLICATE = 60; 
+
+        // 2. Bản đồ liên kết Trung tâm với File mẫu tương ứng
+        const templateMap = {
+            "tt1": { kiemDinh: "sample1.xlsx", huy: "samplehuy1.xlsx" },
+            "tt2": { kiemDinh: "sample2.xlsx", huy: "samplehuy2.xlsx" },
+            "tt3": { kiemDinh: "sample3.xlsx", huy: "samplehuy3.xlsx" }
+        };
+        // ================================
 
         // Bảng phân quyền Trung tâm
         const userCenterMap = {
@@ -249,7 +261,7 @@
             const errorDiv = document.getElementById('loginError');
             
             // Dịch ngược lại email nếu dùng tài khoản che khuất
-            if(email === 'ttkd****@****.vn') {
+            if(email === 'ttkd****@*****.vn') {
                 email = 'ttkdnamdinh@pvgaslpg.com.vn';
             }
             
@@ -262,10 +274,23 @@
             errorDiv.style.display = "none";
             document.getElementById('loginModal').querySelector('.primary-btn').innerText = "Đang xử lý...";
             
-            signInWithEmailAndPassword(auth, email, pass)
+            // BỔ SUNG LỚP BẢO MẬT: Đặt Persistence thành SESSION trước khi đăng nhập
+            setPersistence(auth, browserSessionPersistence)
+                .then(() => {
+                    // Trả về promise đăng nhập để chuỗi .then().catch() bên dưới xử lý tiếp
+                    return signInWithEmailAndPassword(auth, email, pass);
+                })
                 .then((userCredential) => {
                     document.getElementById('loginModal').querySelector('.primary-btn').innerText = "ĐĂNG NHẬP";
-                    // Việc đóng Modal sẽ do onAuthStateChanged tự động lo
+                    // ==========================================
+                    // BỔ SUNG Ở ĐÂY: Xóa trắng form ngay khi thành công
+                    // ==========================================
+                    // Trả lại chuỗi ẩn danh gốc cho ô Email
+                    document.getElementById('loginEmail').value = 'ttkd****@****.vn'; 
+                    // Xóa hoàn toàn mật khẩu
+                    document.getElementById('loginPass').value = '';
+                    // ==========================================
+					// Việc đóng Modal sẽ do onAuthStateChanged tự động lo
                 })
                 .catch((error) => {
                     console.error(error);
@@ -361,10 +386,10 @@
             document.getElementById('isHuyCheckbox').addEventListener('change', function() {
                 const btn = document.getElementById('mainProcessBtn');
                 if(this.checked) {
-                    btn.innerHTML = "Xử Lý Dữ Liệu HỦY (X)";
+                    btn.innerHTML = "Xử Lý dữ liệu HỦY (X)";
                     btn.style.backgroundColor = "#dc3545";
                 } else {
-                    btn.innerHTML = "Xử Lý KIỂM ĐỊNH (√)";
+                    btn.innerHTML = "Xử Lý dữ liệu Kiểm định (√)";
                     btn.style.backgroundColor = "#007bff";
                 }
             });
@@ -496,6 +521,8 @@
                 let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
                 
                 let uniqueDates = new Set(); let uniqueLoaiChai = new Set();
+				// Object để gom chuỗi Serial theo từng Loại chai
+				let serialStringsByLoaiChai = {};
 
                 ws.eachRow((row, rowNumber) => {
                     if(rowNumber === 1) return;
@@ -547,9 +574,82 @@
                         if(!sessionStats[loaiChai][rY].byNamCT[yCT]) sessionStats[loaiChai][rY].byNamCT[yCT] = 0;
                         sessionStats[loaiChai][rY].byNamCT[yCT] += 1;
                     }
-                });
+                // BỔ SUNG: Khởi tạo và cộng dồn chuỗi Serial
+    if (!serialStringsByLoaiChai[loaiChai]) serialStringsByLoaiChai[loaiChai] = "";
+    serialStringsByLoaiChai[loaiChai] += serial;
+				});
+				
 
                 if(validCount > 0) {
+    // ==========================================
+                // BẮT ĐẦU: KIỂM TRA TRÙNG LẶP SERIAL
+                // ==========================================
+                let serialWarningTriggered = false; 
+                let dupDetails = "";
+                let newFileLogsObj = {}; // Chuẩn bị cấu trúc dữ liệu giống hệt newFileLogs
+
+                // Lấy tên sheet thực tế (thư viện ExcelJS)
+                const actualSheetName = ws.name; 
+
+                // Khởi tạo Object cấu trúc chuẩn cho từng Loại chai
+                for (let lc of uniqueLoaiChai) {
+                    if (serialStringsByLoaiChai[lc]) {
+                        newFileLogsObj[lc] = {
+                            fileName: file.name,
+                            sheetName: actualSheetName,
+                            serialString: serialStringsByLoaiChai[lc]
+                        };
+                    }
+                }
+
+                addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
+                
+                // Fetch và so sánh giống hệt cơ chế của window.processFiles
+                for (let lc of uniqueLoaiChai) {
+                    if (serialWarningTriggered) break;
+                    let nh = newFileLogsObj[lc];
+                    if (!nh) continue;
+
+                    let allHistoryPath = [];
+                    // Tính mốc thời gian chốt chặn
+                    const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
+                    const snap = await get(child(ref(db), `${trungTamId}/${lc}/LichSuFile`));
+                    
+                    if(snap.exists()) { 
+                        let d = snap.val(); 
+                        for(let ts in d) { 
+                            // Chỉ lấy các node có timeStamp >= mốc thời gian chốt chặn
+                            if (parseInt(ts) >= timeThreshold) {
+                                for(let k in d[ts]) allHistoryPath.push(d[ts][k]); 
+                            }
+                        } 
+                    }
+
+                    for (let pr of allHistoryPath) {
+                        if (!nh.serialString || !pr.serialString) continue;
+                        let lcsLen = getLCSLength(nh.serialString, pr.serialString);
+                        if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
+                            serialWarningTriggered = true; 
+                            // Kết hợp cả loại chai vào thông báo cho rõ ràng
+                            dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}" - Chai ${lc})`; 
+                            break;
+                        }
+                    }
+                }
+
+                if (serialWarningTriggered) {
+                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để hủy bỏ. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { 
+                        addLog("Đã hủy thao tác.");
+                        e.target.value = "";
+                        return; // Hủy toàn bộ, không nạp lên RTDB
+                    }
+                    addLog("Bỏ qua cảnh báo trùng Serial (Dữ liệu bổ sung).");
+                }
+                // ==========================================
+                // KẾT THÚC: KIỂM TRA TRÙNG LẶP SERIAL
+                // ==========================================
+
+    // ... [Code hiện tại: Cập nhật thống kê sessionStats] ...
                     for(let lc in sessionStats) {
                         for(let rY in sessionStats[lc]) {
                             updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
@@ -561,7 +661,20 @@
                             }
                         }
                     }
-                    Object.assign(updates, sourceStructureUpdates);
+                    // ==========================================
+                // ĐẨY CHUỖI MỚI VÀO NODE LichSuFile
+                // ==========================================
+                for (let lc of uniqueLoaiChai) {
+                    let nh = newFileLogsObj[lc];
+                    if (nh) {
+                        const pushKey = push(child(ref(db), 'temp')).key;
+                        const logPath = `${trungTamId}/${lc}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                        updates[logPath] = nh; 
+                        batchPathsList.push(logPath); 
+                    }
+                }
+                // ==========================================
+					Object.assign(updates, sourceStructureUpdates);
 
                     let finalThoiDiemKD = uniqueDates.size === 1 ? Array.from(uniqueDates)[0] : "Nhiều thời điểm";
                     let finalLoaiChai = uniqueLoaiChai.size === 1 ? Array.from(uniqueLoaiChai)[0] : "Hỗn hợp";
@@ -607,7 +720,8 @@
             addLog(`Bắt đầu quy trình ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...`);
 
             let templateDataBuffer;
-            const templateName = isHuy ? 'samplehuy.xlsx' : 'sample.xlsx';
+            const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+            const templateName = isHuy ? tplMap.huy : tplMap.kiemDinh;
             try {
                 addLog(`Đang tải file mẫu (${templateName}) từ máy chủ...`);
                 const response = await fetch(templateName);
@@ -713,17 +827,25 @@
                     taphopData = [...tren20Nam, ...duoi20Nam]; 
                 }
 
-                addLog(`Đang kiểm tra trùng lặp trên CSDL...`);
+                addLog(`Đang kiểm tra trùng lặp trên CSDL (Giới hạn ${DAYS_TO_CHECK_DUPLICATE} ngày)...`);
                 let allHistoryPath = [];
+                const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
                 
                 const snap = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
-                if(snap.exists()) { let d = snap.val(); for(let ts in d) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); } }
+                if(snap.exists()) { 
+                    let d = snap.val(); 
+                    for(let ts in d) { 
+                        if (parseInt(ts) >= timeThreshold) {
+                            for(let k in d[ts]) allHistoryPath.push(d[ts][k]); 
+                        }
+                    } 
+                }
 
                 if (!isHuy) {
                     let dupFiles = [];
                     for (let nh of newFileLogs) { if (allHistoryPath.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
                     if (dupFiles.length > 0) {
-                        if (!confirm("Cảnh báo: Các file sau đã từng được xử lý:\n- " + dupFiles.join("\n- ") + "\n\nNhấn OK để tiếp tục.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                        if (!confirm("Cảnh báo: Các file sau đã từng được sử dụng để nhập và xử lý dữ liệu:\n- " + dupFiles.join("\n- ") + "\n\nKiểm tra lại xem có phải bị lặp dữ liệu không? Nhấn Cancel để hủy bỏ, chọn file khác. Nhấn OK nếu biết chính xác không phải dữ liệu lặp và vẫn sử dụng dữ liệu trong những file này.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
                         addLog("Bỏ qua cảnh báo trùng tên file.");
                     }
                 }
@@ -740,7 +862,7 @@
                     }
                 }
                 if (serialWarningTriggered) {
-                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã lập hồ sơ (Trùng chuỗi Serial).\n\nNhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để chọn file khác. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
                     addLog("Bỏ qua cảnh báo trùng Serial.");
                 }
 
@@ -896,7 +1018,8 @@
 
                 loading.innerText = 'Đang tải file mẫu từ máy chủ...';
                 let templateDataBuffer;
-                const templateFileName = isHuy ? 'samplehuy.xlsx' : 'sample.xlsx';
+                const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+                const templateFileName = isHuy ? tplMap.huy : tplMap.kiemDinh;
                 const response = await fetch(templateFileName);
                 if (!response.ok) throw new Error(`Không tìm thấy file ${templateFileName}`);
                 templateDataBuffer = await response.arrayBuffer();
