@@ -597,6 +597,9 @@
                 
                 let uniqueDates = new Set(); let uniqueLoaiChai = new Set();
                 let serialStringsByLoaiChai = {};
+				// Bổ sung: Tải danh sách nhà CT hiện tại
+const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
 
                 // --- BẮT ĐẦU: LOGIC PRE-SCAN TỰ ĐỘNG ĐIỀN DỮ LIỆU ---
                 let rowData = [];
@@ -710,8 +713,20 @@
                     const rY = recentCheckStr.split('/')[1]; const yCT = namCT_orig.split('/')[1];
                     let nhaCT_id = nhaCT_orig.replace(/\//g, '-');
 
-                    sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
-                    sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
+if (!nhaCT_id) {
+    nhaCT_id = "Chua_Xac_Dinh"; nhaCT_orig = "Chưa xác định";
+} else {
+    // Tìm xem ID này đã tồn tại chưa (không phân biệt hoa/thường)
+    let found = Object.keys(existingNhaCT).find(k => k.toLowerCase() === nhaCT_id.toLowerCase());
+    if (found) {
+        nhaCT_id = found; // Nếu có thì dùng lại ID chuẩn cũ, KHÔNG ghi đè tenDayDu
+    } else {
+        // Nếu chưa có mới tạo mới
+        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
+        existingNhaCT[nhaCT_id] = { tenDayDu: nhaCT_orig }; // Cập nhật bộ nhớ tạm
+    }
+}
+sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
 
                     const nextDate_str = nextDate_orig; 
                     const lastCheck_id = lastCheck_orig.replace(/\//g, '-');
@@ -911,29 +926,39 @@
                                     const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
 
                                     const nCT_orig_raw = String(rows[i][2]).trim(); 
-                                    let nCT_orig = nCT_orig_raw ? window.fixDateString(nCT_orig_raw, "Năm CT", i + 1) : "";
+let nCT_orig = nCT_orig_raw ? window.fixDateString(nCT_orig_raw, "Năm CT", i + 1) : "";
 
-                                    let nCT_id = isHuy && !(/^\d{2}\/\d{4}$/.test(nCT_orig)) ? "KhongXacDinh" : nCT_orig.replace(/\//g, '-');
-                                    let nhCT_orig = String(rows[i][1]).trim(); let nhCT_id = nhCT_orig.replace(/\//g, '-');
-                                    if (!nhCT_id) { nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; }
+let nCT_id = isHuy && !(/^\d{2}\/\d{4}$/.test(nCT_orig)) ? "KhongXacDinh" : nCT_orig.replace(/\//g, '-');
 
-                                    let dRow = { nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id, namCT_orig: nCT_orig, namCT_id: nCT_id, maHieu: String(rows[i][3] || "").trim(), serial: sr };
-                                    
-                                    if(isHuy) {
-                                        dRow.lyDoHuy = String(rows[i][5] || "").trim();
-                                    } else {
-                                        dRow.khoiLuong = String(rows[i][5] || "").trim();
-                                        let lastCheck_raw = String(rows[i][6] || "").trim();
-                                        dRow.lastCheck_orig = lastCheck_raw ? window.fixDateString(lastCheck_raw, "Kiểm định lần trước", i + 1) : "";
-                                    }
+let nhCT_orig = String(rows[i][1]).trim(); 
+let nhCT_id = nhCT_orig.replace(/\//g, '-');
 
-                                    taphopDataRaw.push(dRow);
+if (!nhCT_id) { 
+    nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; 
+} else {
+    // Tìm xem ID này đã tồn tại chưa (không phân biệt hoa/thường)
+    let found = Object.keys(existingNhaCT).find(k => k.toLowerCase() === nhCT_id.toLowerCase());
+    if (found) {
+        nhCT_id = found; // Dùng lại ID cũ, bỏ qua ghi đè tenDayDu
+    } else {
+        // Chưa có thì tạo mới
+        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
+        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+    }
+}
 
-                                    if(!existingNhaCT[nhCT_id]) {
-                                        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
-                                        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
-                                    }
-                                    sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_initialized`] = true;
+let dRow = { nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id, namCT_orig: nCT_orig, namCT_id: nCT_id, maHieu: String(rows[i][3] || "").trim(), serial: sr };
+
+if(isHuy) {
+    dRow.lyDoHuy = String(rows[i][5] || "").trim();
+} else {
+    dRow.khoiLuong = String(rows[i][5] || "").trim();
+    let lastCheck_raw = String(rows[i][6] || "").trim();
+    dRow.lastCheck_orig = lastCheck_raw ? window.fixDateString(lastCheck_raw, "Kiểm định lần trước", i + 1) : "";
+}
+
+taphopDataRaw.push(dRow);
+sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_initialized`] = true;
                                 }
                             }
                             if (hasData) newFileLogs.push({ fileName: file.name, sheetName: sheetName, serialString: currentSerialString });
