@@ -1629,10 +1629,9 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                             if (summary.isOldData) {
                                 sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
                             } 
-                            // NẾU LÀ DỮ LIỆU CHUẨN -> BÓC TÁCH THÁNG/NĂM NHƯ CŨ
+                            // NẾU LÀ DỮ LIỆU CHUẨN -> BÓC TÁCH THÁNG/NĂM NHƯ CŨ (bỏ bóc tách, dùng luôn dữ liệu lưu như xuất lô cũ.
                             else {
-                                let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
-                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
                             }
                             for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
                             
