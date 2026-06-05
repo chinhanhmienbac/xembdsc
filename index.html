@@ -915,7 +915,8 @@ window.closeModal = async function(id) {
 
                 loading.innerText = 'Đang tải file mẫu từ máy chủ...';
                 let templateDataBuffer;
-                const templateFileName = isHuy ? 'samplehuy.xlsx' : 'sample.xlsx';
+                const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+                const templateFileName = isHuy ? tplMap.huy : tplMap.kiemDinh;
                 const response = await fetch(templateFileName);
                 if (!response.ok) throw new Error(`Không tìm thấy file ${templateFileName}`);
                 templateDataBuffer = await response.arrayBuffer();
@@ -984,10 +985,11 @@ window.closeModal = async function(id) {
 
                         for (let key in grouped) {
                             const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
-                        //    let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
-                        //    sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
-						//== Thay thế bằng lệnh xuất mới căn cứ theo nextDate để dùng chung cho cả 2 loại nguồn dữ liệu
-						sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+ 
+                           sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); 
+                                                  
+                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            
                             for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
                             
                             for (let k = 0; k < N1; k++) {
@@ -1011,8 +1013,10 @@ window.closeModal = async function(id) {
                 let prefix = isHuy ? "Recreated_Huy_" : "Recreated_BBKD_";
                 saveAs(blob, `${prefix}${loaiChai}_${timeStamp}.xlsx`); 
                 loading.style.display = 'none'; alert("Hoàn thành! File đã được tái tạo và tải xuống.");
-            } catch (err) { console.error(err); alert("Lỗi khi tạo lại file: " + err.message); loading.style.display = 'none'; }
+                        } catch (err) { console.error(err); alert("Lỗi khi tạo lại file: " + err.message); loading.style.display = 'none'; }
         }
+
+
 		// ==========================================
         // THUẬT TOÁN ĐỊNH VỊ VÀ ÁNH XẠ CHAI - LÔ NGUỒN
         // ==========================================
