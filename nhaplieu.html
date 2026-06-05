@@ -269,7 +269,7 @@
             <p style="font-size: 14px; color: #555;">Chức năng nhập trực tiếp dữ liệu cũ vào Cơ sở dữ liệu.</p>
             <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải mẫu Excel</button>
             <button class="primary-btn" onclick="document.getElementById('importOldDataFile').click()">2. Nhập từ Excel</button>
-            <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx" onchange="window.importOldDataFromExcel(event)">
+            <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx, .xls" onchange="window.importOldDataFromExcel(event)">
         </div>
     </div>
 	<div id="oldDataConfigModal" class="modal-overlay" style="z-index: 1020;">
@@ -446,106 +446,114 @@
             return (numSer >= numMin && numSer <= numMax);
         }
 		
-		// --- HÀM CẢNH VỆ AI SỬA LỖI ĐỊNH DẠNG NGÀY THÁNG ---
+		// --- HÀM CẢNH VỆ AI SỬA LỖI ĐỊNH DẠNG NGÀY THÁNG (V3 - TIỀN XỬ LÝ DẤU) ---
         window.fixDateString = function(val, fieldName, rowNum) {
             if (!val) return val;
-            val = String(val).trim().replace(/\s+/g, ''); // Xóa mọi khoảng trắng
+            let originalVal = String(val).trim();
             
+            // 1. TIỀN XỬ LÝ: Xóa khoảng trắng và chuẩn hóa mọi dấu gõ nhầm (., -, _, \, ,) thành dấu /
+            let normalizedVal = originalVal.replace(/\s+/g, ''); // Xóa khoảng trắng
+            normalizedVal = normalizedVal.replace(/[\.\,\-\_\\]+/g, '/'); // Biến mọi ký tự đặc biệt thành /
+            normalizedVal = normalizedVal.replace(/\/+/g, '/'); // Gộp nhiều dấu / (VD: 4//23) thành 1 dấu /
+            normalizedVal = normalizedVal.replace(/^\/+|\/+$/g, ''); // Cắt bỏ dấu / lỡ gõ thừa ở 2 đầu
+
             let currentYear = new Date().getFullYear();
             
-            // Nếu đã chuẩn mm/yyyy từ đầu thì cho qua luôn
-            if (/^\d{2}\/\d{4}$/.test(val)) {
-                let parts = val.split('/');
-                let m = parseInt(parts[0]);
-                let y = parseInt(parts[1]);
+            // Nếu sau khi nắn dấu đã ra đúng mm/yyyy thì trả về luôn (Không cần hỏi)
+            if (/^\d{2}\/\d{4}$/.test(normalizedVal)) {
+                let parts = normalizedVal.split('/');
+                let m = parseInt(parts[0], 10);
+                let y = parseInt(parts[1], 10);
                 if (m >= 1 && m <= 12 && y >= 1999 && y <= currentYear + 5) {
-                    return val;
+                    return normalizedVal; 
                 }
             }
 
-            let originalVal = val;
             let mStr = "", yStr = "";
 
-            // BÓC TÁCH THÔNG MINH (Có hoặc không có dấu /)
-            if (val.includes('/')) {
-                let parts = val.split('/');
+            // 2. BÓC TÁCH THÔNG MINH
+            if (normalizedVal.includes('/')) {
+                let parts = normalizedVal.split('/');
                 mStr = parts[0]; 
                 yStr = parts[1] || "";
             } else {
-                if (val.length === 6) { 
-                    // Vd: 042023 -> 04 và 2023
-                    mStr = val.slice(0,2); yStr = val.slice(2);
-                } else if (val.length === 5) { 
-                    // Vd: 52003 -> 5 và 2003
-                    let y4 = parseInt(val.slice(1));
-                    if (y4 >= 1999 && y4 <= currentYear + 5) {
-                        mStr = val.slice(0,1); yStr = val.slice(1);
+                let len = normalizedVal.length;
+                if (len === 3) {
+                    // Vd: 112 -> 1 và 12 (01/2012) | 301 -> 3 và 01 (03/2001) | 042 -> 04 và 2 (04/2002)
+                    if (normalizedVal.startsWith("0")) {
+                        mStr = normalizedVal.slice(0, 2); yStr = normalizedVal.slice(2);
                     } else {
-                        mStr = val.slice(0,2); yStr = val.slice(2);
+                        mStr = normalizedVal.slice(0, 1); yStr = normalizedVal.slice(1);
                     }
-                } else if (val.length === 4) { 
-                    // Vd: 6207 -> 6 và 207 | 0425 -> 04 và 25
-                    let m2 = parseInt(val.slice(0,2));
+                } else if (len === 4) {
+                    // Vd: 1205 -> 12 và 05 | 5205 -> 5 và 205
+                    let m2 = parseInt(normalizedVal.slice(0, 2), 10);
                     if (m2 >= 1 && m2 <= 12) {
-                        mStr = val.slice(0,2); yStr = val.slice(2);
+                        mStr = normalizedVal.slice(0, 2); yStr = normalizedVal.slice(2);
                     } else {
-                        mStr = val.slice(0,1); yStr = val.slice(1);
+                        mStr = normalizedVal.slice(0, 1); yStr = normalizedVal.slice(1);
                     }
+                } else if (len === 5) {
+                    // Vd: 52023 -> 5 và 2023 | 11205 -> 11 và 205
+                    let y4 = parseInt(normalizedVal.slice(1), 10);
+                    if (y4 >= 1999 && y4 <= currentYear + 5) {
+                        mStr = normalizedVal.slice(0, 1); yStr = normalizedVal.slice(1);
+                    } else {
+                        mStr = normalizedVal.slice(0, 2); yStr = normalizedVal.slice(2);
+                    }
+                } else if (len >= 6) {
+                    // Vd: 042023 -> 04 và 2023
+                    mStr = normalizedVal.slice(0, 2); yStr = normalizedVal.slice(2, 6);
                 } else {
-                    mStr = val.slice(0,2); yStr = val.slice(2);
+                    mStr = normalizedVal; yStr = String(currentYear);
                 }
             }
 
-            // XỬ LÝ LỖI THÁNG (Tháng > 12 hoặc = 0)
-            let m = parseInt(mStr);
-            if (isNaN(m)) {
-                mStr = "01";
-            } else if (m === 0) {
-                // mm=0 -> 10. Nhưng nếu gõ 0/2019 thì ưu tiên 01
-                mStr = (originalVal.startsWith("0/")) ? "01" : "10";
+            // 3. CHUẨN HÓA THÁNG (ÉP BUỘC TỪ 01 ĐẾN 12)
+            let m = parseInt(mStr, 10);
+            if (isNaN(m) || m === 0) {
+                mStr = "01"; 
             } else if (m > 12) {
-                // Thay số đầu bằng 0 (Vd: 15 -> 05, 24 -> 04)
-                mStr = "0" + String(m).slice(-1); 
+                let lastDigit = m % 10;
+                if (lastDigit === 0) mStr = "10"; 
+                else mStr = "0" + lastDigit;      
             } else {
-                mStr = String(m).padStart(2, '0'); // Thêm số 0 nếu m/yyyy
+                mStr = String(m).padStart(2, '0');
             }
 
-            // XỬ LÝ LỖI NĂM THIẾU SỐ
-            if (yStr.length === 2) { 
-                // Vd: 25 -> 2025
-                let y2 = parseInt(yStr);
-                if (y2 === 99) yStr = "1999";
-                else yStr = "20" + yStr.padStart(2, '0');
+            // 4. CHUẨN HÓA NĂM
+            if (yStr.length === 1) {
+                yStr = "200" + yStr; 
+            } else if (yStr.length === 2) {
+                if (yStr === "99") yStr = "1999";
+                else yStr = "20" + yStr.padStart(2, '0'); 
             } else if (yStr.length === 3) {
-                // Vd: 205 -> 2005 | 019 -> 2019
-                if (yStr.startsWith("0")) yStr = "2" + yStr;
-                else if (yStr.startsWith("2")) yStr = "20" + yStr.slice(1);
-                else if (yStr.startsWith("9")) yStr = "1" + yStr;
-                else yStr = "20" + yStr.slice(-2);
+                yStr = "20" + yStr.slice(-2); 
             }
             
-            // XỬ LÝ LỖI NĂM VƯỢT GIỚI HẠN (Trước 1999 hoặc quá 5 năm)
-            let y = parseInt(yStr);
+            let y = parseInt(yStr, 10);
             if (isNaN(y)) y = currentYear;
 
-            if (y < 1999) {
-                // Vd: gõ nhầm 1019 -> ép về 2019 nếu hợp lý
-                let assumedYear = parseInt("20" + String(y).slice(-2));
-                if (assumedYear >= 1999 && assumedYear <= currentYear + 5) yStr = String(assumedYear);
-                else yStr = "1999";
-            } else if (y > currentYear + 5) {
-                // Vd: gõ nhầm 3025 -> ép về 2025
-                let assumedYear = parseInt("20" + String(y).slice(-2));
-                if (assumedYear >= 1999 && assumedYear <= currentYear + 5) yStr = String(assumedYear);
-                else yStr = String(currentYear);
+            // 5. KIỂM SOÁT NĂM VƯỢT GIỚI HẠN AN TOÀN
+            if (y < 1999 || y > currentYear + 5) {
+                let assumedYear = parseInt("20" + String(y).slice(-2), 10);
+                if (assumedYear >= 1999 && assumedYear <= currentYear + 5) {
+                    yStr = String(assumedYear);
+                } else {
+                    yStr = y < 1999 ? "1999" : String(currentYear);
+                }
+            } else {
+                yStr = String(y);
             }
 
             let suggested = mStr + "/" + yStr;
 
-            // Nếu sửa xong mà trùng khớp (chỉ là m/yyyy -> 0m/yyyy) thì cho qua luôn
-            if (suggested === originalVal || suggested === "0" + originalVal) return suggested;
+            // Nếu người dùng chỉ gõ sai dấu, thiếu số 0, hoặc thừa khoảng trắng -> Cho qua không cần hỏi
+            if (suggested === normalizedVal || suggested === "0" + normalizedVal) {
+                return suggested;
+            }
 
-            // BẬT BẢNG HỎI CONFIRM
+            // BẬT CẢNH BÁO NẾU DỮ LIỆU BỊ SAI LỆCH NHIỀU
             let msg = `Dòng ${rowNum}: Cột [${fieldName}] có dữ liệu sai: "${originalVal}".\n\nHệ thống AI nội bộ phân tích và đề xuất sửa thành:\n👉 ${suggested}\n\n- Nhấn OK để tự động sửa thành số này (hoặc tự gõ số khác).\n- Nhấn Cancel để HỦY TOÀN BỘ tiến trình và ra ngoài tự sửa file.`;
             let userInput = prompt(msg, suggested);
             
@@ -553,7 +561,7 @@
                 throw new Error("USER_CANCELLED");
             }
             
-            // Xử lý nốt nếu user ngoan cố gõ lại m/yyyy vào bảng prompt
+            // Ép người dùng nhập đúng định dạng mm/yyyy khi tự gõ lại
             userInput = String(userInput).trim().replace(/\s+/g, '');
             if (/^\d\/\d{4}$/.test(userInput)) userInput = "0" + userInput;
             
@@ -1075,8 +1083,12 @@
             document.getElementById('logArea').innerHTML = ""; addLog("Đang đọc file bổ sung dữ liệu cũ...");
 
             try {
-                const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer());
-                const ws = wb.worksheets[0]; 
+                // SỬ DỤNG ENGINE XLSX ĐỂ ĐỌC ĐƯỢC CẢ FILE .XLS VÀ .XLSX
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0]; // Lấy tên sheet đầu tiên chuẩn theo SheetJS
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
                 
                 let updates = {}; let batchPathsList = []; let sessionStats = {}; let sourceStructureUpdates = {};
                 let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
@@ -1089,23 +1101,28 @@
                 let rowData = [];
                 let firstNextDate = null, isNextDateConsistent = true, missingNextDate = false;
 
-                ws.eachRow((row, rowNumber) => {
-                    if(rowNumber === 1) return; // Bỏ qua Header
+                // Sheet_to_json trả về mảng 0-indexed (Bắt đầu từ 0)
+                for (let rIdx = 1; rIdx < rows.length; rIdx++) {
+                    let row = rows[rIdx];
+                    // Nếu dòng rỗng hoàn toàn thì bỏ qua
+                    if (!row || row.length === 0 || (!row[1] && !row[2] && !row[4])) continue;
                     
-                    // Cột 9 (I): Chai hủy
-                    let voHuyRaw = String(row.getCell(9).value || "").trim().toLowerCase(); 
+                    let rowNumber = rIdx + 1; // Tính bù STT Header của Excel
+                    
+                    // Cột 9 (I) - Index 8: Chai hủy
+                    let voHuyRaw = String(row[8] || "").trim().toLowerCase(); 
                     let isHuyRow = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
 
-                    // Cột 3 (C): Năm CT
-                    let namCT_orig_raw = String(row.getCell(3).value || "").trim();
+                    // Cột 3 (C) - Index 2: Năm CT
+                    let namCT_orig_raw = String(row[2] || "").trim();
                     let namCT_orig = (!isHuyRow && namCT_orig_raw) ? window.fixDateString(namCT_orig_raw, "Năm CT", rowNumber) : namCT_orig_raw;
 
-                    // Cột 7 (G): KĐ lần trước
-                    let lastCheck_orig_raw = String(row.getCell(7).value || "").trim();
+                    // Cột 7 (G) - Index 6: KĐ lần trước
+                    let lastCheck_orig_raw = String(row[6] || "").trim();
                     let lastCheck_orig = (!isHuyRow && lastCheck_orig_raw) ? window.fixDateString(lastCheck_orig_raw, "Kiểm định lần trước", rowNumber) : lastCheck_orig_raw;
 
-                    // Cột 8 (H): KĐ kỳ tới
-                    let nextDate_orig_raw = String(row.getCell(8).value || "").trim(); 
+                    // Cột 8 (H) - Index 7: KĐ kỳ tới
+                    let nextDate_orig_raw = String(row[7] || "").trim(); 
                     let nextDate_orig = (!isHuyRow && nextDate_orig_raw) ? window.fixDateString(nextDate_orig_raw, "Kiểm định kỳ tới", rowNumber) : nextDate_orig_raw;
 
                     if (!nextDate_orig) missingNextDate = true;
@@ -1116,17 +1133,17 @@
 
                     rowData.push({
                         rowNumber: rowNumber,
-                        nhaCT_orig: String(row.getCell(2).value || "").trim(), // Cột 2 (B): Nhà CT
+                        nhaCT_orig: String(row[1] || "").trim(), // Cột 2 (B) - Index 1: Nhà CT
                         namCT_orig: namCT_orig,
-                        maHieu: String(row.getCell(4).value || "").trim(),     // Cột 4 (D): Mã hiệu
-                        serial: String(row.getCell(5).value || "").trim(),     // Cột 5 (E): Serial
-                        khoiLuong: String(row.getCell(6).value || "").trim(),  // Cột 6 (F): Khối lượng
+                        maHieu: String(row[3] || "").trim(),     // Cột 4 (D) - Index 3: Mã hiệu
+                        serial: String(row[4] || "").trim(),     // Cột 5 (E) - Index 4: Serial
+                        khoiLuong: String(row[5] || "").trim(),  // Cột 6 (F) - Index 5: Khối lượng
                         lastCheck_orig: lastCheck_orig,
                         nextDate_orig: nextDate_orig,
                         isHuyRow: isHuyRow,
-                        lyDoHuy: String(row.getCell(10).value || "").trim()    // Cột 10 (J): Lý do hủy
+                        lyDoHuy: String(row[9] || "").trim()     // Cột 10 (J) - Index 9: Lý do hủy
                     });
-                });
+                }
 
                 if (missingNextDate && isNextDateConsistent && firstNextDate) {
                     if (confirm(`Hệ thống phát hiện [Kiểm định kỳ tới (${firstNextDate})] bị bỏ trống ở một số dòng nhưng đồng nhất ở các dòng có dữ liệu.\nNhấn OK để TỰ ĐỘNG ĐIỀN cho toàn bộ. Nhấn Cancel để tự sửa file.`)) {
@@ -1261,7 +1278,8 @@
                     Object.assign(updates, sourceStructureUpdates);
 
                     const pushKey = push(child(ref(db), 'temp')).key;
-                    updates[`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`] = { fileName: file.name, sheetName: ws.name, serialString: serialStrings }; 
+                    // FIX: Sử dụng biến sheetName được khai báo từ XLSX.read ở phía trên thay vì ws.name
+                    updates[`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`] = { fileName: file.name, sheetName: sheetName, serialString: serialStrings }; 
                     batchPathsList.push(`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`); 
 
                     updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
@@ -1310,7 +1328,7 @@
 
             statusDiv.innerHTML = `<span style='color: blue;'>Đang trích xuất và xử lý dữ liệu ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...</span>`;
             document.getElementById('logArea').innerHTML = ""; 
-            addLog(`Bắt đầu quy trình ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...`);
+            addLog(`Bắt đầu nhập dữ liệu ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...`);
 
             let templateDataBuffer;
             const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
