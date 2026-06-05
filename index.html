@@ -291,6 +291,13 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+		
+		// Bản đồ liên kết Trung tâm với File mẫu tương ứng
+        const templateMap = {
+            "tt1": { kiemDinh: "sample1.xlsx", huy: "samplehuy1.xlsx" },
+            "tt2": { kiemDinh: "sample2.xlsx", huy: "samplehuy2.xlsx" },
+            "tt3": { kiemDinh: "sample3.xlsx", huy: "samplehuy3.xlsx" }
+        };
 
         // --- GLOBAL HELPERS ---
 window.dirtyLots = []; // Mảng theo dõi các lô vừa thêm/sửa
