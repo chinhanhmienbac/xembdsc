@@ -1,4 +1,327 @@
-// --- CẤU TRÚC ĐỊNH DẠNG EXCEL DÙNG CHUNG ---
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Theo Dõi & Quản Trị Hệ Thống</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
+    <style>
+        body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5;
+}
+        .layout-container { display: grid; grid-template-columns: 1fr 2.5fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
+        .col-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        @media (max-width: 992px) { .layout-container { grid-template-columns: 1fr; } }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+        h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff; }
+        .form-group { margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 5px;}
+        .checkbox-group input { width: 20px; height: 20px; cursor: pointer; }
+
+        button.primary-btn { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
+        button.primary-btn:hover { background-color: #0056b3; }
+        button.secondary-btn { width: 100%; background-color: #6c757d; color: white; border: none; padding: 10px; cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.secondary-btn:hover { background-color: #5a6268; }
+        button.info-btn { width: 100%; background-color: #17a2b8; color: white; border: none; padding: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.info-btn:hover { background-color: #138496; }
+        button.warning-btn { width: 100%; background-color: #ffc107; color: #212529; border: none; padding: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.warning-btn:hover { background-color: #e0a800; }
+
+        #logArea { font-size: 13px; color: #444; line-height: 1.6; max-height: 500px; overflow-y: auto; }
+        
+        /* Styles cho Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 95%; max-width: 1500px; max-height: 90vh; display: flex; flex-direction: column; overflow-y: auto;}
+        .modal-content-sm { max-width: 600px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; border: none; padding: 0; }
+        .btn-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .history-table-container { overflow-y: auto; flex-grow: 1; margin-bottom: 15px;}
+        .history-table { width: 100%; border-collapse: collapse; font-size: 14px;}
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .history-table th { background-color: #f4f4f4; position: sticky; top: 0; }
+        
+        .btn-action { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 2px;}
+        .btn-del { background-color: #dc3545; } .btn-del:hover { background-color: #c82333; }
+        .btn-edit { background-color: #ffc107; color: #212529;} .btn-edit:hover { background-color: #e0a800; }
+        
+        .action-buttons-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .btn-tool { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; flex-grow: 1;}
+        .btn-tool:hover { background-color: #218838; }
+        .btn-tool-blue { background-color: #007bff; } .btn-tool-blue:hover { background-color: #0056b3; }
+        .btn-recreate-row { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;}
+        .btn-recreate-row:hover { background-color: #218838; }
+		
+		.sort-icon { cursor: pointer; color: #999; margin-left: 5px; font-size: 12px; }
+		.sort-icon:hover { color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="col-card col-left">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 150px; height: auto;">
+            </div>
+
+            <h3>Hệ thống</h3>
+            <div class="form-group">
+                <label>Chọn Trung tâm kiểm định:</label>
+                <select id="trungTamSelect" onchange="window.updateHistoryIfOpen()"></select>
+            </div>
+            
+            <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
+            <button class="info-btn" onclick="window.openSourceChoiceModal()">Thông tin nguồn</button>
+            <button class="warning-btn" onclick="window.recalculateStats()">Tính toán lại Thống kê</button>
+        </div>
+
+        <div class="col-card col-main">
+            <h2 style="color: #008037; font-weight: bold; text-transform: uppercase; text-align: center; flex-grow: 1;">
+			HỆ THỐNG THEO DÕI DỮ LIỆU KIỂM ĐỊNH</h2>
+            <div style="text-align: center; margin-top: 80px; color: #888;">
+                <i style="font-size: 16px;">Khu vực này hiện đang để trống. Vui lòng sử dụng các nút quản trị ở menu bên trái.</i>
+            </div>
+        </div>
+
+        <div class="col-card col-right">
+            <h3>Nhật ký hoạt động</h3>
+            <div id="logArea"><i>Sẵn sàng...</i></div>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center;">
+                    <h3 id="modalTitle" style="margin-bottom: 0;">Lịch sử nhập liệu</h3>
+                    <button class="btn-action" style="background-color: #28a745; margin-left: 20px; padding: 8px 15px;" onclick="window.openExportHistoryModal()">Xuất Excel</button>
+                </div>
+                <button class="btn-close" onclick="window.closeModal('historyModal')">&times;</button>
+            </div>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Thời điểm nhập liệu <span class="sort-icon" onclick="window.sortHistory('timeStamp')">⇕</span></th>
+                            <th style="width: 15%;">Thời điểm kiểm định <span class="sort-icon" onclick="window.sortHistory('thoiDiemKD')">⇕</span></th>
+                            <th style="width: 10%;">Loại chai <span class="sort-icon" onclick="window.sortHistory('loaiChai')">⇕</span></th>
+                            <th style="width: 10%;">Số lượng <span class="sort-icon" onclick="window.sortHistory('total')">⇕</span></th>
+                            <th style="width: 20%;">Chi nhánh sử dụng </th>
+                            <th style="width: 10%;">Trạng thái <span class="sort-icon" onclick="window.sortHistory('isHuy')">⇕</span></th>
+                            <th style="width: 21%;">Thao tác</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+                <div id="historyLoading" style="text-align:center; padding:10px; display:none; color: #007bff;">Đang tải dữ liệu...</div>
+            </div>
+        </div>
+    </div>
+	<div id="exportHistoryModal" class="modal-overlay" style="z-index: 1005;">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Tùy chọn Xuất báo cáo Excel</h3>
+                <button class="btn-close" onclick="window.closeModal('exportHistoryModal')">&times;</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <b>1. Chọn Thời gian:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="radio" name="expTime" value="all" checked onchange="document.getElementById('expYearSelect').disabled = true;"> Toàn bộ thời gian</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expTime" value="year" onchange="document.getElementById('expYearSelect').disabled = false;"> Theo năm TĐ KĐ:</label>
+                        <select id="expYearSelect" disabled style="width: 80px; margin-left: 5px; padding: 2px;"></select>
+                    </div>
+                    
+                    <b style="display: block; margin-top: 15px;">2. Chọn Trạng thái:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="all" checked> Tất cả</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="kd"> Chỉ Kiểm định</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="huy"> Chỉ Hủy</label>
+                    </div>
+                </div>
+                <div>
+                    <b>3. Chọn Loại chai:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="V12" checked> V12</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="V45" checked> V45</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="Com" checked> Com</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="Hỗn hợp" checked> Hỗn hợp (Dữ liệu cũ)</label>
+                    </div>
+                </div>
+            </div>
+            <button class="primary-btn" style="background-color: #28a745; margin-top: 20px;" onclick="window.executeExportHistory()">TẢI XUỐNG BÁO CÁO</button>
+        </div>
+    </div>
+
+    <div id="sourceChoiceModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Lựa chọn Thông tin nguồn</h3>
+                <button class="btn-close" onclick="window.closeModal('sourceChoiceModal')">&times;</button>
+            </div>
+            <button class="primary-btn" style="margin-bottom:15px;" onclick="window.openLotsModal()">1. Xem và quản lý Lô chai</button>
+            <button class="info-btn" onclick="window.openMansModal()">2. Xem và sửa danh sách Nhà CT</button>
+        </div>
+    </div>
+
+    <div id="lotsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Danh sách Lô chai (Nguồn)</h3>
+                <button class="btn-close" onclick="window.closeModal('lotsModal')">&times;</button>
+            </div>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>TT</th>
+                            <th>Tên Lô</th>
+                            <th>Năm CT</th>
+                            <th>Nhà CT</th>
+                            <th>Loại chai</th>
+                            <th>Số lượng</th>
+                            <th>Mã hiệu</th>
+                            <th>Serial Min</th>
+                            <th>Serial Max</th>
+                            <th>Xuất xưởng</th>
+                            <th>Chai thuê</th>
+                            <th style="width: 15%;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lotsTableBody"></tbody>
+                </table>
+                <div id="lotsLoading" style="text-align:center; padding:10px; display:none;">Đang tải...</div>
+            </div>
+            <div class="action-buttons-row">
+                <button class="btn-tool" onclick="window.openLotForm()">+ Thêm Lô mới</button>
+                <button class="btn-tool btn-tool-blue" onclick="window.downloadLotTemplate()">Tải Mẫu Excel</button>
+                <button class="btn-tool btn-tool-blue" onclick="document.getElementById('importLotFile').click()">Nhập từ Excel</button>
+                <input type="file" id="importLotFile" style="display:none;" accept=".xlsx" onchange="window.importLotsFromExcel(event)">
+                <button class="btn-tool btn-tool-blue" onclick="window.exportLotsToExcel()">Xuất Excel</button>
+				<button class="btn-tool" style="margin-left: auto; background-color: #6f42c1; color: white;" onclick="window.runGlobalLotUpdate()">Update Lot</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lotFormModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 id="lotFormTitle">Thêm Lô chai</h3>
+                <button class="btn-close" onclick="window.closeModal('lotFormModal')">&times;</button>
+            </div>
+            <input type="hidden" id="lotOldPath">
+            <input type="hidden" id="lotIdHidden">
+            <input type="hidden" id="lotOldSoLuong">
+            <input type="hidden" id="lotOldNamCT_year">
+            <input type="hidden" id="lotOldLoai">
+			<input type="hidden" id="lotOldChaiThue">
+            
+            <div class="form-group"><label>Tên Lô chai:</label><input type="text" id="lf_tenLo" placeholder="VD: Lô 1"></div>
+            <div class="form-group"><label>Loại chai:</label><select id="lf_loai"><option value="V12">V12</option><option value="V45">V45</option><option value="Com">Com</option></select></div>
+            <div class="form-group"><label>Năm CT (mm/yyyy):</label><input type="text" id="lf_namCT" placeholder="01/2020"></div>
+            <div class="form-group"><label>Nhà CT:</label><select id="lf_nhaCT"></select></div>
+            <div class="form-group"><label>Số lượng:</label><input type="number" id="lf_soLuong" value="0"></div>
+            <div class="form-group"><label>Mã hiệu:</label><input type="text" id="lf_maHieu"></div>
+            <div class="form-group"><label>Serial Min:</label><input type="text" id="lf_sMin"></div>
+            <div class="form-group"><label>Serial Max:</label><input type="text" id="lf_sMax"></div>
+            <div class="form-group"><label>Xuất xưởng (mm/yyyy):</label><input type="text" id="lf_xuatXuong" placeholder="01/2020"></div>
+            <div class="form-group checkbox-group"><input type="checkbox" id="lf_chaiThue"><label for="lf_chaiThue"> Chai thuê</label></div>
+            <button class="primary-btn" onclick="window.saveLot()">Lưu Lô chai</button>
+        </div>
+    </div>
+
+    <div id="mansModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>Danh sách Nhà chế tạo (Nhà CT)</h3>
+                <button class="btn-close" onclick="window.closeModal('mansModal')">&times;</button>
+            </div>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr><th style="width: 5%;">TT</th><th style="width: 20%;">Mã Nhà CT</th><th style="width: 55%;">Tên đầy đủ</th><th style="width: 20%;">Thao tác</th></tr>
+                    </thead>
+                    <tbody id="mansTableBody"></tbody>
+                </table>
+                <div id="mansLoading" style="text-align:center; padding:10px; display:none;">Đang tải...</div>
+            </div>
+            <div class="action-buttons-row">
+                <button class="btn-tool" onclick="window.openManForm()">+ Thêm Nhà CT</button>
+                <button class="btn-tool btn-tool-blue" onclick="window.downloadManTemplate()">Tải Mẫu</button>
+                <button class="btn-tool btn-tool-blue" onclick="document.getElementById('importManFile').click()">Nhập Excel</button>
+                <input type="file" id="importManFile" style="display:none;" accept=".xlsx" onchange="window.importMansFromExcel(event)">
+                <button class="btn-tool btn-tool-blue" onclick="window.exportMansToExcel()">Xuất Excel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manFormModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3 id="manFormTitle">Thêm Nhà CT</h3>
+                <button class="btn-close" onclick="window.closeModal('manFormModal')">&times;</button>
+            </div>
+            <input type="hidden" id="manOldId">
+            <div class="form-group"><label>Mã Nhà CT (Viết liền, không dấu /):</label><input type="text" id="mf_ma"></div>
+            <div class="form-group"><label>Tên đầy đủ:</label><input type="text" id="mf_ten"></div>
+            <button class="primary-btn" onclick="window.saveMan()">Lưu Nhà CT</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
+            authDomain: "dulieubanhang-d6156.firebaseapp.com",
+            databaseURL: "https://dulieubanhang-d6156-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dulieubanhang-d6156",
+            storageBucket: "dulieubanhang-d6156.firebasestorage.app",
+            messagingSenderId: "588583798336",
+            appId: "1:588583798336:web:82a240fb3da2f96893c1a5",
+            measurementId: "G-7D51WBK63L"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+		
+		// Bản đồ liên kết Trung tâm với File mẫu tương ứng
+        const templateMap = {
+            "tt1": { kiemDinh: "sample1.xlsx", huy: "samplehuy1.xlsx" },
+            "tt2": { kiemDinh: "sample2.xlsx", huy: "samplehuy2.xlsx" },
+            "tt3": { kiemDinh: "sample3.xlsx", huy: "samplehuy3.xlsx" }
+        };
+
+        // --- GLOBAL HELPERS ---
+window.dirtyLots = []; // Mảng theo dõi các lô vừa thêm/sửa
+window.closeModal = async function(id) { 
+    // Chạy đồng bộ nếu người dùng đóng danh sách Lô và có lô mới thay đổi
+    if (id === 'lotsModal' && window.dirtyLots.length > 0) {
+        await window.runPartialLotUpdate();
+    }
+    document.getElementById(id).style.display = 'none'; 
+}
+        
+		function addLog(msg) { const logArea = document.getElementById('logArea'); logArea.innerHTML += `<div>- ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
+        function parseDateMMYYYY(str) { const parts = str.split('/'); return new Date(parts[1], parts[0] - 1, 1); }
+        function formatDateMMYYYY(date) { const m = String(date.getMonth() + 1).padStart(2, '0'); const y = date.getFullYear(); return `${m}/${y}`; }
+        function diffMonths(d1, d2) { let months = (d2.getFullYear() - d1.getFullYear()) * 12; months -= d1.getMonth(); months += d2.getMonth(); return months; }
+        function addMonths(date, months) { const d = new Date(date); d.setMonth(d.getMonth() + months); return d; }
+        function toRoman(num) { const roman = {M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1}; let str = ''; for (let i of Object.keys(roman)) { let q = Math.floor(num / roman[i]); num -= q * roman[i]; str += i.repeat(q); } return str; }
+        function formatEpochToLocal(epochMs) {
+            const d = new Date(parseInt(epochMs));
+            const day = String(d.getDate()).padStart(2, '0'); const mon = String(d.getMonth() + 1).padStart(2, '0'); const yr = d.getFullYear();
+            const hr = String(d.getHours()).padStart(2, '0'); const min = String(d.getMinutes()).padStart(2, '0'); const sec = String(d.getSeconds()).padStart(2, '0');
+            return `${hr}:${min}:${sec} - ${day}/${mon}/${yr}`;
+        }
+		// --- CẤU TRÚC ĐỊNH DẠNG EXCEL DÙNG CHUNG ---
         const borderFull = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
         const borderNoLeft = { top: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
         const borderNoRight = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } };
@@ -39,3 +362,917 @@
                 }
             }
         };
+		
+        const danhSachTrungTam = [
+            { id: "tt1", ten: "Trung tâm kiểm định 1" },
+            { id: "tt2", ten: "Trung tâm kiểm định 2" },
+            { id: "tt3", ten: "Trung tâm kiểm định 3" }
+        ];
+		const danhSachChiNhanh = [
+            { id: "cnMB", ten: "Chi nhánh Miền Bắc" },
+            { id: "cnTB", ten: "Chi nhánh Tây Bắc" },
+            { id: "cnMT", ten: "Chi nhánh Miền Trung" },
+            { id: "cnMN", ten: "Chi nhánh Miền Nam" }
+        ];
+        window.onload = function() {
+            const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
+            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
+        };
+        function getTrungTamDuocChon() { return document.getElementById('trungTamSelect').value; }
+
+        // ==========================================
+        // QUẢN LÝ LỊCH SỬ NHẬP LIỆU & THỐNG KÊ
+        // ==========================================
+                window.currentHistoryData = [];
+        window.currentSortCol = '';
+        window.isSortAsc = true;
+        window.pendingDelete = null; // Lưu tạm thông tin phiên cần xóa
+
+        window.openHistoryModal = async function() { document.getElementById('historyModal').style.display = 'flex'; await loadHistoryTable(); }
+        window.updateHistoryIfOpen = function() { if(document.getElementById('historyModal').style.display === 'flex') loadHistoryTable(); }
+
+        async function loadHistoryTable() {
+            const trungTamId = getTrungTamDuocChon();
+            const tbody = document.getElementById('historyTableBody'); const loading = document.getElementById('historyLoading');
+            tbody.innerHTML = ''; loading.style.display = 'block';
+            
+            const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap`));
+            loading.style.display = 'none';
+
+            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có lịch sử nhập liệu nào.</td></tr>'; window.currentHistoryData = []; return; }
+            const data = snap.val();
+            // Lưu dữ liệu vào biến toàn cục để phục vụ sắp xếp và xuất file
+            window.currentHistoryData = Object.keys(data).map(key => data[key]).sort((a, b) => b.timeStamp - a.timeStamp);
+            window.renderHistoryTable();
+        }
+
+        // Hàm render giao diện bảng từ biến toàn cục
+        window.renderHistoryTable = function() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            const trungTamId = getTrungTamDuocChon();
+
+            window.currentHistoryData.forEach(item => {
+                const tr = document.createElement('tr');
+                let statusHtml = item.isHuy ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
+                let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
+                
+                // Hiển thị tên Chi nhánh (match từ ID)
+                let cnName = "Không xác định";
+                if (item.chiNhanhSD) {
+                    let cnObj = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD);
+                    if(cnObj) cnName = cnObj.ten;
+                }
+
+                tr.innerHTML = `
+                    <td style="font-size:12px;">${formatEpochToLocal(item.timeStamp)}</td>
+                    <td><span style="color:#007bff; font-weight:bold">${item.thoiDiemKD || "N/A"}</span></td>
+                    <td><b>${item.loaiChai}</b></td>
+                    <td>${item.total}</td>
+                    <td style="font-size:13px;">${cnName}</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                     ${recreateBtnHtml}
+                        
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Hàm Sắp xếp (Sort)
+        window.sortHistory = function(col) {
+            if (window.currentHistoryData.length === 0) return;
+            if (window.currentSortCol === col) { window.isSortAsc = !window.isSortAsc; } 
+            else { window.currentSortCol = col; window.isSortAsc = true; }
+
+            window.currentHistoryData.sort((a, b) => {
+                let valA = a[col] || ""; let valB = b[col] || "";
+                if (col === 'timeStamp' || col === 'total') {
+                    valA = Number(valA); valB = Number(valB);
+                } else if (col === 'thoiDiemKD') {
+                    valA = valA !== "Nhiều thời điểm" ? parseDateMMYYYY(valA).getTime() : 0;
+                    valB = valB !== "Nhiều thời điểm" ? parseDateMMYYYY(valB).getTime() : 0;
+                }
+                if (valA < valB) return window.isSortAsc ? -1 : 1;
+                if (valA > valB) return window.isSortAsc ? 1 : -1;
+                return 0;
+            });
+            window.renderHistoryTable();
+        }
+
+        // ==========================================
+        // TÍNH NĂNG XUẤT EXCEL BÁO CÁO TỔNG HỢP
+        // ==========================================
+        window.openExportHistoryModal = function() {
+            if(window.currentHistoryData.length === 0) { alert("Không có dữ liệu để xuất!"); return; }
+            
+            // Lọc các năm có trong CSDL để nhét vào Combobox
+            let years = new Set();
+            window.currentHistoryData.forEach(item => {
+                if (item.thoiDiemKD && item.thoiDiemKD !== "Nhiều thời điểm") {
+                    years.add(item.thoiDiemKD.split('/')[1]);
+                }
+            });
+            const sel = document.getElementById('expYearSelect');
+            sel.innerHTML = '';
+            Array.from(years).sort().reverse().forEach(y => { sel.innerHTML += `<option value="${y}">${y}</option>`; });
+            
+            document.getElementById('exportHistoryModal').style.display = 'flex';
+        }
+
+        window.executeExportHistory = async function() {
+            // Đọc cấu hình
+            const timeMode = document.querySelector('input[name="expTime"]:checked').value;
+            const targetYear = document.getElementById('expYearSelect').value;
+            const statusMode = document.querySelector('input[name="expStatus"]:checked').value;
+            const selectedTypes = Array.from(document.querySelectorAll('.expType:checked')).map(cb => cb.value);
+
+            if (selectedTypes.length === 0) { alert("Phải chọn ít nhất 1 loại chai!"); return; }
+
+            // Lọc dữ liệu
+            let filteredData = window.currentHistoryData.filter(item => {
+                // Lọc trạng thái
+                if (statusMode === 'kd' && item.isHuy) return false;
+                if (statusMode === 'huy' && !item.isHuy) return false;
+                // Lọc Loại chai
+                if (!selectedTypes.includes(item.loaiChai)) return false;
+                // Lọc Thời gian
+                if (timeMode === 'year') {
+                    if (!item.thoiDiemKD || item.thoiDiemKD === "Nhiều thời điểm" || item.thoiDiemKD.split('/')[1] !== targetYear) return false;
+                }
+                return true;
+            });
+
+            if (filteredData.length === 0) { alert("Không có dữ liệu nào khớp với tiêu chí lọc!"); return; }
+
+            // Dùng ExcelJS vẽ file
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('Lich_Su_Nhap');
+            
+            // Tiêu đề (Đổi từ F1 sang G1 vì có 7 cột)
+            ws.mergeCells('A1:G1');
+            ws.getCell('A1').value = 'BÁO CÁO LỊCH SỬ NHẬP LIỆU';
+            ws.getCell('A1').font = { name: 'Times New Roman', size: 16, bold: true };
+            ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+            
+            // Header (Bổ sung cột Chi nhánh SD)
+            ws.addRow(['STT', 'Thời điểm lập (Hệ thống)', 'Kỳ kiểm định', 'Loại chai', 'Số lượng', 'Chi nhánh SD', 'Trạng thái (KĐ/Hủy)']);
+            const headerRow = ws.getRow(2);
+            headerRow.font = { name: 'Times New Roman', size: 12, bold: true };
+            headerRow.alignment = { horizontal: 'center' };
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            });
+
+            // Định dạng độ rộng cho 7 cột
+            ws.columns = [
+                { width: 8 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 12 }, { width: 25 }, { width: 20 }
+            ];
+
+            // Đổ dữ liệu
+            let totalChai = 0;
+            filteredData.forEach((item, index) => {
+                totalChai += (item.total || 0);
+                
+                // Lấy tên chi nhánh từ ID
+                let cnName = "Không xác định";
+                if (item.chiNhanhSD) {
+                    let cnObj = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD);
+                    if(cnObj) cnName = cnObj.ten;
+                }
+
+                const row = ws.addRow([
+                    index + 1,
+                    formatEpochToLocal(item.timeStamp),
+                    item.thoiDiemKD || "N/A",
+                    item.loaiChai,
+                    item.total,
+                    cnName, // Thêm dữ liệu Chi nhánh vào cột 6
+                    item.isHuy ? "Hủy" : "Kiểm định"
+                ]);
+                row.font = { name: 'Times New Roman', size: 11 };
+                row.eachCell(cell => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
+                row.getCell(1).alignment = { horizontal: 'center' };
+                row.getCell(3).alignment = { horizontal: 'center' };
+                row.getCell(4).alignment = { horizontal: 'center' };
+                row.getCell(5).alignment = { horizontal: 'center' };
+                row.getCell(6).alignment = { horizontal: 'left' };
+                row.getCell(7).alignment = { horizontal: 'center' };
+            });
+
+            // Dòng tổng cộng (Thêm 1 ô trống vào cuối để khớp 7 cột)
+            const sumRow = ws.addRow(['', '', '', 'TỔNG CỘNG:', totalChai, '', '']);
+            sumRow.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFF0000' } };
+            sumRow.eachCell(cell => { cell.border = { top: {style:'double'}, bottom: {style:'double'} }; });
+
+            // Lưu file
+            const buffer = await wb.xlsx.writeBuffer(); 
+            saveAs(new Blob([buffer]), `BaoCao_LichSu_${getTrungTamDuocChon()}.xlsx`);
+            window.closeModal('exportHistoryModal');
+        }
+
+//=================================================================
+//=== HÀM THỐNG KÊ
+        
+        window.recalculateStats = async function() {
+            if(!confirm("Hệ thống sẽ quét toàn bộ CSDL để tính toán lại thống kê. Quá trình này có thể mất vài phút. Bạn có muốn tiếp tục?")) return;
+            addLog("Đang tính toán lại thống kê...");
+            
+            let newStats = {};
+            
+            // Bước 1: Quét Lô Chai (Tính node chaiDuocCT)
+            const snapNguon = await get(child(ref(db), 'Tonghop/Thongtinnguon'));
+            if(snapNguon.exists()){
+                const dNguon = snapNguon.val();
+                for(let lc in dNguon){
+                    for(let ns in dNguon[lc]){
+                        const yCT = ns.split('-')[1];
+                        if(!yCT) continue;
+                        for(let nx in dNguon[lc][ns]){
+                            const lots = dNguon[lc][ns][nx].DanhSachLot || {};
+                            for(let lid in lots){
+                                const lot = lots[lid];
+                                const sl = lot.soLuong || 0;
+                                const isThue = lot.chaiThue === true;
+
+                                if(!newStats[lc]) newStats[lc] = {};
+                                if(!newStats[lc][yCT]) newStats[lc][yCT] = { 
+                                    chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, 
+                                    chaiKDtrongNam: {}, 
+                                    soKDtheoNamCT: {} 
+                                };
+                                
+                                if (isThue) {
+                                    newStats[lc][yCT].chaiDuocCT.chaiThueDuocCT += sl;
+                                } else {
+                                    newStats[lc][yCT].chaiDuocCT.chaiKothueDuocCT += sl;
+                                }
+                                newStats[lc][yCT].chaiDuocCT.tongChaiDuocCT += sl;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bước 2: Quét toàn bộ DanhSachChai
+            const centers = ['tt1', 'tt2', 'tt3'];
+            for(let tt of centers){
+                const snapTT = await get(child(ref(db), tt));
+                if(snapTT.exists()){
+                    const dTT = snapTT.val();
+                    for(let lc of ['V12', 'V45', 'Com']){
+                        if(!dTT[lc]) continue;
+                        for(let ns in dTT[lc]){
+                            if(ns === 'LichSuFile') continue;
+                            const yCT = ns.split('-')[1];
+                            if(!yCT) continue;
+                            for(let nx in dTT[lc][ns]){
+                                const ds = dTT[lc][ns][nx].DanhSachChai;
+                                if(ds){
+                                    for(let cid in ds){
+                                        const chai = ds[cid];
+                                        const rY = (chai.recentCheck || "").split('/')[1];
+                                        if(rY){
+                                            if(!newStats[lc]) newStats[lc] = {};
+                                            if(!newStats[lc][rY]) newStats[lc][rY] = { 
+                                                chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, 
+                                                chaiKDtrongNam: {}, 
+                                                soKDtheoNamCT: {} 
+                                            };
+                                            
+                                            if(!newStats[lc][rY].chaiKDtrongNam[tt]) newStats[lc][rY].chaiKDtrongNam[tt] = { tongChaiDuocKD: 0 };
+                                            if(!newStats[lc][rY].chaiKDtrongNam.Toan_dien) newStats[lc][rY].chaiKDtrongNam.Toan_dien = { tongChaiDuocKD: 0 };
+                                            
+                                            newStats[lc][rY].chaiKDtrongNam[tt].tongChaiDuocKD += 1;
+                                            newStats[lc][rY].chaiKDtrongNam.Toan_dien.tongChaiDuocKD += 1;
+                                            
+                                            if(!newStats[lc][rY].soKDtheoNamCT[tt]) newStats[lc][rY].soKDtheoNamCT[tt] = {};
+                                            if(!newStats[lc][rY].soKDtheoNamCT.Toan_dien) newStats[lc][rY].soKDtheoNamCT.Toan_dien = {};
+                                            
+                                            if(!newStats[lc][rY].soKDtheoNamCT[tt][yCT]) newStats[lc][rY].soKDtheoNamCT[tt][yCT] = { soChaiKiemdinhThuocNamCT: 0 };
+                                            newStats[lc][rY].soKDtheoNamCT[tt][yCT].soChaiKiemdinhThuocNamCT += 1;
+                                            
+                                            if(!newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT]) newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT] = { soChaiKiemdinhThuocNamCT: 0 };
+                                            newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT].soChaiKiemdinhThuocNamCT += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            await update(ref(db), { 'Tonghop/Thongke': newStats });
+            addLog("Hoàn tất tính toán lại Thống kê!");
+            alert("Tính toán lại thống kê hoàn tất!");
+        }
+
+        // ==========================================
+        // QUẢN LÝ NHÀ CT
+        // ==========================================
+        window.openSourceChoiceModal = function() { document.getElementById('sourceChoiceModal').style.display = 'flex'; }
+        window.openMansModal = async function() { window.closeModal('sourceChoiceModal'); document.getElementById('mansModal').style.display = 'flex'; await loadMansTable(); }
+        async function loadMansTable() {
+            const tbody = document.getElementById('mansTableBody'); const loading = document.getElementById('mansLoading');
+            tbody.innerHTML = ''; loading.style.display = 'block';
+            const snap = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+            loading.style.display = 'none';
+            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="4">Chưa có Nhà CT nào.</td></tr>'; return; }
+            
+            const data = snap.val(); let tt = 1;
+            for(let ma in data) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${tt++}</td> <td>${ma}</td> <td>${data[ma].tenDayDu}</td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick="window.editMan('${ma}', '${data[ma].tenDayDu}')">Sửa</button>
+                        <button class="btn-action btn-del" onclick="window.deleteMan('${ma}')">Xóa</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            }
+        }
+        window.openManForm = function() { document.getElementById('manFormTitle').innerText="Thêm Nhà CT"; document.getElementById('manOldId').value=""; document.getElementById('mf_ma').value=""; document.getElementById('mf_ten').value=""; document.getElementById('manFormModal').style.display='flex'; }
+        window.editMan = function(ma, ten) { document.getElementById('manFormTitle').innerText="Sửa Nhà CT"; document.getElementById('manOldId').value=ma; document.getElementById('mf_ma').value=ma; document.getElementById('mf_ten').value=ten; document.getElementById('manFormModal').style.display='flex'; }
+        window.deleteMan = async function(ma) { if(confirm(`Xóa Nhà CT: ${ma}?`)) { await update(ref(db), { [`Tonghop/DanhsachnhaCT/${ma}`]: null }); loadMansTable(); } }
+        window.saveMan = async function() {
+            const oldMa = document.getElementById('manOldId').value;
+            const newMa = document.getElementById('mf_ma').value.trim().replace(/\//g, '-');
+            const ten = document.getElementById('mf_ten').value.trim();
+            if(!newMa) return alert("Mã không được để trống!");
+            let updates = {};
+            if(oldMa && oldMa !== newMa) updates[`Tonghop/DanhsachnhaCT/${oldMa}`] = null;
+            updates[`Tonghop/DanhsachnhaCT/${newMa}`] = { tenDayDu: ten };
+            await update(ref(db), updates); window.closeModal('manFormModal'); loadMansTable();
+        }
+
+        async function populateNhaCTDropdown() {
+            const sel = document.getElementById('lf_nhaCT'); sel.innerHTML = '';
+            const snap = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+            if(snap.exists()) {
+                const data = snap.val();
+                for(let ma in data) sel.innerHTML += `<option value="${ma}">${ma} - ${data[ma].tenDayDu}</option>`;
+            } else { sel.innerHTML = '<option value="">-- Trống --</option>'; }
+        }
+
+        window.downloadManTemplate = async function() {
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_NhaCT');
+            ws.addRow(['Mã Nhà CT', 'Tên đầy đủ']);
+            ws.getRow(1).font = { bold: true }; ws.columns = [{width: 20}, {width: 40}];
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_Nhap_NhaCT.xlsx");
+        }
+        window.exportMansToExcel = async function() {
+            const snap = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+            if (!snap.exists()) return alert("Chưa có dữ liệu để xuất.");
+            const data = snap.val();
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('DanhSachNhaCT');
+            ws.addRow(['TT', 'Mã Nhà CT', 'Tên đầy đủ']); ws.getRow(1).font = { bold: true };
+            let count = 1; for(let ma in data) { ws.addRow([count++, ma, data[ma].tenDayDu]); }
+            ws.columns = [{width: 10}, {width: 20}, {width: 40}];
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "DanhSach_NhaCT.xlsx");
+        }
+        window.importMansFromExcel = async function(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer());
+            const ws = wb.worksheets[0]; let updates = {};
+            ws.eachRow((row, rowNumber) => {
+                if(rowNumber === 1) return;
+                const ma = String(row.getCell(1).value || "").trim().replace(/\//g, '-');
+                const ten = String(row.getCell(2).value || "").trim();
+                if(ma) updates[`Tonghop/DanhsachnhaCT/${ma}`] = { tenDayDu: ten };
+            });
+            if(Object.keys(updates).length > 0) { await update(ref(db), updates); alert("Nhập dữ liệu thành công!"); loadMansTable(); }
+            e.target.value = "";
+        }
+
+        // ==========================================
+        // QUẢN LÝ LÔ CHAI
+        // ==========================================
+        window.openLotsModal = async function() { window.closeModal('sourceChoiceModal'); document.getElementById('lotsModal').style.display = 'flex'; await loadLotsTable(); }
+        async function loadLotsTable() {
+            const tbody = document.getElementById('lotsTableBody'); const loading = document.getElementById('lotsLoading');
+            tbody.innerHTML = ''; loading.style.display = 'block';
+            const snap = await get(child(ref(db), `Tonghop/Thongtinnguon`));
+            loading.style.display = 'none';
+            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="12">Chưa có dữ liệu Lô chai.</td></tr>'; return; }
+            
+            const data = snap.val(); let lotArray = [];
+            for(let lc in data) {
+                for(let ns in data[lc]) {
+                    for(let nx in data[lc][ns]) {
+                        if(data[lc][ns][nx].DanhSachLot) {
+                            const lots = data[lc][ns][nx].DanhSachLot;
+                            for(let lid in lots) { lotArray.push({ lc, ns, nx, lid, ...lots[lid] }); }
+                        }
+                    }
+                }
+            }
+
+            lotArray.sort((a, b) => {
+                let pA = a.ns.split('-'); let dA = new Date(pA[1], pA[0]-1);
+                let pB = b.ns.split('-'); let dB = new Date(pB[1], pB[0]-1);
+                return dA - dB;
+            });
+
+            let tt = 1;
+            lotArray.forEach(lot => {
+                const tr = document.createElement('tr');
+                const viewNamCT = lot.ns.replace('-', '/');
+                const viewXuatXuong = lot.xuatXuong ? lot.xuatXuong.replace('-', '/') : '';
+                const isThue = lot.chaiThue ? '☑' : '';
+                const pathObj = JSON.stringify({ lc: lot.lc, ns: lot.ns, nx: lot.nx, lid: lot.lid });
+                
+                tr.innerHTML = `<td>${tt++}</td> <td style="color:#007bff;font-weight:bold;">${lot.tenLo||''}</td> <td>${viewNamCT}</td> <td>${lot.nx}</td> <td>${lot.lc}</td>
+                    <td>${lot.soLuong||0}</td> <td>${lot.maHieu||''}</td> <td>${lot.serialMin||''}</td> <td>${lot.serialMax||''}</td> <td>${viewXuatXuong}</td>
+                    <td><span style="color:green;font-weight:bold;">${isThue}</span></td>
+                    <td>
+                        <button class="btn-action btn-edit" onclick='window.editLot(${pathObj}, ${JSON.stringify(lot)})'>Sửa</button>
+                        <button class="btn-action btn-del" onclick="window.deleteLot('${lot.lc}','${lot.ns}','${lot.nx}','${lot.lid}', ${lot.soLuong||0}, ${lot.chaiThue?true:false})">Xóa</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.openLotForm = async function() { 
+            document.getElementById('lotFormTitle').innerText="Thêm Lô chai mới"; document.getElementById('lotOldPath').value=""; document.getElementById('lotIdHidden').value="";
+            document.getElementById('lotOldSoLuong').value="0"; document.getElementById('lotOldNamCT_year').value=""; document.getElementById('lotOldLoai').value="";
+            document.getElementById('lf_tenLo').value=""; document.getElementById('lf_namCT').value=""; document.getElementById('lf_soLuong').value="0"; 
+            document.getElementById('lf_maHieu').value=""; document.getElementById('lf_sMin').value=""; document.getElementById('lf_sMax').value=""; document.getElementById('lf_xuatXuong').value="";
+            document.getElementById('lf_chaiThue').checked = false;
+            await populateNhaCTDropdown(); document.getElementById('lotFormModal').style.display='flex'; 
+			document.getElementById('lotOldChaiThue').value = "";
+        }
+        window.editLot = async function(p, lot) {
+            document.getElementById('lotFormTitle').innerText="Sửa Lô chai"; document.getElementById('lotOldPath').value=JSON.stringify(p); document.getElementById('lotIdHidden').value=p.lid;
+            document.getElementById('lotOldSoLuong').value=lot.soLuong||0; document.getElementById('lotOldNamCT_year').value=p.ns.split('-')[1]; document.getElementById('lotOldLoai').value=p.lc;
+            document.getElementById('lf_tenLo').value=lot.tenLo||''; document.getElementById('lf_loai').value=p.lc; document.getElementById('lf_namCT').value=p.ns.replace('-','/'); 
+            await populateNhaCTDropdown(); document.getElementById('lf_nhaCT').value=p.nx;
+            document.getElementById('lf_soLuong').value=lot.soLuong||0; document.getElementById('lf_maHieu').value=lot.maHieu||'';
+            document.getElementById('lf_sMin').value=lot.serialMin||''; document.getElementById('lf_sMax').value=lot.serialMax||'';
+            document.getElementById('lf_xuatXuong').value=lot.xuatXuong ? lot.xuatXuong.replace('-','/') : '';
+            document.getElementById('lf_chaiThue').checked = lot.chaiThue ? true : false;
+            document.getElementById('lotFormModal').style.display='flex';
+			document.getElementById('lotOldChaiThue').value = lot.chaiThue ? "true" : "false";
+        }
+        
+        window.deleteLot = async function(lc, ns, nx, lid, soLuong, chaiThue) {
+            if(confirm("Xóa Lô chai này?")) {
+                let updates = {};
+                updates[`Tonghop/Thongtinnguon/${lc}/${ns}/${nx}/DanhSachLot/${lid}`] = null;
+                const yCT = ns.split('-')[1];
+                if(yCT) {
+                    updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/tongChaiDuocCT`] = increment(-soLuong);
+                    if (chaiThue) updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/chaiThueDuocCT`] = increment(-soLuong);
+                    else updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/chaiKothueDuocCT`] = increment(-soLuong);
+                }
+                await update(ref(db), updates); loadLotsTable();
+            }
+        }
+        window.saveLot = async function() {
+            const oldPathStr = document.getElementById('lotOldPath').value; const lidHidden = document.getElementById('lotIdHidden').value;
+            const tenLo = document.getElementById('lf_tenLo').value.trim(); const lc = document.getElementById('lf_loai').value;
+            const ns_view = document.getElementById('lf_namCT').value.trim(); const nx = document.getElementById('lf_nhaCT').value;
+            const xx_view = document.getElementById('lf_xuatXuong').value.trim();
+            const chaiThue = document.getElementById('lf_chaiThue').checked;
+            const soLuong = parseInt(document.getElementById('lf_soLuong').value)||0;
+            
+            if(!ns_view || !nx) return alert("Năm CT và Nhà CT không được trống!");
+            const ns = ns_view.replace(/\//g, '-'); const xx = xx_view.replace(/\//g, '-');
+
+            const lotData = { tenLo, chaiThue, soLuong, maHieu: document.getElementById('lf_maHieu').value.trim(), serialMin: document.getElementById('lf_sMin').value.trim(), serialMax: document.getElementById('lf_sMax').value.trim(), xuatXuong: xx };
+            const lid = lidHidden ? lidHidden : push(child(ref(db), 'temp')).key;
+            const newPath = `Tonghop/Thongtinnguon/${lc}/${ns}/${nx}/DanhSachLot/${lid}`;
+            
+            let updates = {};
+            if(oldPathStr) {
+                const op = JSON.parse(oldPathStr); const oldActualPath = `Tonghop/Thongtinnguon/${op.lc}/${op.ns}/${op.nx}/DanhSachLot/${op.lid}`;
+                if(oldActualPath !== newPath) updates[oldActualPath] = null;
+                
+                const oldQty = parseInt(document.getElementById('lotOldSoLuong').value)||0;
+                const oldY = document.getElementById('lotOldNamCT_year').value;
+                const oldL = document.getElementById('lotOldLoai').value;
+                const oldThue = document.getElementById('lotOldChaiThue').value === "true";
+
+                if(oldY) {
+                    updates[`Tonghop/Thongke/${oldL}/${oldY}/chaiDuocCT/tongChaiDuocCT`] = increment(-oldQty);
+                    if (oldThue) updates[`Tonghop/Thongke/${oldL}/${oldY}/chaiDuocCT/chaiThueDuocCT`] = increment(-oldQty);
+                    else updates[`Tonghop/Thongke/${oldL}/${oldY}/chaiDuocCT/chaiKothueDuocCT`] = increment(-oldQty);
+                }
+            }
+            const newY = ns.split('-')[1];
+            if(newY) {
+                updates[`Tonghop/Thongke/${lc}/${newY}/chaiDuocCT/tongChaiDuocCT`] = increment(soLuong);
+                if (chaiThue) updates[`Tonghop/Thongke/${lc}/${newY}/chaiDuocCT/chaiThueDuocCT`] = increment(soLuong);
+                else updates[`Tonghop/Thongke/${lc}/${newY}/chaiDuocCT/chaiKothueDuocCT`] = increment(soLuong);
+            }
+            
+            updates[newPath] = lotData;
+            await update(ref(db), updates); 
+            
+            // GHI NHẬN LÔ VỪA TẠO/SỬA ĐỂ TỰ ĐỘNG CHẠY KHI ĐÓNG MODAL
+            window.dirtyLots.push({ lc, ns, nx, lid, ...lotData });
+            
+            window.closeModal('lotFormModal'); loadLotsTable();
+        }
+
+        window.downloadLotTemplate = async function() {
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_LoChai');
+            ws.addRow(['Tên Lô', 'Năm CT (mm/yyyy)', 'Mã Nhà CT', 'Loại chai (V12/V45/Com)', 'Số lượng', 'Mã hiệu', 'Serial Min', 'Serial Max', 'Xuất xưởng (mm/yyyy)', 'Chai thuê (để trống/k=Không, khác=Có)']);
+            ws.getRow(1).font = { bold: true }; ws.columns = [{width: 15},{width: 20},{width: 15},{width: 25},{width: 15},{width: 15},{width: 15},{width: 15},{width: 20},{width: 35}];
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_Nhap_LoChai.xlsx");
+        }
+        window.exportLotsToExcel = async function() {
+            const snap = await get(child(ref(db), `Tonghop/Thongtinnguon`));
+            if (!snap.exists()) return alert("Chưa có dữ liệu để xuất.");
+            const data = snap.val(); let lotArray = [];
+            for(let lc in data) { for(let ns in data[lc]) { for(let nx in data[lc][ns]) { if(data[lc][ns][nx].DanhSachLot) { const lots = data[lc][ns][nx].DanhSachLot; for(let lid in lots) { lotArray.push({ lc, ns, nx, lid, ...lots[lid] }); } } } } }
+            lotArray.sort((a, b) => { let pA = a.ns.split('-'); let dA = new Date(pA[1], pA[0]-1); let pB = b.ns.split('-'); let dB = new Date(pB[1], pB[0]-1); return dA - dB; });
+
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('DanhSachLo');
+            ws.addRow(['TT', 'Tên Lô', 'Năm CT', 'Mã Nhà CT', 'Loại chai', 'Số lượng', 'Mã hiệu', 'Serial Min', 'Serial Max', 'Xuất xưởng', 'Chai thuê']);
+            ws.getRow(1).font = { bold: true };
+            let count = 1;
+            lotArray.forEach(l => { ws.addRow([count++, l.tenLo||'', l.ns.replace('-','/'), l.nx, l.lc, l.soLuong||0, l.maHieu||'', l.serialMin||'', l.serialMax||'', l.xuatXuong?l.xuatXuong.replace('-','/'):'', l.chaiThue ? 'Có' : 'Không']); });
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "DanhSach_LoChai.xlsx");
+        }
+        window.importLotsFromExcel = async function(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+            const validNhaCT = snapNhaCT.exists() ? Object.keys(snapNhaCT.val()) : [];
+
+            const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer());
+            const ws = wb.worksheets[0]; let updates = {}; let errorCount = 0;
+            
+            ws.eachRow((row, rowNumber) => {
+                if(rowNumber === 1) return;
+                let tenLo = String(row.getCell(1).value || "").trim();
+                let ns_view = String(row.getCell(2).value || "").trim();
+                let nx = String(row.getCell(3).value || "").trim();
+                let lc = String(row.getCell(4).value || "").trim();
+                let soLuong = parseInt(row.getCell(5).value) || 0;
+                let maHieu = String(row.getCell(6).value || "").trim();
+                let sMin = String(row.getCell(7).value || "").trim();
+                let sMax = String(row.getCell(8).value || "").trim();
+                let xx_view = String(row.getCell(9).value || "").trim();
+                let thueVal = String(row.getCell(10).value || "").trim().toLowerCase();
+                let chaiThue = (thueVal === "" || thueVal.startsWith("k")) ? false : true;
+
+                if(!lc || !ns_view || !nx) return;
+                if(!validNhaCT.includes(nx)) { console.warn(`Dòng ${rowNumber}: Mã Nhà CT '${nx}' không tồn tại.`); errorCount++; return; }
+                
+                let ns = ns_view.replace(/\//g, '-'); let xx = xx_view.replace(/\//g, '-');
+                let lid = push(child(ref(db), 'temp')).key;
+                
+                let lotObj = { tenLo, chaiThue, soLuong, maHieu, serialMin: sMin, serialMax: sMax, xuatXuong: xx };
+                updates[`Tonghop/Thongtinnguon/${lc}/${ns}/${nx}/DanhSachLot/${lid}`] = lotObj;
+                
+                // GHI NHẬN LÔ VỪA NHẬP TỪ EXCEL
+                window.dirtyLots.push({ lc, ns, nx, lid, ...lotObj });
+                
+                const yCT = ns.split('-')[1];
+                if(yCT) {
+                    updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/tongChaiDuocCT`] = increment(soLuong);
+                    if (chaiThue) updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/chaiThueDuocCT`] = increment(soLuong);
+                    else updates[`Tonghop/Thongke/${lc}/${yCT}/chaiDuocCT/chaiKothueDuocCT`] = increment(soLuong);
+                }
+            });
+            
+            if(Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+                let msg = "Nhập dữ liệu thành công!";
+                if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do Mã Nhà CT không đúng)`;
+                alert(msg); loadLotsTable();
+            } else alert("Không có dữ liệu hợp lệ để nhập.");
+            e.target.value = "";
+        }
+
+        // --- HÀM TÁI TẠO FILE TỪ CSDL ---
+        window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
+            const loading = document.getElementById('historyLoading'); loading.innerText = 'Đang tải dữ liệu từ CSDL...'; loading.style.display = 'block';
+
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (!snap.exists()) { alert("Dữ liệu gốc của lần nhập này không còn tồn tại!"); loading.style.display = 'none'; return; }
+                const summary = snap.val(); let dataPaths = [];
+                if (summary.paths && Array.isArray(summary.paths)) dataPaths = summary.paths; else if (summary.paths) dataPaths = Object.values(summary.paths);
+                dataPaths = dataPaths.filter(p => p.includes('/DanhSachChai/'));
+                let fetchedDocs = []; loading.innerText = `Đang trích xuất ${dataPaths.length} chai...`;
+
+                for (let i = 0; i < dataPaths.length; i += 100) { const chunk = dataPaths.slice(i, i + 100); const chunkSnaps = await Promise.all(chunk.map(p => get(child(ref(db), p)))); chunkSnaps.forEach(s => { if(s.exists()) fetchedDocs.push(s.val()); }); }
+
+                loading.innerText = 'Đang tải file mẫu từ máy chủ...';
+                let templateDataBuffer;
+                const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+                const templateFileName = isHuy ? tplMap.huy : tplMap.kiemDinh;
+                const response = await fetch(templateFileName);
+                if (!response.ok) throw new Error(`Không tìm thấy file ${templateFileName}`);
+                templateDataBuffer = await response.arrayBuffer();
+
+                const thoiDiemStr = summary.thoiDiemKD; const loaiChai = summary.loaiChai; 
+                let thoiDiemKiemDinh = null;
+                if(thoiDiemStr && thoiDiemStr !== "Nhiều thời điểm") { thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr); }
+
+                let lC_check = loaiChai.toLowerCase();
+                let xx = "12"; let bbb = "26.5"; 
+                if (lC_check.includes("v45")) { xx = "45"; bbb = "99"; } 
+                else if (lC_check.includes("com")) { xx = "Com"; bbb = "24.5"; }
+                
+                const timeParts = thoiDiemStr.split('/'); const mm = timeParts[0] || "mm"; const yyyy = timeParts[1] || "yyyy";
+                const aaa = fetchedDocs.length;
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                if (isHuy) {
+                    let activeSheet = workbook.sheet("vohuy");
+                    if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+                    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    
+                    let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+
+                    let destRow = 13; 
+                    for (let k = 0; k < fetchedDocs.length; k++) {
+                        let r = destRow + k; let d = fetchedDocs[k];
+                        activeSheet.cell(r, 1).value(k + 1);
+                        activeSheet.cell(r, 2).value(d.nhaCT || "");
+                        activeSheet.cell(r, 3).value(d.namCT || "");
+                        activeSheet.cell(r, 4).value(d.maHieu || "");
+                        activeSheet.cell(r, 5).value(d.serial || "");
+                        activeSheet.cell(r, 7).value("X");
+                        activeSheet.cell(r, 8).value(d.lyDoHuy || "");
+
+                        for (let c = 1; c <= 8; c++) { 
+                            const currentCell = activeSheet.cell(r, c); 
+                            currentCell.style("fontFamily", "Times New Roman"); 
+                            currentCell.style("fontSize", 12); 
+                            currentCell.style("border", borderFull); 
+                        }
+                    }
+                    destRow += fetchedDocs.length;
+                    appendFooterSafe(activeSheet, ghichuSheet, destRow);
+                } else {
+                    let tren20Nam = []; let duoi20Nam = [];
+                    fetchedDocs.forEach(d => {
+                        let row = { nhaCT_orig: d.nhaCT||"", namCT_orig: d.namCT||"", maHieu: d.maHieu||"", serial: d.serial||"", khoiLuong: d.khoiLuong||"", lastCheck_orig: d.lastCheckOriginal||"", nextDate_str: d.nextDate||"", tick: "√" };
+                        if (d.namCT) { 
+                            let mKiemDinh = thoiDiemKiemDinh; if(!mKiemDinh && d.recentCheck) mKiemDinh = parseDateMMYYYY(d.recentCheck);
+                            if(mKiemDinh) { const dateC = parseDateMMYYYY(d.namCT); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
+                        } else { duoi20Nam.push(row); }
+                    });
+
+                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig)); sortData(tren20Nam); sortData(duoi20Nam);
+
+                    function buildSheet(sheetName, data) {
+    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+    const aaa = data.length; // BỔ SUNG DÒNG NÀY
+    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
+                        let destRow = 10; let groupNum = 1;
+
+                        for (let key in grouped) {
+                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
+ 
+                           sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); 
+                                                  
+                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            
+                            for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
+                            
+                            for (let k = 0; k < N1; k++) {
+                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); 
+                                sheet.cell(r, 2).value(groupData[k].nhaCT_orig || ""); sheet.cell(r, 3).value(groupData[k].namCT_orig || ""); sheet.cell(r, 4).value(groupData[k].maHieu || ""); sheet.cell(r, 5).value(groupData[k].serial || ""); sheet.cell(r, 6).value(groupData[k].khoiLuong || ""); sheet.cell(r, 7).value(groupData[k].lastCheck_orig || ""); sheet.cell(r, 8).value(groupData[k].tick || "√");
+                                if (k < N2) { 
+                                    sheet.cell(r, 9).value(N1 + k + 1); 
+                                    sheet.cell(r, 10).value(groupData[N1 + k].nhaCT_orig || ""); sheet.cell(r, 11).value(groupData[N1 + k].namCT_orig || ""); sheet.cell(r, 12).value(groupData[N1 + k].maHieu || ""); sheet.cell(r, 13).value(groupData[N1 + k].serial || ""); sheet.cell(r, 14).value(groupData[N1 + k].khoiLuong || ""); sheet.cell(r, 15).value(groupData[N1 + k].lastCheck_orig || ""); sheet.cell(r, 16).value(groupData[N1 + k].tick || "√");
+                                }
+                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); else applyThinBorders(currentCell, false, false); }
+                            }
+                            destRow += N1 + 1; groupNum++;
+                        }
+                        appendFooterSafe(sheet, ghichuSheet, destRow);
+                    }
+                    buildSheet("tren20nam", tren20Nam); 
+                    buildSheet("duoi20nam", duoi20Nam);
+                }
+
+                if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
+                let prefix = isHuy ? "Recreated_Huy_" : "Recreated_BBKD_";
+                saveAs(blob, `${prefix}${loaiChai}_${timeStamp}.xlsx`); 
+                loading.style.display = 'none'; alert("Hoàn thành! File đã được tái tạo và tải xuống.");
+                        } catch (err) { console.error(err); alert("Lỗi khi tạo lại file: " + err.message); loading.style.display = 'none'; }
+        }
+
+
+		// ==========================================
+        // THUẬT TOÁN ĐỊNH VỊ VÀ ÁNH XẠ CHAI - LÔ NGUỒN
+        // ==========================================
+        window.isSerialMatch = function(serial, min, max) {
+            if (!serial || !min || !max) return false;
+            
+            // 1. Loại bỏ các dấu, chỉ giữ chữ và số
+            let cSer = String(serial).replace(/[^a-zA-Z0-9]/g, '');
+            let cMin = String(min).replace(/[^a-zA-Z0-9]/g, '');
+            let cMax = String(max).replace(/[^a-zA-Z0-9]/g, '');
+            
+            // 2. Tổng số ký tự phải bằng nhau
+            if (cSer.length !== cMin.length || cSer.length !== cMax.length) return false;
+
+            // 3. Các ký tự chữ phải giống nhau (Cả giá trị)
+            let letSer = cSer.replace(/[0-9]/g, '');
+            let letMin = cMin.replace(/[0-9]/g, '');
+            if (letSer !== letMin || letSer !== cMax.replace(/[0-9]/g, '')) return false;
+
+            // 3.1. Các ký tự chữ phải giống nhau (Cả vị trí)
+            for (let i = 0; i < cSer.length; i++) {
+                let isLSer = /[a-zA-Z]/.test(cSer[i]);
+                let isLMin = /[a-zA-Z]/.test(cMin[i]);
+                if (isLSer !== isLMin) return false;
+            }
+
+            // 4. Giá trị số nằm trong khoảng
+            let numSerStr = cSer.replace(/[a-zA-Z]/g, '');
+            let numMinStr = cMin.replace(/[a-zA-Z]/g, '');
+            let numMaxStr = cMax.replace(/[a-zA-Z]/g, '');
+            
+            if(numSerStr === '' || numMinStr === '' || numMaxStr === '') return false;
+
+            // Sử dụng BigInt để chống tràn bộ nhớ nếu dải số quá dài
+            let numSer = BigInt(numSerStr); let numMin = BigInt(numMinStr); let numMax = BigInt(numMaxStr);
+            return (numSer >= numMin && numSer <= numMax);
+        }
+
+        // HÀM 1: Cập nhật CỤC BỘ (Chỉ chạy khi đóng form nếu có Lô mới tạo/sửa)
+        window.runPartialLotUpdate = async function() {
+            if (window.dirtyLots.length === 0) return;
+            document.getElementById('lotsLoading').style.display = 'block';
+            document.getElementById('lotsLoading').innerText = 'Đang đồng bộ chai theo các lô vừa sửa...';
+            
+            try {
+                let updates = {};
+                const centers = ['tt1', 'tt2', 'tt3'];
+                
+                for(let lot of window.dirtyLots) {
+                    let yearLot = lot.ns.split('-')[1]; // Lấy yyyy từ Lô nguồn
+                    for(let tt of centers) {
+                        const snapLoai = await get(child(ref(db), `${tt}/${lot.lc}`));
+                        if(!snapLoai.exists()) continue;
+                        let dLoai = snapLoai.val();
+                        
+                        for(let ns in dLoai) {
+                            if(ns === 'LichSuFile') continue;
+                            let yearChai = ns.split('-')[1];
+                            if(yearChai !== yearLot) continue; // Năm chế tạo phải trùng (Bỏ qua tháng)
+                            
+                            let nxData = dLoai[ns][lot.nx];
+                            if(!nxData || !nxData.DanhSachChai) continue; // Phải trùng Nhà CT
+                            
+                            let dsChai = nxData.DanhSachChai;
+                            for(let cid in dsChai) {
+                                let chai = dsChai[cid];
+                                let path = `${tt}/${lot.lc}/${ns}/${lot.nx}/DanhSachChai/${cid}`;
+                                
+                                // Nếu không phải tt1 thì mã hiệu phải khớp
+                                if (tt !== 'tt1') {
+                                    let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
+                                    let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                                    if (chaiMaHieu !== lotMaHieu) continue;
+                                }
+
+                                // Nếu lọt vào dải Serial
+                                if (window.isSerialMatch(chai.serial, lot.serialMin, lot.serialMax)) {
+                                    updates[`${path}/loNguon`] = lot.lid; // Dùng ID làm khóa để dễ tra ngược
+                                    updates[`${path}/chaiThue`] = lot.chaiThue === true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Đẩy dữ liệu lên CSDL theo cục nhỏ (Chống quá tải Firebase)
+                let keys = Object.keys(updates);
+                if(keys.length > 0) {
+                    let chunk = {}; let count = 0; let promises = [];
+                    for(let k of keys) {
+                        chunk[k] = updates[k]; count++;
+                        if(count >= 500) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; }
+                    }
+                    if(count > 0) promises.push(update(ref(db), chunk));
+                    await Promise.all(promises);
+                }
+                
+                window.dirtyLots = []; // Giải phóng bộ nhớ
+                document.getElementById('lotsLoading').style.display = 'none';
+            } catch(e) {
+                console.error(e);
+                window.dirtyLots = [];
+                document.getElementById('lotsLoading').style.display = 'none';
+            }
+        }
+
+        // HÀM 2: Cập nhật TOÀN CỤC (Ấn nút Update Lot)
+        window.runGlobalLotUpdate = async function() {
+            if(!confirm("Tiến trình này sẽ XOÁ TOÀN BỘ thông tin Lô nguồn hiện tại của TẤT CẢ các chai và rà soát để gán lại từ đầu. Quá trình có thể mất vài phút. Bạn có chắc chắn?")) return;
+            
+            document.getElementById('lotsLoading').style.display = 'block';
+            document.getElementById('lotsLoading').innerText = 'Đang tải dữ liệu và tính toán toàn cục... Vui lòng chờ!';
+            
+            try {
+                let updates = {};
+                const centers = ['tt1', 'tt2', 'tt3'];
+                const types = ['V12', 'V45', 'Com'];
+                
+                // 1. Lấy toàn bộ Lô Nguồn để đối chiếu
+                const snapLots = await get(child(ref(db), 'Tonghop/Thongtinnguon'));
+                let allLots = [];
+                if(snapLots.exists()) {
+                    let dNguon = snapLots.val();
+                    for(let lc in dNguon) {
+                        for(let ns in dNguon[lc]) {
+                            for(let nx in dNguon[lc][ns]) {
+                                if(dNguon[lc][ns][nx].DanhSachLot) {
+                                    let lots = dNguon[lc][ns][nx].DanhSachLot;
+                                    for(let lid in lots) allLots.push({ lc, ns, nx, lid, ...lots[lid] });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. Quét toàn bộ chai tại các trung tâm
+                for(let tt of centers) {
+                    const snapTT = await get(child(ref(db), tt));
+                    if(!snapTT.exists()) continue;
+                    let dTT = snapTT.val();
+                    
+                    for(let lc of types) {
+                        if(!dTT[lc]) continue;
+                        for(let ns in dTT[lc]) {
+                            if(ns === 'LichSuFile') continue;
+                            let yearChai = ns.split('-')[1]; // mm-yyyy
+                            if(!yearChai) continue;
+                            
+                            for(let nx in dTT[lc][ns]) {
+                                if(!dTT[lc][ns][nx].DanhSachChai) continue;
+                                let dsChai = dTT[lc][ns][nx].DanhSachChai;
+                                
+                                for(let cid in dsChai) {
+                                    let chai = dsChai[cid];
+                                    let path = `${tt}/${lc}/${ns}/${nx}/DanhSachChai/${cid}`;
+                                    
+                                    // BẮT BUỘC TẨY TRẮNG TRƯỚC ĐỂ LÀM SẠCH NHỮNG LÔ BỊ XÓA
+                                    if (chai.loNguon !== undefined) updates[`${path}/loNguon`] = null;
+                                    if (chai.chaiThue !== undefined) updates[`${path}/chaiThue`] = null;
+
+                                    // Lọc lô phù hợp
+                                    let matchedLot = allLots.find(lot => {
+                                        if(lot.lc !== lc || lot.nx !== nx) return false;
+                                        let yearLot = lot.ns.split('-')[1];
+                                        if(yearChai !== yearLot) return false;
+                                        
+                                        // Quy tắc đặc biệt cho TT1 (Bỏ qua mã hiệu)
+                                        if (tt !== 'tt1') {
+                                            let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
+                                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                                            if (chaiMaHieu !== lotMaHieu) return false;
+                                        }
+
+                                        return window.isSerialMatch(chai.serial, lot.serialMin, lot.serialMax);
+                                    });
+
+                                    // Gán giá trị nếu khớp
+                                    if (matchedLot) {
+                                        updates[`${path}/loNguon`] = matchedLot.lid;
+                                        updates[`${path}/chaiThue`] = matchedLot.chaiThue === true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Chunk upload
+                let keys = Object.keys(updates);
+                if(keys.length > 0) {
+                    let chunk = {}; let count = 0; let promises = [];
+                    for(let k of keys) {
+                        chunk[k] = updates[k]; count++;
+                        if(count >= 500) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; }
+                    }
+                    if(count > 0) promises.push(update(ref(db), chunk));
+                    await Promise.all(promises);
+                }
+                
+                document.getElementById('lotsLoading').style.display = 'none';
+                alert("Hoàn tất Update Lot toàn hệ thống thành công!");
+            } catch(e) {
+                console.error(e);
+                alert("Lỗi: " + e.message);
+                document.getElementById('lotsLoading').style.display = 'none';
+            }
+        }
+	
+	</script>
+</body>
+</html>
