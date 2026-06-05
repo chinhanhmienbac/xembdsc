@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Nhập Liệu Kiểm Định</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx-populate/1.21.0/xlsx-populate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
+    <style>
+      body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5;
+} 
+	  /* body { font-family: Tahoma, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5; } */
+        .layout-container { display: grid; grid-template-columns: 1fr 2.5fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
+        .col-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        @media (max-width: 992px) { .layout-container { grid-template-columns: 1fr; } }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+        h3 { margin-top: 0; font-size: 16px; border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #007bff; }
+        .form-group { margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 5px;}
+        .checkbox-group input { width: 20px; height: 20px; cursor: pointer; }
+
+        button.primary-btn { width: 100%; background-color: #007bff; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px; transition: background 0.2s;}
+        button.primary-btn:hover { background-color: #0056b3; }
+        button.danger-btn { width: 100%; background-color: #dc3545; color: white; border: none; padding: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 16px; border-radius: 5px;}
+        button.danger-btn:hover { background-color: #c82333; }
+        button.secondary-btn { width: 100%; background-color: #6c757d; color: white; border: none; padding: 10px; cursor: pointer; margin-top: 15px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.secondary-btn:hover { background-color: #5a6268; }
+        button.warning-btn { width: 100%; background-color: #ffc107; color: #212529; border: none; padding: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; font-size: 14px; border-radius: 5px;}
+        button.warning-btn:hover { background-color: #e0a800; }
+
+        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+        .text-success { color: green; }
+        .text-danger { color: #dc3545; }
+        .text-warning { color: #d39e00; }
+        
+        .drop-zone { border: 2px dashed #007bff; border-radius: 5px; padding: 30px 20px; text-align: center; cursor: pointer; background-color: #f0f8ff; transition: background-color 0.3s, border-color 0.3s; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .drop-zone.dragover { background-color: #e6f2ff; border-color: #0056b3; }
+        .drop-zone span { pointer-events: none; color: #0056b3; font-weight: bold; }
+        #fileInput { display: none; }
+        .file-list { margin-top: 15px; text-align: left; font-size: 0.9em; color: #333; max-height: 150px; overflow-y: auto; border-top: 1px solid #ddd; padding-top: 10px; display: none; }
+        .btn-clear { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 10px; display: none; }
+        
+        /* Styles cho Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 95%; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column; overflow-y: auto;}
+        .modal-content-sm { max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; border: none; padding: 0; }
+        .btn-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .history-table-container { overflow-y: auto; flex-grow: 1; margin-bottom: 15px;}
+        .history-table { width: 100%; border-collapse: collapse; font-size: 14px;}
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .history-table th { background-color: #f4f4f4; position: sticky; top: 0; }
+        
+        .btn-action { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin: 2px;}
+        .btn-del { background-color: #dc3545; } .btn-del:hover { background-color: #c82333; }
+        .btn-recreate-row { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;}
+        .btn-recreate-row:hover { background-color: #218838; }
+		
+		.sort-icon { cursor: pointer; color: #999; margin-left: 5px; font-size: 12px; }
+		.sort-icon:hover { color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="col-card col-left">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 150px; height: auto;">
+            </div>
+            <h3>Hệ thống</h3>
+            <div class="form-group">
+                <label>Chọn Trung tâm kiểm định:</label>
+                <select id="trungTamSelect" onchange="window.updateHistoryIfOpen()"></select>
+            </div>
+            
+            <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
+            <button class="warning-btn" onclick="window.openOldDataModal()">Bổ sung dữ liệu cũ</button>
+        </div>
+
+        <div class="col-card col-main">
+		    <h2 style="color: #008037; font-weight: bold; text-transform: uppercase; text-align: center; flex-grow: 1;">
+			TRANG NHẬP DỮ LIỆU KIỂM ĐỊNH</h2>
+            
+            <div class="form-group">
+                <label>1. Dữ liệu đầu vào (.xls / .xlsx):</label>
+                <div class="drop-zone" id="dropZone">
+                    <span>Thả các file vào đây hoặc Click để chọn file (số lượng không quá 7000 chai mỗi lần)</span>
+                    <input type="file" id="fileInput" multiple accept=".xls,.xlsx">
+                    <div class="file-list" id="fileList"></div>
+                </div>
+                <button type="button" class="btn-clear" id="clearFilesBtn" onclick="window.clearFiles()">Xóa danh sách file</button>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>2. Thời điểm KĐ (mm/yyyy):</label>
+                    <input type="text" id="thoiDiemInput" placeholder="VD: 05/2026" required pattern="^(0[1-9]|1[0-2])\/[0-9]{4}$">
+                </div>
+                
+                <div class="form-group" style="flex: 1; display: flex; gap: 10px; align-items: center; background: #eef9f0; border: 1px solid #28a745; margin-bottom: 0; padding: 10px 15px;">
+                    <div style="flex: 1;">
+                        <label>3. Loại chai:</label>
+                        <select id="loaiChaiInput" style="border-color: #28a745;">
+                            <option value="V12">V12</option>
+                            <option value="V45">V45</option>
+                            <option value="Com">Com</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <label for="isHuyCheckbox" style="margin-bottom: 5px; font-weight:bold; color: #dc3545; cursor: pointer;">Chai hủy</label>
+                        <input type="checkbox" id="isHuyCheckbox" style="width: 22px; height: 22px; cursor: pointer; accent-color: #dc3545;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>4. Chi nhánh sử dụng chai:</label>
+                <select id="chiNhanhInput"></select>
+            </div>
+
+            <div class="form-group">
+                <label>5. Tên file kết quả xuất ra:</label>
+                <input type="text" id="fileNameInput" value="DanhSach" placeholder="Nhập tên file">
+            </div>
+
+            <button class="primary-btn" onclick="window.runProcess()" id="mainProcessBtn">Xử Lý Kiểm định (√)</button>
+            <div id="status"></div>
+        </div>
+
+        <div class="col-card col-right">
+            <h3>Nhật ký hoạt động</h3>
+            <div id="logArea" style="font-size: 13px; color: #444; line-height: 1.6; max-height: 500px; overflow-y: auto;">
+                <i>Sẵn sàng...</i>
+            </div>
+        </div>
+    </div>
+
+<!-- MODAL ĐĂNG NHẬP (Chặn toàn màn hình) -->
+    <div id="loginModal" class="modal-overlay" style="display: flex; background: #eef2f5; z-index: 9999;">
+        <div class="col-card" style="width: 400px; max-width: 90%; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 180px; height: auto; margin-bottom: 20px;">
+            <h3 style="border:none; color:#333; margin-bottom: 20px;">ĐĂNG NHẬP HỆ THỐNG</h3>
+            <div class="form-group" style="text-align: left;">
+                <label>Tài khoản (Email):</label>
+                <select id="loginEmail" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"></select>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label>Mật khẩu:</label>
+                <input type="password" id="loginPass" onkeypress="if(event.key === 'Enter') window.loginFirebase()">
+</div>
+            <div id="loginError" style="color: red; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+            <button class="primary-btn" onclick="window.loginFirebase()">ĐĂNG NHẬP</button>
+        </div>
+    </div>
+    
+	<div id="historyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center;">
+                    <h3 id="modalTitle" style="margin-bottom: 0;">Lịch sử nhập liệu</h3>
+                    <button class="btn-action" style="background-color: #28a745; margin-left: 20px; padding: 8px 15px;" onclick="window.openExportHistoryModal()">Xuất Excel</button>
+                </div>
+                <button class="btn-close" onclick="window.closeModal('historyModal')">&times;</button>
+            </div>
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Thời điểm nhập liệu <span class="sort-icon" onclick="window.sortHistory('timeStamp')">⇕</span></th>
+                            <th style="width: 15%;">Thời điểm kiểm định <span class="sort-icon" onclick="window.sortHistory('thoiDiemKD')">⇕</span></th>
+                            <th style="width: 10%;">Loại chai <span class="sort-icon" onclick="window.sortHistory('loaiChai')">⇕</span></th>
+                            <th style="width: 10%;">Số lượng <span class="sort-icon" onclick="window.sortHistory('total')">⇕</span></th>
+                            <th style="width: 20%;">Chi nhánh sử dụng</th>
+                            <th style="width: 10%;">Trạng thái <span class="sort-icon" onclick="window.sortHistory('isHuy')">⇕</span></th>
+                            <th style="width: 20%;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+                <div id="historyLoading" style="text-align:center; padding:10px; display:none; color: #007bff;">Đang tải dữ liệu...</div>
+            </div>
+        </div>
+    </div>
+	
+	<div id="exportHistoryModal" class="modal-overlay" style="z-index: 1005;">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Tùy chọn Xuất báo cáo Excel</h3>
+                <button class="btn-close" onclick="window.closeModal('exportHistoryModal')">&times;</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <b>1. Chọn Thời gian:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="radio" name="expTime" value="all" checked onchange="document.getElementById('expYearSelect').disabled = true;"> Toàn bộ thời gian</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expTime" value="year" onchange="document.getElementById('expYearSelect').disabled = false;"> Theo năm TĐ KĐ:</label>
+                        <select id="expYearSelect" disabled style="width: 80px; margin-left: 5px; padding: 2px;"></select>
+                    </div>
+                    
+                    <b style="display: block; margin-top: 15px;">2. Chọn Trạng thái:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="all" checked> Tất cả</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="kd"> Chỉ Kiểm định</label><br>
+                        <label style="font-weight: normal;"><input type="radio" name="expStatus" value="huy"> Chỉ Hủy</label>
+                    </div>
+                </div>
+                <div>
+                    <b>3. Chọn Loại chai:</b>
+                    <div style="margin-top: 5px;">
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="V12" checked> V12</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="V45" checked> V45</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="Com" checked> Com</label><br>
+                        <label style="font-weight: normal;"><input type="checkbox" class="expType" value="Hỗn hợp" checked> Hỗn hợp (Dữ liệu cũ)</label>
+                    </div>
+                </div>
+            </div>
+            <button class="primary-btn" style="background-color: #28a745; margin-top: 20px;" onclick="window.executeExportHistory()">TẢI XUỐNG BÁO CÁO</button>
+        </div>
+    </div>
+	<div id="editHistoryModal" class="modal-overlay" style="z-index: 1015;">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Sửa thông tin Lô nhập liệu</h3>
+                <button class="btn-close" onclick="window.closeModal('editHistoryModal')">&times;</button>
+            </div>
+            <p style="font-size: 13px; color: #dc3545;">Lưu ý: Thay đổi sẽ áp dụng hàng loạt lên tất cả các chai thuộc lô nhập này.</p>
+            <input type="hidden" id="editHisTimeStamp">
+            <div class="form-group">
+                <label>1. Thời điểm kiểm định mới (mm/yyyy):</label>
+                <input type="text" id="editHisThoiDiem" placeholder="VD: 05/2026">
+            </div>
+            <div class="form-group">
+                <label>2. Chi nhánh sử dụng mới:</label>
+                <select id="editHisChiNhanh"></select>
+            </div>
+            <button class="primary-btn" onclick="window.saveEditHistory()">LƯU THAY ĐỔI</button>
+        </div>
+    </div>
+
+    <div id="secureAuthModal" class="modal-overlay" style="z-index: 1010;">
+        <div class="col-card" style="width: 350px; text-align: center; border: 2px solid #dc3545;">
+            <h3 style="color: #dc3545;">YÊU CẦU XÁC THỰC</h3>
+            <p style="font-size: 13px; color: #555;">Hành động xóa dữ liệu không thể hoàn tác. Vui lòng nhập lại mật khẩu để xác nhận thẩm quyền.</p>
+            <form autocomplete="off" onsubmit="event.preventDefault(); window.executeSecureDelete();">
+                <select id="secureEmail" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;"></select>
+                <input type="password" id="securePass" placeholder="Mật khẩu" required autocomplete="new-password" style="margin-bottom: 10px;">
+                <div id="secureError" style="color: red; font-size: 12px; margin-bottom: 10px; display: none;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="secondary-btn" style="margin-top:0;" onclick="window.closeModal('secureAuthModal')">Hủy</button>
+                    <button type="submit" class="danger-btn" style="margin-top:0;" id="btnConfirmDelete">XÁC NHẬN XÓA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="oldDataModal" class="modal-overlay">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Bổ sung dữ liệu cũ</h3>
+                <button class="btn-close" onclick="window.closeModal('oldDataModal')">&times;</button>
+            </div>
+            <p style="font-size: 14px; color: #555;">Chức năng nhập trực tiếp dữ liệu cũ vào Cơ sở dữ liệu.</p>
+            <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải mẫu Excel</button>
+            <button class="primary-btn" onclick="document.getElementById('importOldDataFile').click()">2. Nhập từ Excel</button>
+            <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx" onchange="window.importOldDataFromExcel(event)">
+        </div>
+    </div>
+	<div id="oldDataConfigModal" class="modal-overlay" style="z-index: 1020;">
+        <div class="modal-content modal-content-sm">
+            <div class="modal-header">
+                <h3>Cấu hình lô dữ liệu cũ</h3>
+                <button class="btn-close" onclick="window.closeModal('oldDataConfigModal')">&times;</button>
+            </div>
+            <p style="font-size: 13px; color: #555;">Vui lòng thiết lập các giá trị chung sẽ được áp dụng cho TOÀN BỘ chai trong file Excel này.</p>
+            <div class="form-group">
+                <label>1. Loại chai:</label>
+                <select id="oldLoaiChaiInput">
+                    <option value="V12">V12</option>
+                    <option value="V45">V45</option>
+                    <option value="Com">Com</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>2. Thời điểm kiểm định chung (mm/yyyy):</label>
+                <input type="text" id="oldThoiDiemInput" placeholder="VD: 05/2026">
+            </div>
+            <div class="form-group">
+                <label>3. Chi nhánh sử dụng:</label>
+                <select id="oldChiNhanhInput"></select>
+            </div>
+            <button class="primary-btn" onclick="window.processImportOldData()">BẮT ĐẦU NHẬP LIỆU</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+		import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
+            authDomain: "dulieubanhang-d6156.firebaseapp.com",
+            databaseURL: "https://dulieubanhang-d6156-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dulieubanhang-d6156",
+            storageBucket: "dulieubanhang-d6156.firebasestorage.app",
+            messagingSenderId: "588583798336",
+            appId: "1:588583798336:web:82a240fb3da2f96893c1a5",
+            measurementId: "G-7D51WBK63L"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+		const auth = getAuth(app);
+		
+        // ===== CẤU HÌNH MỚI BỔ SUNG =====
+        // 1. Số ngày quét lùi về trước để tìm chuỗi trùng (có thể đổi thành 100, 300...)
+        const DAYS_TO_CHECK_DUPLICATE = 60; 
+
+        // 2. Bản đồ liên kết Trung tâm với File mẫu tương ứng
+        const templateMap = {
+            "tt1": { kiemDinh: "sample1.xlsx", huy: "samplehuy1.xlsx" },
+            "tt2": { kiemDinh: "sample2.xlsx", huy: "samplehuy2.xlsx" },
+            "tt3": { kiemDinh: "sample3.xlsx", huy: "samplehuy3.xlsx" }
+        };
+        // ================================
+
+        // Bảng phân quyền Trung tâm
+        const userCenterMap = {
+            "ttkd1@pvgaslpg.com.vn": "tt1",
+            "ttkdnamdinh@pvgaslpg.com.vn": "tt2",
+            "ttkd3@pvgaslpg.com.vn": "tt3",
+            "admin@pvgaslpg.com.vn": "admin",
+            "quantri@pvgaslpg.com.vn": "admin"
+        };
+
+        // Hàm xử lý phân quyền dropdown sau khi đăng nhập
+        window.applyUserRole = function(email) {
+            const role = userCenterMap[email];
+            const ttSelect = document.getElementById('trungTamSelect');
+            
+            if (role === "admin") {
+                ttSelect.disabled = false; // Admin được chọn tùy ý
+            } else if (role) {
+                ttSelect.value = role;
+                ttSelect.disabled = true; // Khóa lựa chọn của TT
+            } else {
+                ttSelect.disabled = true; // Mặc định khóa nếu ko xác định
+            }
+            document.getElementById('loginModal').style.display = 'none';
+            addLog(`Đã xác thực tài khoản: ${email}`);
+        };
+
+        // Lắng nghe trạng thái đăng nhập
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.applyUserRole(user.email);
+            } else {
+                document.getElementById('loginModal').style.display = 'flex'; // Khóa trang web
+            }
+        });
+
+        // Hàm xử lý khi bấm nút Đăng nhập
+        window.loginFirebase = function() {
+            let email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            if(!email || !pass) {
+                errorDiv.innerText = "Vui lòng chọn tài khoản và nhập mật khẩu!";
+                errorDiv.style.display = "block";
+                return;
+            }
+            
+            errorDiv.style.display = "none";
+            document.getElementById('loginModal').querySelector('.primary-btn').innerText = "Đang xử lý...";
+            
+            setPersistence(auth, browserSessionPersistence)
+                .then(() => {
+                    return signInWithEmailAndPassword(auth, email, pass);
+                })
+                .then((userCredential) => {
+                    document.getElementById('loginModal').querySelector('.primary-btn').innerText = "ĐĂNG NHẬP";
+                    // Reset form sau khi vào thành công
+                    document.getElementById('loginEmail').value = ""; 
+                    document.getElementById('loginPass').value = '';
+                })
+                .catch((error) => {
+                    console.error(error);
+                    errorDiv.innerText = "Sai mật khẩu! Vui lòng thử lại.";
+                    errorDiv.style.display = "block";
+                    document.getElementById('loginModal').querySelector('.primary-btn').innerText = "ĐĂNG NHẬP";
+                });
+        };
+
+        // --- GLOBAL HELPERS CHUNG ---
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+        function addLog(msg) { const logArea = document.getElementById('logArea'); logArea.innerHTML += `<div>- ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
+        function parseDateMMYYYY(str) { const parts = str.split('/'); return new Date(parts[1], parts[0] - 1, 1); }
+        function formatDateMMYYYY(date) { const m = String(date.getMonth() + 1).padStart(2, '0'); const y = date.getFullYear(); return `${m}/${y}`; }
+        function diffMonths(d1, d2) { let months = (d2.getFullYear() - d1.getFullYear()) * 12; months -= d1.getMonth(); months += d2.getMonth(); return months; }
+        function addMonths(date, months) { const d = new Date(date); d.setMonth(d.getMonth() + months); return d; }
+        function toRoman(num) { const roman = {M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1}; let str = ''; for (let i of Object.keys(roman)) { let q = Math.floor(num / roman[i]); num -= q * roman[i]; str += i.repeat(q); } return str; }
+        function formatEpochToLocal(epochMs) {
+            const d = new Date(parseInt(epochMs));
+            const day = String(d.getDate()).padStart(2, '0'); const mon = String(d.getMonth() + 1).padStart(2, '0'); const yr = d.getFullYear();
+            const hr = String(d.getHours()).padStart(2, '0'); const min = String(d.getMinutes()).padStart(2, '0'); const sec = String(d.getSeconds()).padStart(2, '0');
+            return `${hr}:${min}:${sec} - ${day}/${mon}/${yr}`;
+        }
+        function getLCSLength(s1, s2) {
+            if (!s1 || !s2) return 0;
+            let dp = new Array(s2.length + 1).fill(0); let maxLen = 0;
+            for (let i = 1; i <= s1.length; i++) {
+                let prev = 0;
+                for (let j = 1; j <= s2.length; j++) {
+                    let temp = dp[j];
+                    if (s1[i - 1] === s2[j - 1]) { dp[j] = prev + 1; if (dp[j] > maxLen) maxLen = dp[j]; } else dp[j] = 0;
+                    prev = temp;
+                }
+            } return maxLen;
+        }
+		
+		// --- THUẬT TOÁN ĐỊNH VỊ VÀ ÁNH XẠ CHAI - LÔ NGUỒN ---
+        window.isSerialMatch = function(serial, min, max) {
+            if (!serial || !min || !max) return false;
+            let cSer = String(serial).replace(/[^a-zA-Z0-9]/g, '');
+            let cMin = String(min).replace(/[^a-zA-Z0-9]/g, '');
+            let cMax = String(max).replace(/[^a-zA-Z0-9]/g, '');
+            if (cSer.length !== cMin.length || cSer.length !== cMax.length) return false;
+            let letSer = cSer.replace(/[0-9]/g, '');
+            let letMin = cMin.replace(/[0-9]/g, '');
+            if (letSer !== letMin || letSer !== cMax.replace(/[0-9]/g, '')) return false;
+            for (let i = 0; i < cSer.length; i++) {
+                if (/[a-zA-Z]/.test(cSer[i]) !== /[a-zA-Z]/.test(cMin[i])) return false;
+            }
+            let numSerStr = cSer.replace(/[a-zA-Z]/g, '');
+            let numMinStr = cMin.replace(/[a-zA-Z]/g, '');
+            let numMaxStr = cMax.replace(/[a-zA-Z]/g, '');
+            if(numSerStr === '' || numMinStr === '' || numMaxStr === '') return false;
+            let numSer = BigInt(numSerStr); let numMin = BigInt(numMinStr); let numMax = BigInt(numMaxStr);
+            return (numSer >= numMin && numSer <= numMax);
+        }
+		
+		// --- HÀM CẢNH VỆ AI SỬA LỖI ĐỊNH DẠNG NGÀY THÁNG ---
+        window.fixDateString = function(val, fieldName, rowNum) {
+            if (!val) return val;
+            val = String(val).trim().replace(/\s+/g, ''); // Xóa mọi khoảng trắng
+            
+            let currentYear = new Date().getFullYear();
+            
+            // Nếu đã chuẩn mm/yyyy từ đầu thì cho qua luôn
+            if (/^\d{2}\/\d{4}$/.test(val)) {
+                let parts = val.split('/');
+                let m = parseInt(parts[0]);
+                let y = parseInt(parts[1]);
+                if (m >= 1 && m <= 12 && y >= 1999 && y <= currentYear + 5) {
+                    return val;
+                }
+            }
+
+            let originalVal = val;
+            let mStr = "", yStr = "";
+
+            // BÓC TÁCH THÔNG MINH (Có hoặc không có dấu /)
+            if (val.includes('/')) {
+                let parts = val.split('/');
+                mStr = parts[0]; 
+                yStr = parts[1] || "";
+            } else {
+                if (val.length === 6) { 
+                    // Vd: 042023 -> 04 và 2023
+                    mStr = val.slice(0,2); yStr = val.slice(2);
+                } else if (val.length === 5) { 
+                    // Vd: 52003 -> 5 và 2003
+                    let y4 = parseInt(val.slice(1));
+                    if (y4 >= 1999 && y4 <= currentYear + 5) {
+                        mStr = val.slice(0,1); yStr = val.slice(1);
+                    } else {
+                        mStr = val.slice(0,2); yStr = val.slice(2);
+                    }
+                } else if (val.length === 4) { 
+                    // Vd: 6207 -> 6 và 207 | 0425 -> 04 và 25
+                    let m2 = parseInt(val.slice(0,2));
+                    if (m2 >= 1 && m2 <= 12) {
+                        mStr = val.slice(0,2); yStr = val.slice(2);
+                    } else {
+                        mStr = val.slice(0,1); yStr = val.slice(1);
+                    }
+                } else {
+                    mStr = val.slice(0,2); yStr = val.slice(2);
+                }
+            }
+
+            // XỬ LÝ LỖI THÁNG (Tháng > 12 hoặc = 0)
+            let m = parseInt(mStr);
+            if (isNaN(m)) {
+                mStr = "01";
+            } else if (m === 0) {
+                // mm=0 -> 10. Nhưng nếu gõ 0/2019 thì ưu tiên 01
+                mStr = (originalVal.startsWith("0/")) ? "01" : "10";
+            } else if (m > 12) {
+                // Thay số đầu bằng 0 (Vd: 15 -> 05, 24 -> 04)
+                mStr = "0" + String(m).slice(-1); 
+            } else {
+                mStr = String(m).padStart(2, '0'); // Thêm số 0 nếu m/yyyy
+            }
+
+            // XỬ LÝ LỖI NĂM THIẾU SỐ
+            if (yStr.length === 2) { 
+                // Vd: 25 -> 2025
+                let y2 = parseInt(yStr);
+                if (y2 === 99) yStr = "1999";
+                else yStr = "20" + yStr.padStart(2, '0');
+            } else if (yStr.length === 3) {
+                // Vd: 205 -> 2005 | 019 -> 2019
+                if (yStr.startsWith("0")) yStr = "2" + yStr;
+                else if (yStr.startsWith("2")) yStr = "20" + yStr.slice(1);
+                else if (yStr.startsWith("9")) yStr = "1" + yStr;
+                else yStr = "20" + yStr.slice(-2);
+            }
+            
+            // XỬ LÝ LỖI NĂM VƯỢT GIỚI HẠN (Trước 1999 hoặc quá 5 năm)
+            let y = parseInt(yStr);
+            if (isNaN(y)) y = currentYear;
+
+            if (y < 1999) {
+                // Vd: gõ nhầm 1019 -> ép về 2019 nếu hợp lý
+                let assumedYear = parseInt("20" + String(y).slice(-2));
+                if (assumedYear >= 1999 && assumedYear <= currentYear + 5) yStr = String(assumedYear);
+                else yStr = "1999";
+            } else if (y > currentYear + 5) {
+                // Vd: gõ nhầm 3025 -> ép về 2025
+                let assumedYear = parseInt("20" + String(y).slice(-2));
+                if (assumedYear >= 1999 && assumedYear <= currentYear + 5) yStr = String(assumedYear);
+                else yStr = String(currentYear);
+            }
+
+            let suggested = mStr + "/" + yStr;
+
+            // Nếu sửa xong mà trùng khớp (chỉ là m/yyyy -> 0m/yyyy) thì cho qua luôn
+            if (suggested === originalVal || suggested === "0" + originalVal) return suggested;
+
+            // BẬT BẢNG HỎI CONFIRM
+            let msg = `Dòng ${rowNum}: Cột [${fieldName}] có dữ liệu sai: "${originalVal}".\n\nHệ thống AI nội bộ phân tích và đề xuất sửa thành:\n👉 ${suggested}\n\n- Nhấn OK để tự động sửa thành số này (hoặc tự gõ số khác).\n- Nhấn Cancel để HỦY TOÀN BỘ tiến trình và ra ngoài tự sửa file.`;
+            let userInput = prompt(msg, suggested);
+            
+            if (userInput === null) {
+                throw new Error("USER_CANCELLED");
+            }
+            
+            // Xử lý nốt nếu user ngoan cố gõ lại m/yyyy vào bảng prompt
+            userInput = String(userInput).trim().replace(/\s+/g, '');
+            if (/^\d\/\d{4}$/.test(userInput)) userInput = "0" + userInput;
+            
+            return userInput;
+        }
+
+        // --- CẤU TRÚC ĐỊNH DẠNG EXCEL DÙNG CHUNG ---
+        const borderFull = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        const borderNoLeft = { top: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+        const borderNoRight = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } };
+        const borderTopBottom = { top: { style: "thin" }, bottom: { style: "thin" } };
+
+        const applyThinBorders = (cell, noLeft, noRight) => {
+            if (!noLeft && !noRight) cell.style("border", borderFull);
+            else if (noLeft && !noRight) cell.style("border", borderNoLeft);
+            else if (!noLeft && noRight) cell.style("border", borderNoRight);
+            else cell.style("border", borderTopBottom);
+        };
+
+        const appendFooterSafe = (ws, ghichuSheet, destRow) => {
+            if (!ghichuSheet) return;
+            if (ghichuSheet._node && ghichuSheet._node.children) {
+                const mergeCellsNode = ghichuSheet._node.children.find(c => c.name === 'mergeCells');
+                if (mergeCellsNode && mergeCellsNode.children) {
+                    mergeCellsNode.children.forEach(mergeCell => {
+                        const ref = mergeCell.attributes.ref; const match = ref.match(/^([a-zA-Z]+)(\d+):([a-zA-Z]+)(\d+)$/);
+                        if (match) { 
+                            let c1 = match[1], r1 = parseInt(match[2]), c2 = match[3], r2 = parseInt(match[4]); 
+                            if (r1 >= 11 && r2 <= 23) { 
+                                let newR1 = destRow + (r1 - 11), newR2 = destRow + (r2 - 11); 
+                                try { ws.range(`${c1}${newR1}:${c2}${newR2}`).merged(true); } catch(e) {} 
+                            } 
+                        }
+                    });
+                }
+            }
+            const safeStyles = ["bold", "italic", "underline", "fontSize", "fontFamily", "horizontalAlignment", "verticalAlignment", "wrapText"];
+            for (let r = 11; r <= 23; r++) {
+                let currentDestRow = destRow + (r - 11); const h = ghichuSheet.row(r).height(); if (h !== undefined) ws.row(currentDestRow).height(h);
+                for (let c = 1; c <= 20; c++) {
+                    const srcCell = ghichuSheet.cell(r, c); const dstCell = ws.cell(currentDestRow, c);
+                    if (srcCell.formula()) dstCell.formula(srcCell.formula()); else if (srcCell.value() !== undefined && srcCell.value() !== null) dstCell.value(srcCell.value());
+                    safeStyles.forEach(key => { let val = srcCell.style(key); if (val !== undefined && typeof val !== 'object') dstCell.style(key, val); });
+                    dstCell.style("horizontalAlignment", "left"); 
+                }
+            }
+        };
+
+        const danhSachTrungTam = [
+            { id: "tt1", ten: "Trung tâm kiểm định TQT" },
+            { id: "tt2", ten: "TT kiểm định Nam Định" },
+            { id: "tt3", ten: "Trung tâm kiểm định 3" }
+        ];
+		const danhSachChiNhanh = [
+            { id: "cnMB", ten: "Chi nhánh Miền Bắc" },
+            { id: "cnTB", ten: "Chi nhánh Tây Bắc" },
+            { id: "cnMT", ten: "Chi nhánh Miền Trung" },
+            { id: "cnMN", ten: "Chi nhánh Miền Nam" }
+        ];
+        
+        window.onload = function() {
+		// NẠP DANH SÁCH TÀI KHOẢN VÀO FORM ĐĂNG NHẬP
+            const selLoginEmail = document.getElementById('loginEmail');
+            const selSecureEmail = document.getElementById('secureEmail');
+            selLoginEmail.innerHTML = '<option value="" disabled selected>-- Chọn tài khoản --</option>';
+            selSecureEmail.innerHTML = '<option value="" disabled selected>-- Chọn tài khoản --</option>';
+            Object.keys(userCenterMap).forEach(email => {
+                selLoginEmail.innerHTML += `<option value="${email}">${email}</option>`;
+                selSecureEmail.innerHTML += `<option value="${email}">${email}</option>`;
+            });
+			
+            const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
+            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}">${tt.ten}</option>`; });
+			// BỔ SUNG: Nạp danh sách Chi nhánh
+            const selCN = document.getElementById('chiNhanhInput'); 
+            selCN.innerHTML = '<option value="" disabled selected>-- Vui lòng chọn Chi nhánh --</option>';
+            const selOldCN = document.getElementById('oldChiNhanhInput'); 
+            selOldCN.innerHTML = '<option value="" disabled selected>-- Vui lòng chọn Chi nhánh --</option>';
+            danhSachChiNhanh.forEach(cn => { 
+                selCN.innerHTML += `<option value="${cn.id}">${cn.ten}</option>`; 
+                selOldCN.innerHTML += `<option value="${cn.id}">${cn.ten}</option>`; 
+            });
+            
+            // Thiết lập lại quyền nếu Firebase Auth Load xong trước HTML
+            if(auth.currentUser) window.applyUserRole(auth.currentUser.email);
+            
+            // Hiệu ứng đổi màu nút xử lý khi bấm tích Chai Hủy
+            document.getElementById('isHuyCheckbox').addEventListener('change', function() {
+                const btn = document.getElementById('mainProcessBtn');
+                if(this.checked) {
+                    btn.innerHTML = "Xử Lý dữ liệu HỦY (X)";
+                    btn.style.backgroundColor = "#dc3545";
+                } else {
+                    btn.innerHTML = "Xử Lý dữ liệu Kiểm định (√)";
+                    btn.style.backgroundColor = "#007bff";
+                }
+            });
+        };
+        
+        function getTrungTamDuocChon() { return document.getElementById('trungTamSelect').value; }
+
+        // --- XỬ LÝ KÉO THẢ ---
+        const dropZone = document.getElementById('dropZone'); const fileInput = document.getElementById('fileInput'); const fileList = document.getElementById('fileList'); const clearFilesBtn = document.getElementById('clearFilesBtn');
+        let selectedDataFiles = []; 
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover')); 
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files); });
+        fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) handleFiles(fileInput.files); });
+        function handleFiles(files) { let newFiles = Array.from(files).filter(f => f.name.endsWith('.xls') || f.name.endsWith('.xlsx')); selectedDataFiles = [...selectedDataFiles, ...newFiles]; updateFileList(); }
+        window.clearFiles = function() { selectedDataFiles = []; fileInput.value = ""; updateFileList(); document.getElementById('logArea').innerHTML = "<i>Đã xóa danh sách file...</i>"; }
+        function updateFileList() {
+            if (selectedDataFiles.length === 0) { fileList.style.display = "none"; fileList.innerHTML = ""; clearFilesBtn.style.display = 'none'; return; }
+            fileList.style.display = "block"; fileList.innerHTML = "<strong>Đã nạp " + selectedDataFiles.length + " file:</strong><br>" + selectedDataFiles.map(f => f.name).join("<br>"); clearFilesBtn.style.display = 'inline-block';
+        }
+
+        // ==========================================
+        // ĐIỀU HƯỚNG NÚT XỬ LÝ CHÍNH
+        // ==========================================
+        window.runProcess = function() {
+            window.processFiles();
+        };
+
+        // ==========================================
+        // QUẢN LÝ LỊCH SỬ NHẬP LIỆU (Sắp xếp & Xuất Excel)
+        // ==========================================
+        window.currentHistoryData = [];
+        window.currentSortCol = '';
+        window.isSortAsc = true;
+        window.pendingDelete = null; // Lưu tạm thông tin phiên cần xóa
+
+        window.openHistoryModal = async function() { document.getElementById('historyModal').style.display = 'flex'; await loadHistoryTable(); }
+        window.updateHistoryIfOpen = function() { if(document.getElementById('historyModal').style.display === 'flex') loadHistoryTable(); }
+
+        async function loadHistoryTable() {
+            const trungTamId = getTrungTamDuocChon();
+            const tbody = document.getElementById('historyTableBody'); const loading = document.getElementById('historyLoading');
+            tbody.innerHTML = ''; loading.style.display = 'block';
+            
+            const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap`));
+            loading.style.display = 'none';
+
+            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có lịch sử nhập liệu nào.</td></tr>'; window.currentHistoryData = []; return; }
+            const data = snap.val();
+            // Lưu dữ liệu vào biến toàn cục để phục vụ sắp xếp và xuất file
+            window.currentHistoryData = Object.keys(data).map(key => data[key]).sort((a, b) => b.timeStamp - a.timeStamp);
+            window.renderHistoryTable();
+        }
+
+        // Hàm render giao diện bảng từ biến toàn cục
+        window.renderHistoryTable = function() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            const trungTamId = getTrungTamDuocChon();
+
+            window.currentHistoryData.forEach(item => {
+                const tr = document.createElement('tr');
+                let statusHtml = item.isHuy ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
+                let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
+                
+                // Hiển thị tên Chi nhánh (match từ ID)
+                let cnName = "Không xác định";
+                if (item.chiNhanhSD) {
+                    let cnObj = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD);
+                    if(cnObj) cnName = cnObj.ten;
+                }
+
+                tr.innerHTML = `
+                    <td style="font-size:12px;">${formatEpochToLocal(item.timeStamp)}</td>
+                    <td><span style="color:#007bff; font-weight:bold">${item.thoiDiemKD || "N/A"}</span></td>
+                    <td><b>${item.loaiChai}</b></td>
+                    <td>${item.total}</td>
+                    <td style="font-size:13px;">${cnName}</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                        <button class="btn-action" style="background-color:#17a2b8;" onclick="window.openEditHistoryModal('${item.timeStamp}', '${item.thoiDiemKD||''}', '${item.chiNhanhSD||''}')">Sửa</button>
+                        ${recreateBtnHtml}
+                        <button class="btn-action btn-del" onclick="window.requestSecureDelete('${trungTamId}', '${item.timeStamp}')">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+		
+		// XỬ LÝ SỬA LỊCH SỬ NHẬP LIỆU
+        window.openEditHistoryModal = function(timeStamp, thoiDiem, chiNhanh) {
+            document.getElementById('editHisTimeStamp').value = timeStamp;
+            document.getElementById('editHisThoiDiem').value = thoiDiem === "Nhiều thời điểm" ? "" : thoiDiem;
+            
+            const selCN = document.getElementById('editHisChiNhanh'); 
+            selCN.innerHTML = '<option value="" disabled>-- Vui lòng chọn Chi nhánh --</option>';
+            danhSachChiNhanh.forEach(cn => { 
+                selCN.innerHTML += `<option value="${cn.id}" ${cn.id === chiNhanh ? 'selected' : ''}>${cn.ten}</option>`; 
+            });
+            document.getElementById('editHistoryModal').style.display = 'flex';
+        }
+
+        window.saveEditHistory = async function() {
+            const timeStamp = document.getElementById('editHisTimeStamp').value;
+            const newThoiDiem = document.getElementById('editHisThoiDiem').value.trim();
+            const newChiNhanh = document.getElementById('editHisChiNhanh').value;
+            
+            if (newThoiDiem && !newThoiDiem.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Định dạng Thời điểm kiểm định phải là mm/yyyy"); return; }
+            if (!newChiNhanh) { alert("Vui lòng chọn Chi nhánh sử dụng mới!"); return; } // Chốt chặn
+            
+            const trungTamId = getTrungTamDuocChon();
+            const loading = document.getElementById('historyLoading');
+            window.closeModal('editHistoryModal');
+            loading.innerText = "Đang cập nhật hàng loạt dữ liệu chai..."; loading.style.display = 'block';
+            
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (!snap.exists()) throw new Error("Không tìm thấy dữ liệu phiên này!");
+                
+                let sessionData = snap.val();
+                let updates = {};
+                let oldThoiDiem = sessionData.thoiDiemKD;
+                
+                updates[`${trungTamId}/LichSuNhap/${timeStamp}/thoiDiemKD`] = newThoiDiem || oldThoiDiem;
+                updates[`${trungTamId}/LichSuNhap/${timeStamp}/chiNhanhSD`] = newChiNhanh;
+
+                let dataPaths = [];
+                if (sessionData.paths && Array.isArray(sessionData.paths)) dataPaths = sessionData.paths; 
+                else if (sessionData.paths) dataPaths = Object.values(sessionData.paths);
+
+                dataPaths.forEach(p => {
+                    if (p.includes('/DanhSachChai/')) {
+                        if (newThoiDiem) updates[`${p}/recentCheck`] = newThoiDiem;
+                        updates[`${p}/chiNhanhSD`] = newChiNhanh;
+                    }
+                });
+                
+                // AI Tự động cân bằng Thống kê nếu đổi lệch năm
+                if (newThoiDiem && oldThoiDiem && newThoiDiem !== "Nhiều thời điểm" && oldThoiDiem !== "Nhiều thời điểm") {
+                    let oldYear = oldThoiDiem.split('/')[1]; let newYear = newThoiDiem.split('/')[1];
+                    if (oldYear !== newYear && sessionData.stats) {
+                        let newStats = JSON.parse(JSON.stringify(sessionData.stats));
+                        for(let lc in sessionData.stats) {
+                            for(let rY in sessionData.stats[lc]) { 
+                                if (rY !== oldYear) continue; 
+                                let total = sessionData.stats[lc][rY].total; let byNamCT = sessionData.stats[lc][rY].byNamCT;
+                                // Trừ dồn năm cũ
+                                updates[`Tonghop/Thongke/${lc}/${oldYear}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(-total);
+                                updates[`Tonghop/Thongke/${lc}/${oldYear}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(-total);
+                                for(let yCT in byNamCT) {
+                                    updates[`Tonghop/Thongke/${lc}/${oldYear}/soKDtheoNamCT/${trungTamId}/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-byNamCT[yCT]);
+                                    updates[`Tonghop/Thongke/${lc}/${oldYear}/soKDtheoNamCT/Toan_dien/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-byNamCT[yCT]);
+                                }
+                                // Cộng dồn năm mới
+                                updates[`Tonghop/Thongke/${lc}/${newYear}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(total);
+                                updates[`Tonghop/Thongke/${lc}/${newYear}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(total);
+                                for(let yCT in byNamCT) {
+                                    updates[`Tonghop/Thongke/${lc}/${newYear}/soKDtheoNamCT/${trungTamId}/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(byNamCT[yCT]);
+                                    updates[`Tonghop/Thongke/${lc}/${newYear}/soKDtheoNamCT/Toan_dien/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(byNamCT[yCT]);
+                                }
+                                newStats[lc][newYear] = newStats[lc][oldYear]; delete newStats[lc][oldYear];
+                            }
+                        }
+                        updates[`${trungTamId}/LichSuNhap/${timeStamp}/stats`] = newStats;
+                    }
+                }
+
+                // Chunk update (Chia nhỏ 400 file đẩy lên 1 lúc)
+                let keys = Object.keys(updates); let chunk = {}; let count = 0; let promises = [];
+                for (let k of keys) { chunk[k] = updates[k]; count++; if (count >= 400) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; } }
+                if (count > 0) promises.push(update(ref(db), chunk));
+                await Promise.all(promises);
+
+                alert("Sửa dữ liệu lô thành công!"); loadHistoryTable(); 
+            } catch(e) { console.error(e); alert("Lỗi cập nhật: " + e.message); loading.style.display = 'none'; }
+        }
+
+        // Hàm Sắp xếp (Sort)
+        window.sortHistory = function(col) {
+            if (window.currentHistoryData.length === 0) return;
+            if (window.currentSortCol === col) { window.isSortAsc = !window.isSortAsc; } 
+            else { window.currentSortCol = col; window.isSortAsc = true; }
+
+            window.currentHistoryData.sort((a, b) => {
+                let valA = a[col] || ""; let valB = b[col] || "";
+                if (col === 'timeStamp' || col === 'total') {
+                    valA = Number(valA); valB = Number(valB);
+                } else if (col === 'thoiDiemKD') {
+                    valA = valA !== "Nhiều thời điểm" ? parseDateMMYYYY(valA).getTime() : 0;
+                    valB = valB !== "Nhiều thời điểm" ? parseDateMMYYYY(valB).getTime() : 0;
+                }
+                if (valA < valB) return window.isSortAsc ? -1 : 1;
+                if (valA > valB) return window.isSortAsc ? 1 : -1;
+                return 0;
+            });
+            window.renderHistoryTable();
+        }
+
+        // ==========================================
+        // TÍNH NĂNG XUẤT EXCEL BÁO CÁO TỔNG HỢP
+        // ==========================================
+        window.openExportHistoryModal = function() {
+            if(window.currentHistoryData.length === 0) { alert("Không có dữ liệu để xuất!"); return; }
+            
+            // Lọc các năm có trong CSDL để nhét vào Combobox
+            let years = new Set();
+            window.currentHistoryData.forEach(item => {
+                if (item.thoiDiemKD && item.thoiDiemKD !== "Nhiều thời điểm") {
+                    years.add(item.thoiDiemKD.split('/')[1]);
+                }
+            });
+            const sel = document.getElementById('expYearSelect');
+            sel.innerHTML = '';
+            Array.from(years).sort().reverse().forEach(y => { sel.innerHTML += `<option value="${y}">${y}</option>`; });
+            
+            document.getElementById('exportHistoryModal').style.display = 'flex';
+        }
+
+        window.executeExportHistory = async function() {
+            // Đọc cấu hình
+            const timeMode = document.querySelector('input[name="expTime"]:checked').value;
+            const targetYear = document.getElementById('expYearSelect').value;
+            const statusMode = document.querySelector('input[name="expStatus"]:checked').value;
+            const selectedTypes = Array.from(document.querySelectorAll('.expType:checked')).map(cb => cb.value);
+
+            if (selectedTypes.length === 0) { alert("Phải chọn ít nhất 1 loại chai!"); return; }
+
+            // Lọc dữ liệu
+            let filteredData = window.currentHistoryData.filter(item => {
+                // Lọc trạng thái
+                if (statusMode === 'kd' && item.isHuy) return false;
+                if (statusMode === 'huy' && !item.isHuy) return false;
+                // Lọc Loại chai
+                if (!selectedTypes.includes(item.loaiChai)) return false;
+                // Lọc Thời gian
+                if (timeMode === 'year') {
+                    if (!item.thoiDiemKD || item.thoiDiemKD === "Nhiều thời điểm" || item.thoiDiemKD.split('/')[1] !== targetYear) return false;
+                }
+                return true;
+            });
+
+            if (filteredData.length === 0) { alert("Không có dữ liệu nào khớp với tiêu chí lọc!"); return; }
+
+            // Dùng ExcelJS vẽ file
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('Lich_Su_Nhap');
+            
+            // Tiêu đề (Đổi từ F1 sang G1 vì có 7 cột)
+            ws.mergeCells('A1:G1');
+            ws.getCell('A1').value = 'BÁO CÁO LỊCH SỬ NHẬP LIỆU';
+            ws.getCell('A1').font = { name: 'Times New Roman', size: 16, bold: true };
+            ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+            
+            // Header (Bổ sung cột Chi nhánh SD)
+            ws.addRow(['STT', 'Thời điểm lập (Hệ thống)', 'Kỳ kiểm định', 'Loại chai', 'Số lượng', 'Chi nhánh SD', 'Trạng thái (KĐ/Hủy)']);
+            const headerRow = ws.getRow(2);
+            headerRow.font = { name: 'Times New Roman', size: 12, bold: true };
+            headerRow.alignment = { horizontal: 'center' };
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            });
+
+            // Định dạng độ rộng cho 7 cột
+            ws.columns = [
+                { width: 8 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 12 }, { width: 25 }, { width: 20 }
+            ];
+
+            // Đổ dữ liệu
+            let totalChai = 0;
+            filteredData.forEach((item, index) => {
+                totalChai += (item.total || 0);
+                
+                // Lấy tên chi nhánh từ ID
+                let cnName = "Không xác định";
+                if (item.chiNhanhSD) {
+                    let cnObj = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD);
+                    if(cnObj) cnName = cnObj.ten;
+                }
+
+                const row = ws.addRow([
+                    index + 1,
+                    formatEpochToLocal(item.timeStamp),
+                    item.thoiDiemKD || "N/A",
+                    item.loaiChai,
+                    item.total,
+                    cnName, // Thêm dữ liệu Chi nhánh vào cột 6
+                    item.isHuy ? "Hủy" : "Kiểm định"
+                ]);
+                row.font = { name: 'Times New Roman', size: 11 };
+                row.eachCell(cell => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
+                row.getCell(1).alignment = { horizontal: 'center' };
+                row.getCell(3).alignment = { horizontal: 'center' };
+                row.getCell(4).alignment = { horizontal: 'center' };
+                row.getCell(5).alignment = { horizontal: 'center' };
+                row.getCell(6).alignment = { horizontal: 'left' };
+                row.getCell(7).alignment = { horizontal: 'center' };
+            });
+
+            // Dòng tổng cộng (Thêm 1 ô trống vào cuối để khớp 7 cột)
+            const sumRow = ws.addRow(['', '', '', 'TỔNG CỘNG:', totalChai, '', '']);
+            sumRow.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFF0000' } };
+            sumRow.eachCell(cell => { cell.border = { top: {style:'double'}, bottom: {style:'double'} }; });
+
+            // Lưu file
+            const buffer = await wb.xlsx.writeBuffer(); 
+            saveAs(new Blob([buffer]), `BaoCao_LichSu_${getTrungTamDuocChon()}.xlsx`);
+            window.closeModal('exportHistoryModal');
+        }
+
+        // ==========================================
+        // BẢO MẬT LỚP 2: XÁC THỰC TRƯỚC KHI XÓA
+        // ==========================================
+        window.requestSecureDelete = function(trungTamId, timeStamp) {
+            window.pendingDelete = { trungTamId, timeStamp };
+            document.getElementById('secureEmail').value = '';
+            document.getElementById('securePass').value = '';
+            document.getElementById('secureError').style.display = 'none';
+            document.getElementById('secureAuthModal').style.display = 'flex';
+        }
+
+        window.executeSecureDelete = async function() {
+            let email = document.getElementById('secureEmail').value;
+            const pass = document.getElementById('securePass').value;
+            const errorDiv = document.getElementById('secureError');
+            const btn = document.getElementById('btnConfirmDelete');
+
+            if(!email || !pass) { errorDiv.innerText = "Vui lòng chọn tài khoản và nhập mật khẩu!"; errorDiv.style.display = "block"; return; }
+
+            btn.innerText = "ĐANG KIỂM TRA..."; btn.disabled = true;
+            
+            try {
+                // Gọi Auth của Firebase để kiểm chứng
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Vượt qua vòng bảo mật -> Tiến hành xóa
+                window.closeModal('secureAuthModal');
+                await window.deleteHistorySession(window.pendingDelete.trungTamId, window.pendingDelete.timeStamp);
+                
+            } catch (error) {
+                console.error(error);
+                errorDiv.innerText = "Sai mật khẩu! Không đủ thẩm quyền.";
+                errorDiv.style.display = "block";
+            } finally {
+                btn.innerText = "XÁC NHẬN XÓA"; btn.disabled = false;
+            }
+        }
+
+        // Thực thi lệnh xóa lên CSDL
+        window.deleteHistorySession = async function(trungTamId, timeStamp) {
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (snap.exists()) {
+                    const data = snap.val(); let delUpdates = {};
+                    if (data.paths && Array.isArray(data.paths)) data.paths.forEach(p => { delUpdates[p] = null; });
+                    else if (data.paths) Object.values(data.paths).forEach(p => { delUpdates[p] = null; });
+                    
+                    if (data.stats) {
+                        for(let lc in data.stats) {
+                            for(let rY in data.stats[lc]) {
+                                delUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(-data.stats[lc][rY].total);
+                                delUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(-data.stats[lc][rY].total);
+
+                                for(let yCT in data.stats[lc][rY].byNamCT) {
+                                    delUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-data.stats[lc][rY].byNamCT[yCT]);
+                                    delUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-data.stats[lc][rY].byNamCT[yCT]);
+                                }
+                            }
+                        }
+                    }
+
+                    delUpdates[`${trungTamId}/LichSuNhap/${timeStamp}`] = null;
+                    await update(ref(db), delUpdates);
+                    alert("Đã xóa thành công lô dữ liệu!"); 
+                    loadHistoryTable(); 
+                } else alert("Không tìm thấy dữ liệu để xóa trên CSDL.");
+            } catch (err) { alert("Lỗi khi xóa: " + err.message); }
+        }
+
+        // ==========================================
+        // BỔ SUNG DỮ LIỆU CŨ (TỪ EXCEL)
+        // ==========================================
+        window.openOldDataModal = function() { document.getElementById('oldDataModal').style.display = 'flex'; }
+
+        // ==========================================
+        // BỔ SUNG DỮ LIỆU CŨ (VỊ TRÍ CỘT ĐÃ ĐƯỢC DỊCH TRÁI)
+        // ==========================================
+        window.downloadOldDataTemplate = async function() {
+            const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_BoSungDuLieu');
+            // Mẫu mới chỉ còn 10 cột do đã bỏ cột Loại chai và Thời điểm
+            ws.addRow(['STT', 'Nhà CT', 'Năm CT (mm/yyyy)', 'Mã hiệu', 'Serial', 'Khối lượng', 'Kiểm định lần trước (mm/yyyy)', 'Kiểm định kỳ tới (mm/yyyy)', 'Chai hủy (để trống/k = Không)', 'Lý do hủy']);
+            ws.getRow(1).font = { bold: true }; 
+            ws.columns = [{width: 10},{width: 25},{width: 25},{width: 15},{width: 15},{width: 15},{width: 25},{width: 25},{width: 30},{width: 35}];
+            ws.columns.forEach(column => { column.numFmt = '@'; });
+            const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_BoSung_DuLieuCu.xlsx");
+        }
+
+        window.pendingOldDataFile = null;
+        
+        // Hàm 1: Bắt sự kiện người dùng chọn file -> Mở Modal Cấu hình
+        window.importOldDataFromExcel = function(e) {
+            const file = e.target.files[0]; if(!file) return;
+            window.pendingOldDataFile = file;
+            window.closeModal('oldDataModal');
+            document.getElementById('oldThoiDiemInput').value = ""; // Xóa rỗng để ép user nhập
+            document.getElementById('oldDataConfigModal').style.display = 'flex';
+            e.target.value = ""; // Reset value để có thể chọn lại file nếu cần
+        }
+
+        // Hàm 2: Thực thi sau khi điền Modal và bấm Bắt đầu nhập liệu
+        window.processImportOldData = async function() {
+            const globalLoaiChai = document.getElementById('oldLoaiChaiInput').value;
+            const globalThoiDiem = document.getElementById('oldThoiDiemInput').value.trim();
+            const globalChiNhanh = document.getElementById('oldChiNhanhInput').value;
+            
+            if (!globalThoiDiem.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Vui lòng nhập đúng định dạng Thời điểm kiểm định mm/yyyy"); return; }
+            if (!globalChiNhanh) { alert("Vui lòng chọn Chi nhánh sử dụng!"); return; } // Chốt chặn
+            
+            window.closeModal('oldDataConfigModal');
+            const file = window.pendingOldDataFile;
+            if(!file) return;
+
+            const trungTamId = getTrungTamDuocChon();
+            document.getElementById('logArea').innerHTML = ""; addLog("Đang đọc file bổ sung dữ liệu cũ...");
+
+            try {
+                const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer());
+                const ws = wb.worksheets[0]; 
+                
+                let updates = {}; let batchPathsList = []; let sessionStats = {}; let sourceStructureUpdates = {};
+                let validCount = 0; let errorCount = 0; const batchTimestamp = Date.now().toString();
+                let serialStrings = "";
+
+                const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+                const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
+
+                // --- BẮT ĐẦU: PRE-SCAN VỚI CHỈ SỐ CỘT MỚI DỊCH TRÁI ---
+                let rowData = [];
+                let firstNextDate = null, isNextDateConsistent = true, missingNextDate = false;
+
+                ws.eachRow((row, rowNumber) => {
+                    if(rowNumber === 1) return; // Bỏ qua Header
+                    
+                    // Cột 9 (I): Chai hủy
+                    let voHuyRaw = String(row.getCell(9).value || "").trim().toLowerCase(); 
+                    let isHuyRow = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
+
+                    // Cột 3 (C): Năm CT
+                    let namCT_orig_raw = String(row.getCell(3).value || "").trim();
+                    let namCT_orig = (!isHuyRow && namCT_orig_raw) ? window.fixDateString(namCT_orig_raw, "Năm CT", rowNumber) : namCT_orig_raw;
+
+                    // Cột 7 (G): KĐ lần trước
+                    let lastCheck_orig_raw = String(row.getCell(7).value || "").trim();
+                    let lastCheck_orig = (!isHuyRow && lastCheck_orig_raw) ? window.fixDateString(lastCheck_orig_raw, "Kiểm định lần trước", rowNumber) : lastCheck_orig_raw;
+
+                    // Cột 8 (H): KĐ kỳ tới
+                    let nextDate_orig_raw = String(row.getCell(8).value || "").trim(); 
+                    let nextDate_orig = (!isHuyRow && nextDate_orig_raw) ? window.fixDateString(nextDate_orig_raw, "Kiểm định kỳ tới", rowNumber) : nextDate_orig_raw;
+
+                    if (!nextDate_orig) missingNextDate = true;
+                    else {
+                        if (!firstNextDate) firstNextDate = nextDate_orig;
+                        else if (nextDate_orig !== firstNextDate) isNextDateConsistent = false;
+                    }
+
+                    rowData.push({
+                        rowNumber: rowNumber,
+                        nhaCT_orig: String(row.getCell(2).value || "").trim(), // Cột 2 (B): Nhà CT
+                        namCT_orig: namCT_orig,
+                        maHieu: String(row.getCell(4).value || "").trim(),     // Cột 4 (D): Mã hiệu
+                        serial: String(row.getCell(5).value || "").trim(),     // Cột 5 (E): Serial
+                        khoiLuong: String(row.getCell(6).value || "").trim(),  // Cột 6 (F): Khối lượng
+                        lastCheck_orig: lastCheck_orig,
+                        nextDate_orig: nextDate_orig,
+                        isHuyRow: isHuyRow,
+                        lyDoHuy: String(row.getCell(10).value || "").trim()    // Cột 10 (J): Lý do hủy
+                    });
+                });
+
+                if (missingNextDate && isNextDateConsistent && firstNextDate) {
+                    if (confirm(`Hệ thống phát hiện [Kiểm định kỳ tới (${firstNextDate})] bị bỏ trống ở một số dòng nhưng đồng nhất ở các dòng có dữ liệu.\nNhấn OK để TỰ ĐỘNG ĐIỀN cho toàn bộ. Nhấn Cancel để tự sửa file.`)) {
+                        rowData.forEach(r => { if (!r.nextDate_orig) r.nextDate_orig = firstNextDate; });
+                        addLog(`Đã tự động điền KĐ kỳ tới cho các dòng trống.`);
+                    } else {
+                        addLog("Đã hủy nhập liệu để người dùng sửa file.");
+                        document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>";
+                        return; // Dừng tiến trình
+                    }
+                }
+                // --- KẾT THÚC PRE-SCAN ---
+
+                // Tải dữ liệu Lô nguồn để đối chiếu
+                addLog("Đang tải dữ liệu Lô nguồn để tự động đối chiếu...");
+                const snapLots = await get(child(ref(db), 'Tonghop/Thongtinnguon'));
+                let allLots = [];
+                if(snapLots.exists()) {
+                    let dNguon = snapLots.val();
+                    for(let lc in dNguon) {
+                        for(let ns in dNguon[lc]) {
+                            for(let nx in dNguon[lc][ns]) {
+                                if(dNguon[lc][ns][nx].DanhSachLot) {
+                                    let lots = dNguon[lc][ns][nx].DanhSachLot;
+                                    for(let lid in lots) allLots.push({ lc, ns, nx, lid, ...lots[lid] });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Xử lý đẩy dữ liệu (Quét qua mảng rowData đã được xử lý)
+                for (let r of rowData) {
+                    let { rowNumber, nhaCT_orig, namCT_orig, maHieu, serial, khoiLuong, lastCheck_orig, nextDate_orig, isHuyRow, lyDoHuy } = r;
+
+                    if (!nhaCT_orig || !namCT_orig) { console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); errorCount++; continue; }
+
+                    const namCT_id = namCT_orig.replace(/\//g, '-'); 
+                    const rY = globalThoiDiem.split('/')[1]; const yCT = namCT_orig.split('/')[1];
+                    let nhaCT_id = nhaCT_orig.replace(/\//g, '-');
+
+                    if (!nhaCT_id) {
+                        nhaCT_id = "Chua_Xac_Dinh"; nhaCT_orig = "Chưa xác định";
+                    } else {
+                        let found = Object.keys(existingNhaCT).find(k => k.toLowerCase() === nhaCT_id.toLowerCase());
+                        if (found) {
+                            nhaCT_id = found; 
+                        } else {
+                            sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
+                            existingNhaCT[nhaCT_id] = { tenDayDu: nhaCT_orig }; 
+                        }
+                    }
+                    sourceStructureUpdates[`Tonghop/Thongtinnguon/${globalLoaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
+
+                    const newChaiKey = push(child(ref(db), 'temp')).key;
+                    const dataPath = `${trungTamId}/${globalLoaiChai}/${namCT_id}/${nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    
+                    let chaiData = { 
+                        maHieu, serial, khoiLuong, lastCheck: lastCheck_orig.replace(/\//g, '-'), lastCheckOriginal: lastCheck_orig, 
+                        timeStamp: batchTimestamp, voHuy: isHuyRow, recentCheck: globalThoiDiem, nextDate: nextDate_orig, 
+                        nhaCT: nhaCT_orig, namCT: namCT_orig, chiNhanhSD: globalChiNhanh // ĐƯA TRƯỜNG CHINHANHSD VÀO
+                    };
+                    if (isHuyRow) chaiData.lyDoHuy = lyDoHuy; 
+
+                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG
+                    let matchedLot = allLots.find(lot => {
+                        if(lot.lc !== globalLoaiChai || lot.nx !== nhaCT_id) return false;
+                        let yearLot = lot.ns.split('-')[1];
+                        let yearChai = namCT_orig.split('/')[1];
+                        if(yearChai !== yearLot) return false;
+                        if (trungTamId !== 'tt1') {
+                            let chaiMaHieu = (maHieu || "").trim().toLowerCase();
+                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                            if (chaiMaHieu !== lotMaHieu) return false;
+                        }
+                        return window.isSerialMatch(serial, lot.serialMin, lot.serialMax);
+                    });
+                    if (matchedLot) {
+                        chaiData.loNguon = matchedLot.lid;
+                        chaiData.chaiThue = matchedLot.chaiThue === true;
+                    }
+
+                    updates[dataPath] = chaiData; batchPathsList.push(dataPath); validCount++;
+
+                    if(yCT && rY && !isHuyRow) {
+                        if(!sessionStats[globalLoaiChai]) sessionStats[globalLoaiChai] = {};
+                        if(!sessionStats[globalLoaiChai][rY]) sessionStats[globalLoaiChai][rY] = { total: 0, byNamCT: {} };
+                        sessionStats[globalLoaiChai][rY].total += 1;
+                        if(!sessionStats[globalLoaiChai][rY].byNamCT[yCT]) sessionStats[globalLoaiChai][rY].byNamCT[yCT] = 0;
+                        sessionStats[globalLoaiChai][rY].byNamCT[yCT] += 1;
+                    }
+
+                    // Gom chuỗi Serial
+                    serialStrings += serial;
+                }
+
+                if(validCount > 0) {
+                    addLog(`Đang kiểm tra trùng lặp trên CSDL (Giới hạn ${DAYS_TO_CHECK_DUPLICATE} ngày)...`);
+                    const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
+                    let allHistoryPath = [];
+                    const snap = await get(child(ref(db), `${trungTamId}/${globalLoaiChai}/LichSuFile`));
+                    if(snap.exists()) { 
+                        let d = snap.val(); 
+                        for(let ts in d) { if (parseInt(ts) >= timeThreshold) { for(let k in d[ts]) allHistoryPath.push(d[ts][k]); } } 
+                    }
+
+                    let serialWarningTriggered = false; let dupDetails = "";
+                    for (let pr of allHistoryPath) {
+                        if (!serialStrings || !pr.serialString) continue;
+                        let lcsLen = getLCSLength(serialStrings, pr.serialString);
+                        if (lcsLen >= 100 || lcsLen >= (serialStrings.length * 0.5)) {
+                            serialWarningTriggered = true; dupDetails = `File: "${pr.fileName}" (Sheet: "${pr.sheetName}")`; break;
+                        }
+                    }
+
+                    if (serialWarningTriggered) {
+                        if (!confirm(`Cảnh báo: Lô chai trong file này khả năng đã được lập hồ sơ (Trùng chuỗi Serial với ${dupDetails}).\n\nNhấn Cancel để hủy bỏ. Nhấn OK để tiếp tục.`)) { 
+                            addLog("Đã hủy thao tác."); document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; 
+                        }
+                    }
+
+                    for(let lc in sessionStats) {
+                        for(let rY in sessionStats[lc]) {
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            for(let yy in sessionStats[lc][rY].byNamCT) {
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                            }
+                        }
+                    }
+                    Object.assign(updates, sourceStructureUpdates);
+
+                    const pushKey = push(child(ref(db), 'temp')).key;
+                    updates[`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`] = { fileName: file.name, sheetName: ws.name, serialString: serialStrings }; 
+                    batchPathsList.push(`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`); 
+
+                    updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                        loaiChai: globalLoaiChai, total: validCount, timeStamp: batchTimestamp, 
+                        thoiDiemKD: globalThoiDiem, chiNhanhSD: globalChiNhanh, paths: batchPathsList, stats: sessionStats, isOldData: true 
+                    };
+
+                    addLog(`Đang đẩy ${validCount} dòng dữ liệu lên RTDB...`);
+                    let chunkUpdates = {}; let count = 0; let promises = [];
+                    for(let k in updates) { chunkUpdates[k] = updates[k]; count++; if(count >= 400) { promises.push(update(ref(db), chunkUpdates)); chunkUpdates = {}; count = 0; } }
+                    if(count > 0) promises.push(update(ref(db), chunkUpdates));
+                    await Promise.all(promises);
+
+                    let msg = `Đã bổ sung ${validCount} chai thành công!`;
+                    if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do thiếu dữ liệu bắt buộc)`;
+                    alert(msg); addLog(msg);
+                } else { alert("Không có dữ liệu hợp lệ để nhập."); }
+                
+            } catch (err) { 
+                console.error(err); 
+                if (err.message === "USER_CANCELLED") {
+                    addLog("Đã hủy thao tác do người dùng từ chối sửa lỗi định dạng.");
+                    document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy nhập liệu.</span>";
+                } else {
+                    alert("Lỗi khi nhập file: " + err.message); 
+                }
+            }
+        }
+
+        // ==========================================
+        // XỬ LÝ CHÍNH - NHÁNH KIỂM ĐỊNH HOẶC HỦY
+        // ==========================================
+        window.processFiles = async function() {
+            const isHuy = document.getElementById('isHuyCheckbox').checked;
+            const dataFiles = selectedDataFiles; 
+            const thoiDiemStr = document.getElementById('thoiDiemInput').value;
+            const loaiChai = document.getElementById('loaiChaiInput').value;
+            let outputFileName = document.getElementById('fileNameInput').value.trim() || (isHuy ? 'DS_chai_Huy' : 'DS_KiemDinh');
+            const statusDiv = document.getElementById('status');
+            const trungTamId = getTrungTamDuocChon();
+            const chiNhanhSD = document.getElementById('chiNhanhInput').value; // Lấy giá trị chi nhánh
+            
+            if (dataFiles.length === 0) { alert("Vui lòng chọn ít nhất 1 file dữ liệu!"); return; }
+            if (!thoiDiemStr.match(/^(0[1-9]|1[0-2])\/[0-9]{4}$/)) { alert("Vui lòng nhập đúng định dạng mm/yyyy (VD: 05/2026)"); return; }
+            if (!chiNhanhSD) { alert("Vui lòng chọn Chi nhánh sử dụng!"); return; } // Chốt chặn
+
+            statusDiv.innerHTML = `<span style='color: blue;'>Đang trích xuất và xử lý dữ liệu ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...</span>`;
+            document.getElementById('logArea').innerHTML = ""; 
+            addLog(`Bắt đầu quy trình ${isHuy ? 'HỦY' : 'KIỂM ĐỊNH'}...`);
+
+            let templateDataBuffer;
+            const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+            const templateName = isHuy ? tplMap.huy : tplMap.kiemDinh;
+            try {
+                addLog(`Đang tải file mẫu (${templateName}) từ máy chủ...`);
+                const response = await fetch(templateName);
+                if (!response.ok) throw new Error(`Không tìm thấy file ${templateName}`);
+                templateDataBuffer = await response.arrayBuffer();
+            } catch (err) { alert("Lỗi tải file mẫu: " + err.message); statusDiv.innerHTML = `<span class='text-danger'>Lỗi: ${err.message}</span>`; return; }
+
+            try {
+                const timeParts = thoiDiemStr.split('/');
+                const mm = timeParts[0]; const yyyy = timeParts[1];
+                let xx = ""; let bbb = "";
+                if (loaiChai === "V12") { xx = "12"; bbb = "26.5"; } else if (loaiChai === "V45") { xx = "45"; bbb = "99"; } else if (loaiChai === "Com") { xx = "Com"; bbb = "24.5"; }
+
+                let taphopDataRaw = []; let newFileLogs = []; let sourceStructureUpdates = {}; 
+                const snapNhaCT = await get(child(ref(db), `Tonghop/DanhsachnhaCT`));
+                const existingNhaCT = snapNhaCT.exists() ? snapNhaCT.val() : {};
+
+                for (let file of dataFiles) {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, {type: 'array'});
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        let sName = sheetName.toLowerCase();
+                        let sheetMatches = false;
+                        
+                        // Lọc TÊN SHEET: 
+                        // 1. Phải chứa đích danh Loại chai đã chọn ở ô Select (v12, v45, com)
+                        // 2. Tùy theo tích Hủy hay không mà có/không có chữ "hủy"
+                        if (sName.includes(loaiChai.toLowerCase())) {
+                            if (isHuy) {
+                                if (sName.includes("hủy") || sName.includes("huỷ")) sheetMatches = true;
+                            } else {
+                                if (!sName.includes("hủy") && !sName.includes("huỷ")) sheetMatches = true;
+                            }
+                        }
+
+                        if (sheetMatches) {
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+                            let currentSerialString = ""; let hasData = false;
+
+                            for (let i = 1; i < rows.length; i++) {
+                                if (rows[i][2]) {
+                                    const sr = String(rows[i][4] || "").trim(); currentSerialString += sr; hasData = true;
+
+                                    // 1. CẢNH VỆ NGÀY THÁNG (Năm CT) - Bỏ qua nếu người dùng đang tích ô Chai Hủy
+                                    const nCT_orig_raw = String(rows[i][2]).trim(); 
+                                    let nCT_orig = nCT_orig_raw;
+                                    // Nếu KHÔNG phải là luồng Hủy thì mới gọi Cảnh vệ kiểm tra định dạng
+                                    if (!isHuy && nCT_orig_raw) {
+                                        nCT_orig = window.fixDateString(nCT_orig_raw, "Năm CT", i + 1);
+                                    }
+
+                                    let nCT_id = isHuy && !(/^\d{2}\/\d{4}$/.test(nCT_orig)) ? "KhongXacDinh" : nCT_orig.replace(/\//g, '-');
+
+let nhCT_orig = String(rows[i][1]).trim(); 
+let nhCT_id = nhCT_orig.replace(/\//g, '-');
+
+if (!nhCT_id) { 
+    nhCT_id = "Chua_Xac_Dinh"; nhCT_orig = "Chưa xác định"; 
+} else {
+    // Tìm xem ID này đã tồn tại chưa (không phân biệt hoa/thường)
+    let found = Object.keys(existingNhaCT).find(k => k.toLowerCase() === nhCT_id.toLowerCase());
+    if (found) {
+        nhCT_id = found; // Dùng lại ID cũ, bỏ qua ghi đè tenDayDu
+    } else {
+        // Chưa có thì tạo mới
+        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
+        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+    }
+}
+
+let dRow = { nhaCT_orig: nhCT_orig, nhaCT_id: nhCT_id, namCT_orig: nCT_orig, namCT_id: nCT_id, maHieu: String(rows[i][3] || "").trim(), serial: sr };
+
+if(isHuy) {
+    dRow.lyDoHuy = String(rows[i][5] || "").trim();
+} else {
+    dRow.khoiLuong = String(rows[i][5] || "").trim();
+    let lastCheck_raw = String(rows[i][6] || "").trim();
+    dRow.lastCheck_orig = lastCheck_raw ? window.fixDateString(lastCheck_raw, "Kiểm định lần trước", i + 1) : "";
+}
+
+taphopDataRaw.push(dRow);
+sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_initialized`] = true;
+                                }
+                            }
+                            if (hasData) newFileLogs.push({ fileName: file.name, sheetName: sheetName, serialString: currentSerialString });
+                        }
+                    });
+                }
+                
+                if(taphopDataRaw.length === 0) {
+                    alert(`Không tìm thấy dữ liệu ${isHuy ? 'Hủy' : 'Kiểm định'} hợp lệ trong file (Chỉ quét các Sheet có tên chứa ${loaiChai})!`);
+                    statusDiv.innerHTML = `<span class='text-danger'>Không có dữ liệu</span>`;
+                    return;
+                }
+                addLog(`Trích xuất thành công ${taphopDataRaw.length} dòng.`);
+
+                let taphopData = [];
+                let tren20Nam = []; let duoi20Nam = [];
+                const thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr);
+
+                if (isHuy) {
+                    taphopData = taphopDataRaw; 
+                } else {
+                    taphopDataRaw.forEach(row => {
+                        const strC = String(row.namCT_orig).trim();
+                        if (strC.includes('/')) {
+                            const dateC = parseDateMMYYYY(strC); const diff = diffMonths(dateC, thoiDiemKiemDinh);
+                            let newDate;
+                            if (diff >= 288) newDate = addMonths(dateC, 311); else if (diff >= 240 && diff <= 287) newDate = addMonths(thoiDiemKiemDinh, 24);
+                            else if (diff >= 204 && diff <= 239) newDate = addMonths(dateC, 264); else newDate = addMonths(thoiDiemKiemDinh, 60);
+
+                            row.nextDate_str = formatDateMMYYYY(newDate); row.tick = "√";
+                            if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row);
+                        }
+                    });
+                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig));
+                    sortData(tren20Nam); sortData(duoi20Nam);
+                    taphopData = [...tren20Nam, ...duoi20Nam]; 
+                }
+
+                addLog(`Đang kiểm tra trùng lặp trên CSDL (Giới hạn ${DAYS_TO_CHECK_DUPLICATE} ngày)...`);
+                let allHistoryPath = [];
+                const timeThreshold = Date.now() - (DAYS_TO_CHECK_DUPLICATE * 24 * 60 * 60 * 1000);
+                
+                const snap = await get(child(ref(db), `${trungTamId}/${loaiChai}/LichSuFile`));
+                if(snap.exists()) { 
+                    let d = snap.val(); 
+                    for(let ts in d) { 
+                        if (parseInt(ts) >= timeThreshold) {
+                            for(let k in d[ts]) allHistoryPath.push(d[ts][k]); 
+                        }
+                    } 
+                }
+
+                if (!isHuy) {
+                    let dupFiles = [];
+                    for (let nh of newFileLogs) { if (allHistoryPath.some(pr => pr.fileName === nh.fileName)) { if (!dupFiles.includes(nh.fileName)) dupFiles.push(nh.fileName); } }
+                    if (dupFiles.length > 0) {
+                        if (!confirm("Cảnh báo: Các file sau đã từng được sử dụng để nhập và xử lý dữ liệu:\n- " + dupFiles.join("\n- ") + "\n\nKiểm tra lại xem có phải bị lặp dữ liệu không? Nhấn Cancel để hủy bỏ, chọn file khác. Nhấn OK nếu biết chính xác không phải dữ liệu lặp và vẫn sử dụng dữ liệu trong những file này.")) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                        addLog("Bỏ qua cảnh báo trùng tên file.");
+                    }
+                }
+
+                let serialWarningTriggered = false; let dupDetails = "";
+                for (let nh of newFileLogs) {
+                    if (serialWarningTriggered) break; 
+                    for (let pr of allHistoryPath) {
+                        if (!nh.serialString || !pr.serialString) continue;
+                        let lcsLen = getLCSLength(nh.serialString, pr.serialString);
+                        if (lcsLen >= 100 || lcsLen >= (nh.serialString.length * 0.5)) {
+                            serialWarningTriggered = true; dupDetails = `File: "${nh.fileName}" (Sheet: "${nh.sheetName}")`; break;
+                        }
+                    }
+                }
+                if (serialWarningTriggered) {
+                    if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để chọn file khác. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
+                    addLog("Bỏ qua cảnh báo trùng Serial.");
+                }
+
+                statusDiv.innerHTML = "<span class='text-warning'>Đang đồng bộ dữ liệu lên Firebase RTDB...</span>";
+                const batchTimestamp = Date.now().toString(); 
+                let updates = {}; let batchPathsList = []; let sessionStats = {}; let opCount = 0; let promises = [];
+                Object.assign(updates, sourceStructureUpdates);
+                const recentYear = yyyy; 
+
+                addLog("Đang tải dữ liệu Lô nguồn để tự động đối chiếu...");
+                const snapLots = await get(child(ref(db), 'Tonghop/Thongtinnguon'));
+                let allLots = [];
+                if(snapLots.exists()) {
+                    let dNguon = snapLots.val();
+                    for(let lc in dNguon) {
+                        for(let ns in dNguon[lc]) {
+                            for(let nx in dNguon[lc][ns]) {
+                                if(dNguon[lc][ns][nx].DanhSachLot) {
+                                    let lots = dNguon[lc][ns][nx].DanhSachLot;
+                                    for(let lid in lots) allLots.push({ lc, ns, nx, lid, ...lots[lid] });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (let d of taphopData) {
+                    const newChaiKey = push(child(ref(db), 'temp')).key;
+                    const dataPath = `${trungTamId}/${loaiChai}/${d.namCT_id}/${d.nhaCT_id}/DanhSachChai/${newChaiKey}`;
+                    
+                    const chiNhanhSD = document.getElementById('chiNhanhInput').value;
+                    let chaiObj = { 
+                        maHieu: d.maHieu, serial: d.serial, timeStamp: batchTimestamp, voHuy: isHuy, 
+                        recentCheck: thoiDiemStr, nhaCT: d.nhaCT_orig, namCT: d.namCT_orig,
+                        chiNhanhSD: chiNhanhSD // BỔ SUNG TRƯỜNG CHINHANHSD
+                    };
+                    
+                    if (isHuy) {
+                        chaiObj.khoiLuong = ""; chaiObj.lastCheck = ""; chaiObj.lastCheckOriginal = ""; chaiObj.nextDate = ""; chaiObj.lyDoHuy = d.lyDoHuy;
+                    } else {
+                        chaiObj.khoiLuong = d.khoiLuong; chaiObj.lastCheckOriginal = d.lastCheck_orig; chaiObj.lastCheck = d.lastCheck_orig.replace(/\//g, '-'); chaiObj.nextDate = d.nextDate_str;
+                        const yCT = d.namCT_orig.split('/')[1];
+                        if(yCT) {
+                            if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
+                            if(!sessionStats[loaiChai][recentYear]) sessionStats[loaiChai][recentYear] = { total: 0, byNamCT: {} };
+                            sessionStats[loaiChai][recentYear].total += 1;
+                            if(!sessionStats[loaiChai][recentYear].byNamCT[yCT]) sessionStats[loaiChai][recentYear].byNamCT[yCT] = 0;
+                            sessionStats[loaiChai][recentYear].byNamCT[yCT] += 1;
+                        }
+                    }
+
+                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG
+                    let matchedLot = allLots.find(lot => {
+                        if(lot.lc !== loaiChai || lot.nx !== d.nhaCT_id) return false;
+                        let yearLot = lot.ns.split('-')[1];
+                        let yearChai = d.namCT_orig.split('/')[1];
+                        if(yearChai !== yearLot) return false;
+                        if (trungTamId !== 'tt1') {
+                            let chaiMaHieu = (d.maHieu || "").trim().toLowerCase();
+                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                            if (chaiMaHieu !== lotMaHieu) return false;
+                        }
+                        return window.isSerialMatch(d.serial, lot.serialMin, lot.serialMax);
+                    });
+                    if (matchedLot) {
+                        chaiObj.loNguon = matchedLot.lid;
+                        chaiObj.chaiThue = matchedLot.chaiThue === true;
+                    }
+
+                    updates[dataPath] = chaiObj; batchPathsList.push(dataPath);
+
+                    opCount++;
+                    if (opCount >= 300) { promises.push(update(ref(db), updates)); updates = {}; opCount = 0; }
+                }
+
+                if (!isHuy) {
+                    for(let lc in sessionStats) {
+                        for(let rY in sessionStats[lc]) {
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${trungTamId}/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            updates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(sessionStats[lc][rY].total);
+                            for(let yy in sessionStats[lc][rY].byNamCT) {
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${trungTamId}/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                                updates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yy}/soChaiKiemdinhThuocNamCT`] = increment(sessionStats[lc][rY].byNamCT[yy]);
+                            }
+                        }
+                    }
+                }
+
+                newFileLogs.forEach(nh => {
+                    const pushKey = push(child(ref(db), 'temp')).key;
+                    const logPath = `${trungTamId}/${loaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`;
+                    updates[logPath] = nh; batchPathsList.push(logPath); 
+                });
+
+                const chiNhanhSD = document.getElementById('chiNhanhInput').value; // Lấy dữ liệu chi nhánh
+                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                    loaiChai: loaiChai, total: taphopData.length, timeStamp: batchTimestamp, 
+                    thoiDiemKD: thoiDiemStr, chiNhanhSD: chiNhanhSD, paths: batchPathsList, isHuy: isHuy, stats: isHuy ? null : sessionStats 
+                };
+                
+                if (Object.keys(updates).length > 0) promises.push(update(ref(db), updates));
+                await Promise.all(promises);
+                addLog(`Đồng bộ CSDL hoàn tất.`);
+
+                // --- TẠO VÀ XUẤT FILE EXCEL ---
+                statusDiv.innerHTML = "<span class='text-warning'>Đang dàn trang File Excel...</span>";
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer);
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                if (isHuy) {
+                    let activeSheet = workbook.sheet("vohuy");
+                    if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+                    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    
+                    const aaa = taphopData.length;
+                    
+                    let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+
+                    let destRow = 13; 
+                    for (let k = 0; k < taphopData.length; k++) {
+                        let r = destRow + k; let d = taphopData[k];
+                        activeSheet.cell(r, 1).value(k + 1);
+                        activeSheet.cell(r, 2).value(d.nhaCT_orig || "");
+                        activeSheet.cell(r, 3).value(d.namCT_orig || "");
+                        activeSheet.cell(r, 4).value(d.maHieu || "");
+                        activeSheet.cell(r, 5).value(d.serial || "");
+                        activeSheet.cell(r, 7).value("X");
+                        activeSheet.cell(r, 8).value(d.lyDoHuy || "");
+
+                        for (let c = 1; c <= 8; c++) { 
+                            const currentCell = activeSheet.cell(r, c); 
+                            currentCell.style("fontFamily", "Times New Roman"); 
+                            currentCell.style("fontSize", 12); 
+                            currentCell.style("border", borderFull); // Dùng chung biến toàn cục để tránh lỗi XML
+                        }
+                    }
+                    destRow += taphopData.length;
+                    appendFooterSafe(activeSheet, ghichuSheet, destRow);
+                } else {
+                    function buildSheet(sheetName, data) {
+    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+    const aaa = data.length; // BỔ SUNG DÒNG NÀY
+    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
+                        let destRow = 10; let groupNum = 1;
+
+                        for (let key in grouped) {
+                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
+                            sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); 
+                            
+                            // NẾU LÀ DỮ LIỆU CŨ -> HIỂN THỊ NGUYÊN BẢN TRƯỜNG NEXTDATE
+                            if (summary.isOldData) {
+                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            } 
+                            // NẾU LÀ DỮ LIỆU CHUẨN -> BÓC TÁCH THÁNG/NĂM NHƯ CŨ (bỏ bóc tách, dùng luôn dữ liệu lưu như xuất lô cũ.
+                            else {
+                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            }
+                            for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
+                            
+                            for (let k = 0; k < N1; k++) {
+                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); 
+                                sheet.cell(r, 2).value(groupData[k].nhaCT_orig || ""); sheet.cell(r, 3).value(groupData[k].namCT_orig || ""); sheet.cell(r, 4).value(groupData[k].maHieu || ""); sheet.cell(r, 5).value(groupData[k].serial || ""); sheet.cell(r, 6).value(groupData[k].khoiLuong || ""); sheet.cell(r, 7).value(groupData[k].lastCheck_orig || ""); sheet.cell(r, 8).value(groupData[k].tick || "√");
+                                if (k < N2) { 
+                                    sheet.cell(r, 9).value(N1 + k + 1); 
+                                    sheet.cell(r, 10).value(groupData[N1 + k].nhaCT_orig || ""); sheet.cell(r, 11).value(groupData[N1 + k].namCT_orig || ""); sheet.cell(r, 12).value(groupData[N1 + k].maHieu || ""); sheet.cell(r, 13).value(groupData[N1 + k].serial || ""); sheet.cell(r, 14).value(groupData[N1 + k].khoiLuong || ""); sheet.cell(r, 15).value(groupData[N1 + k].lastCheck_orig || ""); sheet.cell(r, 16).value(groupData[N1 + k].tick || "√");
+                                }
+                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); else applyThinBorders(currentCell, false, false); }
+                            }
+                            destRow += N1 + 1; groupNum++;
+                        }
+                        appendFooterSafe(sheet, ghichuSheet, destRow);
+                    }
+                    buildSheet("tren20nam", tren20Nam); 
+                    buildSheet("duoi20nam", duoi20Nam);
+                }
+
+                if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
+                if (!outputFileName.toLowerCase().endsWith('.xlsx')) outputFileName += '.xlsx';
+                let prefix = isHuy ? "Huy_" : "";
+                saveAs(blob, `${prefix}${outputFileName}`); 
+                addLog("Xuất file Excel thành công!"); statusDiv.innerHTML = "<span class='text-success'>Hoàn thành! Hệ thống đã ghi nhận CSDL và tải file về máy.</span>";
+
+            } catch (error) { console.error(error); addLog(`LỖI: ${error.message}`); statusDiv.innerHTML = `<span class='text-danger'>Lỗi hệ thống: ${error.message}</span>`; }
+        }
+
+        // --- HÀM TÁI TẠO FILE TỪ CSDL ---
+        window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
+            const loading = document.getElementById('historyLoading'); loading.innerText = 'Đang tải dữ liệu từ CSDL...'; loading.style.display = 'block';
+
+            try {
+                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
+                if (!snap.exists()) { alert("Dữ liệu gốc của lần nhập này không còn tồn tại!"); loading.style.display = 'none'; return; }
+                const summary = snap.val(); let dataPaths = [];
+                if (summary.paths && Array.isArray(summary.paths)) dataPaths = summary.paths; else if (summary.paths) dataPaths = Object.values(summary.paths);
+                dataPaths = dataPaths.filter(p => p.includes('/DanhSachChai/'));
+                let fetchedDocs = []; loading.innerText = `Đang trích xuất ${dataPaths.length} chai...`;
+
+                for (let i = 0; i < dataPaths.length; i += 100) { const chunk = dataPaths.slice(i, i + 100); const chunkSnaps = await Promise.all(chunk.map(p => get(child(ref(db), p)))); chunkSnaps.forEach(s => { if(s.exists()) fetchedDocs.push(s.val()); }); }
+
+                loading.innerText = 'Đang tải file mẫu từ máy chủ...';
+                let templateDataBuffer;
+                const tplMap = templateMap[trungTamId] || { kiemDinh: "sample.xlsx", huy: "samplehuy.xlsx" };
+                const templateFileName = isHuy ? tplMap.huy : tplMap.kiemDinh;
+                const response = await fetch(templateFileName);
+                if (!response.ok) throw new Error(`Không tìm thấy file ${templateFileName}`);
+                templateDataBuffer = await response.arrayBuffer();
+
+                const thoiDiemStr = summary.thoiDiemKD; const loaiChai = summary.loaiChai; 
+                let thoiDiemKiemDinh = null;
+                if(thoiDiemStr && thoiDiemStr !== "Nhiều thời điểm") { thoiDiemKiemDinh = parseDateMMYYYY(thoiDiemStr); }
+
+                let lC_check = loaiChai.toLowerCase();
+                let xx = "12"; let bbb = "26.5"; 
+                if (lC_check.includes("v45")) { xx = "45"; bbb = "99"; } 
+                else if (lC_check.includes("com")) { xx = "Com"; bbb = "24.5"; }
+                
+                const timeParts = thoiDiemStr.split('/'); const mm = timeParts[0] || "mm"; const yyyy = timeParts[1] || "yyyy";
+                const aaa = fetchedDocs.length;
+                const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
+                const ghichuSheet = workbook.sheet("ghichu");
+
+                if (isHuy) {
+                    let activeSheet = workbook.sheet("vohuy");
+                    if (!activeSheet) activeSheet = workbook.sheets().find(s => s.name().toLowerCase() !== "ghichu");
+                    if (!activeSheet) throw new Error("File mẫu không có sheet dữ liệu!");
+                    
+                    let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                    let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+
+                    let destRow = 13; 
+                    for (let k = 0; k < fetchedDocs.length; k++) {
+                        let r = destRow + k; let d = fetchedDocs[k];
+                        activeSheet.cell(r, 1).value(k + 1);
+                        activeSheet.cell(r, 2).value(d.nhaCT || "");
+                        activeSheet.cell(r, 3).value(d.namCT || "");
+                        activeSheet.cell(r, 4).value(d.maHieu || "");
+                        activeSheet.cell(r, 5).value(d.serial || "");
+                        activeSheet.cell(r, 7).value("X");
+                        activeSheet.cell(r, 8).value(d.lyDoHuy || "");
+
+                        for (let c = 1; c <= 8; c++) { 
+                            const currentCell = activeSheet.cell(r, c); 
+                            currentCell.style("fontFamily", "Times New Roman"); 
+                            currentCell.style("fontSize", 12); 
+                            currentCell.style("border", borderFull); 
+                        }
+                    }
+                    destRow += fetchedDocs.length;
+                    appendFooterSafe(activeSheet, ghichuSheet, destRow);
+                } else {
+                    let tren20Nam = []; let duoi20Nam = [];
+                    fetchedDocs.forEach(d => {
+                        let row = { nhaCT_orig: d.nhaCT||"", namCT_orig: d.namCT||"", maHieu: d.maHieu||"", serial: d.serial||"", khoiLuong: d.khoiLuong||"", lastCheck_orig: d.lastCheckOriginal||"", nextDate_str: d.nextDate||"", tick: "√" };
+                        if (d.namCT) { 
+                            let mKiemDinh = thoiDiemKiemDinh; if(!mKiemDinh && d.recentCheck) mKiemDinh = parseDateMMYYYY(d.recentCheck);
+                            if(mKiemDinh) { const dateC = parseDateMMYYYY(d.namCT); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
+                        } else { duoi20Nam.push(row); }
+                    });
+
+                    const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig)); sortData(tren20Nam); sortData(duoi20Nam);
+
+                    function buildSheet(sheetName, data) {
+    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+    const aaa = data.length; // BỔ SUNG DÒNG NÀY
+    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
+                        let destRow = 10; let groupNum = 1;
+
+                        for (let key in grouped) {
+                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
+                            let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
+                            sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+                            for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
+                            
+                            for (let k = 0; k < N1; k++) {
+                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); 
+                                sheet.cell(r, 2).value(groupData[k].nhaCT_orig || ""); sheet.cell(r, 3).value(groupData[k].namCT_orig || ""); sheet.cell(r, 4).value(groupData[k].maHieu || ""); sheet.cell(r, 5).value(groupData[k].serial || ""); sheet.cell(r, 6).value(groupData[k].khoiLuong || ""); sheet.cell(r, 7).value(groupData[k].lastCheck_orig || ""); sheet.cell(r, 8).value(groupData[k].tick || "√");
+                                if (k < N2) { 
+                                    sheet.cell(r, 9).value(N1 + k + 1); 
+                                    sheet.cell(r, 10).value(groupData[N1 + k].nhaCT_orig || ""); sheet.cell(r, 11).value(groupData[N1 + k].namCT_orig || ""); sheet.cell(r, 12).value(groupData[N1 + k].maHieu || ""); sheet.cell(r, 13).value(groupData[N1 + k].serial || ""); sheet.cell(r, 14).value(groupData[N1 + k].khoiLuong || ""); sheet.cell(r, 15).value(groupData[N1 + k].lastCheck_orig || ""); sheet.cell(r, 16).value(groupData[N1 + k].tick || "√");
+                                }
+                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); else applyThinBorders(currentCell, false, false); }
+                            }
+                            destRow += N1 + 1; groupNum++;
+                        }
+                        appendFooterSafe(sheet, ghichuSheet, destRow);
+                    }
+                    buildSheet("tren20nam", tren20Nam); 
+                    buildSheet("duoi20nam", duoi20Nam);
+                }
+
+                if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
+                let prefix = isHuy ? "Recreated_Huy_" : "Recreated_BBKD_";
+                saveAs(blob, `${prefix}${loaiChai}_${timeStamp}.xlsx`); 
+                loading.style.display = 'none'; alert("Hoàn thành! File đã được tái tạo và tải xuống.");
+            } catch (error) { 
+                console.error(error); 
+                if (error.message === "USER_CANCELLED") {
+                    addLog("Đã hủy thao tác do người dùng từ chối sửa lỗi định dạng.");
+                    statusDiv.innerHTML = `<span class='text-danger'>Đã hủy nhập liệu.</span>`;
+                } else {
+                    addLog(`LỖI: ${error.message}`); 
+                    statusDiv.innerHTML = `<span class='text-danger'>Lỗi hệ thống: ${error.message}</span>`; 
+                }
+            }
+        }
+    </script>
+</body>
+</html>
