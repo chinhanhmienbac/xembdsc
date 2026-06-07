@@ -1056,12 +1056,39 @@
 
         window.pendingOldDataFile = null;
         
-        // Hàm 1: Bắt sự kiện người dùng chọn file -> Mở Modal Cấu hình
+        // Hàm 1: Bắt sự kiện người dùng chọn file -> Mở Modal Cấu hình (Có AI đọc tên file)
         window.importOldDataFromExcel = function(e) {
             const file = e.target.files[0]; if(!file) return;
             window.pendingOldDataFile = file;
             window.closeModal('oldDataModal');
-            document.getElementById('oldThoiDiemInput').value = ""; // Xóa rỗng để ép user nhập
+
+            // --- BẮT ĐẦU LOGIC AI TỰ ĐỘNG ĐIỀN FORM TỪ TÊN FILE ---
+            let fileName = file.name.toLowerCase(); // Chuyển tên file về chữ thường để dễ so sánh
+            
+            // 1. Tự động nhận diện Loại chai
+            if (fileName.includes("v12")) document.getElementById('oldLoaiChaiInput').value = "V12";
+            else if (fileName.includes("v45")) document.getElementById('oldLoaiChaiInput').value = "V45";
+            else if (fileName.includes("com")) document.getElementById('oldLoaiChaiInput').value = "Com";
+            else document.getElementById('oldLoaiChaiInput').selectedIndex = 0; // Mặc định V12 nếu không rõ
+
+            // 2. Tự động bóc tách Thời điểm kiểm định (mmyyyy)
+            // Thuật toán: Tìm chuỗi 6 số liên tiếp (2 số đầu 01-12, 4 số sau bắt đầu bằng 19 hoặc 20)
+            let dateMatch = fileName.match(/(0[1-9]|1[0-2])(19\d{2}|20\d{2})/);
+            if (dateMatch) {
+                // dateMatch[1] là mm, dateMatch[2] là yyyy
+                document.getElementById('oldThoiDiemInput').value = dateMatch[1] + '/' + dateMatch[2];
+            } else {
+                document.getElementById('oldThoiDiemInput').value = ""; // Bỏ trống ép nhập tay nếu không tìm thấy
+            }
+
+            // 3. Tự động nhận diện Chi nhánh
+            if (fileName.includes("cnmb")) document.getElementById('oldChiNhanhInput').value = "cnMB";
+            else if (fileName.includes("cntb")) document.getElementById('oldChiNhanhInput').value = "cnTB";
+            else if (fileName.includes("cnmt")) document.getElementById('oldChiNhanhInput').value = "cnMT";
+            else if (fileName.includes("cnmn")) document.getElementById('oldChiNhanhInput').value = "cnMN";
+            else document.getElementById('oldChiNhanhInput').value = ""; // Về mặc định "Vui lòng chọn"
+            // --- KẾT THÚC LOGIC AI ---
+
             document.getElementById('oldDataConfigModal').style.display = 'flex';
             e.target.value = ""; // Reset value để có thể chọn lại file nếu cần
         }
@@ -1146,7 +1173,7 @@
                 }
 
                 if (missingNextDate && isNextDateConsistent && firstNextDate) {
-                    if (confirm(`Hệ thống phát hiện [Kiểm định kỳ tới (${firstNextDate})] bị bỏ trống ở một số dòng nhưng đồng nhất ở các dòng có dữ liệu.\nNhấn OK để TỰ ĐỘNG ĐIỀN cho toàn bộ. Nhấn Cancel để tự sửa file.`)) {
+                    if (confirm(`Hệ thống phát hiện [Kiểm định kỳ tới (${firstNextDate})] bị bỏ trống ở một số dòng nhưng ở các dòng có dữ liệu thì dều giống nhau.\nNhấn OK để TỰ ĐỘNG ĐIỀN thời hạn kiểm định này cho toàn bộ. Nhấn Cancel để tự sửa file.`)) {
                         rowData.forEach(r => { if (!r.nextDate_orig) r.nextDate_orig = firstNextDate; });
                         addLog(`Đã tự động điền KĐ kỳ tới cho các dòng trống.`);
                     } else {
