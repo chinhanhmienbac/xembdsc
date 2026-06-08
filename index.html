@@ -12,7 +12,8 @@
         body {
     font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; padding: 20px; margin: 0; background-color: #eef2f5;
 }
-        .layout-container { display: grid; grid-template-columns: 1fr 2.5fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
+    
+		.layout-container { display: grid; grid-template-columns: 250px 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; align-items: start; }
         .col-card { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         @media (max-width: 992px) { .layout-container { grid-template-columns: 1fr; } }
         h2 { text-align: center; margin-top: 0; color: #333; }
@@ -58,7 +59,16 @@
         .btn-recreate-row:hover { background-color: #218838; }
 		
 		.sort-icon { cursor: pointer; color: #999; margin-left: 5px; font-size: 12px; }
-		.sort-icon:hover { color: #000; }
+		.sort-icon:hover { color: #000; 
+		
+		.table-responsive { overflow-x: auto; white-space: nowrap; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .col-hidden { display: none; }
+        .input-inline { width: 100%; max-width: 75px; padding: 4px; text-align: center; border: 1px solid #007bff; border-radius: 3px; font-weight: bold; }
+        
+        /* Ẩn nút tăng giảm (spinner) của ô nhập số */
+        .input-inline::-webkit-outer-spin-button,
+        .input-inline::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-inline[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
 <body>
@@ -70,50 +80,78 @@
             </div>
 
             <h3>Hệ thống</h3>
-            <div class="form-group">
-                <label>Chọn Trung tâm kiểm định:</label>
-                <select id="trungTamSelect" onchange="window.updateHistoryIfOpen()"></select>
-            </div>
+            <button class="primary-btn" style="background-color: #007bff; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: 15px;" onclick="window.openLoginModal()">Đăng nhập Hệ thống</button>
             
+			<button class="primary-btn" style="background-color: #28a745; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: 0px;" onclick="window.location.href='nhaplieu.html'">Vào trang nhập liệu</button>
             <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
             <button class="info-btn" onclick="window.openSourceChoiceModal()">Thông tin nguồn</button>
             <button class="warning-btn" onclick="window.recalculateStats()">Tính toán lại Thống kê</button>
+			
+			<h3 style="margin-top: 30px;">Nhật ký</h3>
+            <div id="logArea"><i>Sẵn sàng...</i></div>
+        
         </div>
 
         <div class="col-card col-main">
             <h2 style="color: #008037; font-weight: bold; text-transform: uppercase; text-align: center; flex-grow: 1;">
 			HỆ THỐNG THEO DÕI DỮ LIỆU KIỂM ĐỊNH</h2>
-            <div style="text-align: center; margin-top: 80px; color: #888;">
-                <i style="font-size: 16px;">Khu vực này hiện đang để trống. Vui lòng sử dụng các nút quản trị ở menu bên trái.</i>
-            </div>
+                            
+                <div class="bang-solieu-container">
+                    <h3 style="color:#007bff; border-bottom: 2px solid #007bff; padding-bottom:1px; margin-top: 0;">BẢNG SỐ LIỆU TỔNG HỢP ĐẾN HẠN & KIỂM ĐỊNH</h3>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 5px; background: #f8f9fa; padding: 5px 5px; border-radius: 5px; align-items: flex-end; justify-content: flex-start;">
+                        <div class="form-group" style="margin: 0; min-width: 120px;">
+                            <label style="margin-bottom: 3px; display: block; font-weight: bold; font-size: 12px;">Loại chai:</label>
+                            <select id="bslLoaiChai" onchange="window.renderBangSoLieu()" style="width: 100%; padding: 3px 8px; font-size: 12px; height: 26px;">
+                                <option value="V12">V12</option>
+                                <option value="V45">V45</option>
+                                <option value="Com">Com</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0; min-width: 220px;">
+                            <label style="margin-bottom: 3px; display: block; font-weight: bold; font-size: 12px;">Công ty / Chi nhánh:</label>
+                            <select id="bslDonVi" onchange="window.renderBangSoLieu()" style="width: 100%; padding: 3px 8px; font-size: 12px; height: 26px;">
+                                <option value="Toan_dien">-- Toàn bộ Công ty --</option>
+                                </select>
+                        </div>
+                        <button class="primary-btn" style="margin: 0 0 13px 0; padding: 0; width: 80px; height: 26px; font-size: 12px; line-height: 26px; border-radius: 4px;" onclick="window.fetchAndRenderBangSoLieu()">Show</button>
+                    </div>
+                    
+                    <div id="bangSoLieuTableContainer" class="table-responsive" style="max-height: 55vh; margin-bottom: 0;">
+                        <p style="text-align: center; color: #666; font-style: italic; font-size: 11px;">Đang chờ tải Bảng số liệu...</p>
+                    </div>
+                </div>
         </div>
-
-        <div class="col-card col-right">
-            <h3>Nhật ký hoạt động</h3>
-            <div id="logArea"><i>Sẵn sàng...</i></div>
-        </div>
+		
     </div>
 
     <div id="historyModal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
+			<div class="modal-header">
                 <div style="display: flex; align-items: center;">
                     <h3 id="modalTitle" style="margin-bottom: 0;">Lịch sử nhập liệu</h3>
                     <button class="btn-action" style="background-color: #28a745; margin-left: 20px; padding: 8px 15px;" onclick="window.openExportHistoryModal()">Xuất Excel</button>
                 </div>
+                
+                <div style="flex-grow: 1; text-align: center;">
+                    <select id="historyCenterSelect" style="width: auto; padding: 6px 15px; border-radius: 4px; font-weight: bold; border: 1px solid #007bff; color: #007bff; cursor: pointer; outline: none;" onchange="window.updateHistoryIfOpen()">
+                        </select>
+                </div>
+
                 <button class="btn-close" onclick="window.closeModal('historyModal')">&times;</button>
             </div>
             <div class="history-table-container">
                 <table class="history-table">
                     <thead>
                         <tr>
-                            <th style="width: 15%;">Thời điểm nhập liệu <span class="sort-icon" onclick="window.sortHistory('timeStamp')">⇕</span></th>
-                            <th style="width: 15%;">Thời điểm kiểm định <span class="sort-icon" onclick="window.sortHistory('thoiDiemKD')">⇕</span></th>
-                            <th style="width: 10%;">Loại chai <span class="sort-icon" onclick="window.sortHistory('loaiChai')">⇕</span></th>
-                            <th style="width: 10%;">Số lượng <span class="sort-icon" onclick="window.sortHistory('total')">⇕</span></th>
-                            <th style="width: 20%;">Chi nhánh sử dụng </th>
+                            <th style="width: 13%;">Thời điểm nhập liệu <span class="sort-icon" onclick="window.sortHistory('timeStamp')">⇕</span></th>
+                            <th style="width: 13%;">Thời điểm kiểm định <span class="sort-icon" onclick="window.sortHistory('thoiDiemKD')">⇕</span></th>
+                            <th style="width: 9%;">Loại chai <span class="sort-icon" onclick="window.sortHistory('loaiChai')">⇕</span></th>
+                            <th style="width: 8%;">Số lượng <span class="sort-icon" onclick="window.sortHistory('total')">⇕</span></th>
+                            <th style="width: 18%;">Trung tâm kiểm định</th>
+                            <th style="width: 15%;">Chi nhánh sử dụng </th>
                             <th style="width: 10%;">Trạng thái <span class="sort-icon" onclick="window.sortHistory('isHuy')">⇕</span></th>
-                            <th style="width: 21%;">Thao tác</th>
+                            <th style="width: 8%;">Thao tác</th>
                         </tr>
                     </thead>
 
@@ -167,14 +205,46 @@
                 <button class="btn-close" onclick="window.closeModal('sourceChoiceModal')">&times;</button>
             </div>
             <button class="primary-btn" style="margin-bottom:15px;" onclick="window.openLotsModal()">1. Xem và quản lý Lô chai</button>
-            <button class="info-btn" onclick="window.openMansModal()">2. Xem và sửa danh sách Nhà CT</button>
+            <button class="info-btn" style="margin-bottom:15px;" onclick="window.openMansModal()">2. Xem và sửa danh sách Nhà CT</button>
+            <button class="warning-btn" onclick="window.openLuyKeTongModal()">3. Luỹ kế vỏ tại các chi nhánh</button>
+        </div>
+    </div>
+
+    <div id="luyKeTongModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3>Luỹ kế vỏ tại các chi nhánh</h3>
+                <button class="btn-close" onclick="window.closeModal('luyKeTongModal')">&times;</button>
+            </div>
+            <div id="luyKeTongContainer" style="overflow-y: auto; max-height: 60vh;"></div>
+            <div style="margin-top: 20px; background: #f4f4f4; padding: 15px; border-radius: 5px; display: flex; align-items: center; gap: 15px;">
+                <label style="margin: 0;"><b>Xem chi tiết Chi nhánh:</b></label>
+                <select id="luyKeBranchSelect" style="width: 250px; margin: 0;"></select>
+                <button class="info-btn" style="width: auto; margin: 0; padding: 8px 20px;" onclick="window.viewLuyKeChiTiet()">Chi tiết</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="luyKeChiTietModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 1400px;">
+            <div class="modal-header">
+                <h3 id="luyKeChiTietTitle">Chi tiết Luỹ kế</h3>
+                <button class="secondary-btn" style="padding: 6px 15px; margin: 0; width: auto; font-size: 14px; background-color: #6c757d; color: white; display: flex; align-items: center; gap: 5px;" onclick="window.closeModal('luyKeChiTietModal'); document.getElementById('luyKeTongModal').style.display='flex';">
+                    &#8592; Quay lại
+                </button>
+            </div>
+            
+            <div id="luyKeChiTietContainer" style="overflow-y: auto; max-height: 65vh;"></div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button id="btnEditLuyKe" class="warning-btn" style="width: 200px; font-size: 16px;" onclick="window.toggleEditLuyKe()">Sửa Dữ Liệu</button>
+            </div>
         </div>
     </div>
 
     <div id="lotsModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Danh sách Lô chai (Nguồn)</h3>
+                <h3>Danh sách Lô chai thuộc sở hữu của PV GAS LPG(Nguồn)</h3>
                 <button class="btn-close" onclick="window.closeModal('lotsModal')">&times;</button>
             </div>
             <div class="history-table-container">
@@ -187,7 +257,7 @@
                             <th>Nhà CT</th>
                             <th>Loại chai</th>
                             <th>Số lượng</th>
-                            <th>Mã hiệu</th>
+                            <th>Mã chữ Serial</th>
                             <th>Serial Min</th>
                             <th>Serial Max</th>
                             <th>Xuất xưởng</th>
@@ -273,11 +343,38 @@
             <div class="form-group"><label>Tên đầy đủ:</label><input type="text" id="mf_ten"></div>
             <button class="primary-btn" onclick="window.saveMan()">Lưu Nhà CT</button>
         </div>
+				
     </div>
-
+	<div id="loginModal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content modal-content-sm" style="max-width: 400px;">
+            <div class="modal-header" style="justify-content: center; position: relative; border-bottom: none; padding-bottom: 0;">
+                <button class="btn-close" style="position: absolute; right: 0; top: -10px;" onclick="window.closeModal('loginModal')">&times;</button>
+                <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 140px; height: auto; margin: 0 auto;">
+            </div>
+            <h3 style="text-align: center; border: none; margin: 15px 0;">Đăng nhập Hệ thống</h3>
+            
+            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                <label>Tài khoản (Email):</label>
+                <input type="text" id="loginEmail" list="emailList" placeholder="Nhập hoặc chọn tài khoản...">
+                <datalist id="emailList">
+                    <option value="user@pvgaslpg.com.vn"></option>
+                    <option value="admin@pvgaslpg.com.vn"></option>
+                    <option value="manager@pvgaslpg.com.vn"></option>
+                </datalist>
+            </div>
+            <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+                <label>Mật khẩu:</label>
+                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu...">
+            </div>
+            <div id="loginError" style="color: #dc3545; font-size: 13px; margin-bottom: 10px; display: none; text-align: center; font-weight: bold;"></div>
+            <button id="btnLoginSubmit" class="primary-btn" style="margin-top: 0; font-size: 16px;" onclick="window.executeLogin()">ĐĂNG NHẬP</button>
+        </div>
+    </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, update, push, child, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // Bổ sung thư viện Authentication của Firebase
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
@@ -291,6 +388,7 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app); // Khởi tạo biến Auth
 		
 		// Bản đồ liên kết Trung tâm với File mẫu tương ứng
         const templateMap = {
@@ -375,10 +473,53 @@ window.closeModal = async function(id) {
             { id: "cnMN", ten: "Chi nhánh Miền Nam" }
         ];
         window.onload = function() {
-            const sel = document.getElementById('trungTamSelect'); sel.innerHTML = '';
-            danhSachTrungTam.forEach(tt => { sel.innerHTML += `<option value="${tt.id}" ${tt.id === "tt2" ? 'selected' : ''}>${tt.ten}</option>`; });
+            // Đã xóa bỏ các logic liên quan đến thẻ trungTamSelect cũ
+            const historySel = document.getElementById('historyCenterSelect');
+            historySel.innerHTML = '<option value="all">-- Tất cả các Trung tâm --</option>';
+
+            danhSachTrungTam.forEach(tt => { 
+                historySel.innerHTML += `<option value="${tt.id}">${tt.ten}</option>`;
+            });
+            // GỌI HÀM VẼ BẢNG SỐ LIỆU DASHBOARD KHI TRANG VỪA TẢI XONG
+            window.fetchAndRenderBangSoLieu();
         };
-        function getTrungTamDuocChon() { return document.getElementById('trungTamSelect').value; }
+
+        // --- HÀM XỬ LÝ ĐĂNG NHẬP ---
+        window.openLoginModal = function() {
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        
+        window.executeLogin = async function() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const errDiv = document.getElementById('loginError');
+            const btn = document.getElementById('btnLoginSubmit');
+            
+            if (!email || !pass) {
+                errDiv.innerText = "Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!";
+                errDiv.style.display = 'block';
+                return;
+            }
+            
+            errDiv.style.display = 'none';
+            btn.innerText = "ĐANG XÁC THỰC...";
+            btn.disabled = true;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                alert("Đăng nhập thành công!");
+                window.closeModal('loginModal');
+                addLog(`Hệ thống đã xác thực tài khoản: ${email}`);
+            } catch (error) {
+                console.error(error);
+                errDiv.innerText = "Đăng nhập thất bại: Sai tài khoản hoặc mật khẩu!";
+                errDiv.style.display = 'block';
+            } finally {
+                btn.innerText = "ĐĂNG NHẬP";
+                btn.disabled = false;
+            }
+        }
 
         // ==========================================
         // QUẢN LÝ LỊCH SỬ NHẬP LIỆU & THỐNG KÊ
@@ -388,34 +529,73 @@ window.closeModal = async function(id) {
         window.isSortAsc = true;
         window.pendingDelete = null; // Lưu tạm thông tin phiên cần xóa
 
-        window.openHistoryModal = async function() { document.getElementById('historyModal').style.display = 'flex'; await loadHistoryTable(); }
+        window.openHistoryModal = async function() { 
+            document.getElementById('historyModal').style.display = 'flex'; 
+            document.getElementById('historyCenterSelect').value = "all"; // Mặc định mở ra là xem Tất cả
+            await loadHistoryTable(); 
+        }
         window.updateHistoryIfOpen = function() { if(document.getElementById('historyModal').style.display === 'flex') loadHistoryTable(); }
 
         async function loadHistoryTable() {
-            const trungTamId = getTrungTamDuocChon();
+            const selectedCenter = document.getElementById('historyCenterSelect').value;
             const tbody = document.getElementById('historyTableBody'); const loading = document.getElementById('historyLoading');
             tbody.innerHTML = ''; loading.style.display = 'block';
             
-            const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap`));
+            let allData = [];
+
+            try {
+                if (selectedCenter === "all") {
+                    // Tính năng Gom toàn cục: Tải dữ liệu của TẤT CẢ trung tâm cùng lúc
+                    const promises = danhSachTrungTam.map(tt => get(child(ref(db), `${tt.id}/LichSuNhap`)));
+                    const snaps = await Promise.all(promises);
+                    
+                    snaps.forEach((snap, index) => {
+                        if (snap.exists()) {
+                            const data = snap.val();
+                            const ttId = danhSachTrungTam[index].id;
+                            Object.keys(data).forEach(key => {
+                                let item = data[key];
+                                item.trungTamId = ttId; // Đóng dấu trung tâm để xử lý nút Excel
+                                allData.push(item);
+                            });
+                        }
+                    });
+                } else {
+                    // Tính năng xem Cục bộ 1 Trung tâm
+                    const snap = await get(child(ref(db), `${selectedCenter}/LichSuNhap`));
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        Object.keys(data).forEach(key => {
+                            let item = data[key];
+                            item.trungTamId = selectedCenter;
+                            allData.push(item);
+                        });
+                    }
+                }
+            } catch(e) { console.error(e); }
+
             loading.style.display = 'none';
 
-            if (!snap.exists()) { tbody.innerHTML = '<tr><td colspan="6">Chưa có lịch sử nhập liệu nào.</td></tr>'; window.currentHistoryData = []; return; }
-            const data = snap.val();
-            // Lưu dữ liệu vào biến toàn cục để phục vụ sắp xếp và xuất file
-            window.currentHistoryData = Object.keys(data).map(key => data[key]).sort((a, b) => b.timeStamp - a.timeStamp);
+            if (allData.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="7">Chưa có lịch sử nhập liệu nào.</td></tr>'; 
+                window.currentHistoryData = []; return; 
+            }
+            
+            window.currentHistoryData = allData.sort((a, b) => b.timeStamp - a.timeStamp);
             window.renderHistoryTable();
         }
 
-        // Hàm render giao diện bảng từ biến toàn cục
+         // Hàm render giao diện bảng từ biến toàn cục
         window.renderHistoryTable = function() {
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
-            const trungTamId = getTrungTamDuocChon();
 
             window.currentHistoryData.forEach(item => {
                 const tr = document.createElement('tr');
                 let statusHtml = item.isHuy ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
-                let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
+                
+                // Trỏ đúng ID trung tâm để tải file Excel chuẩn
+                let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${item.trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
                 
                 // Hiển thị tên Chi nhánh (match từ ID)
                 let cnName = "Không xác định";
@@ -424,16 +604,21 @@ window.closeModal = async function(id) {
                     if(cnObj) cnName = cnObj.ten;
                 }
 
+                // Hiển thị tên Trung tâm
+                let ttName = "N/A";
+                let ttObj = danhSachTrungTam.find(t => t.id === item.trungTamId);
+                if(ttObj) ttName = ttObj.ten;
+
                 tr.innerHTML = `
                     <td style="font-size:12px;">${formatEpochToLocal(item.timeStamp)}</td>
                     <td><span style="color:#007bff; font-weight:bold">${item.thoiDiemKD || "N/A"}</span></td>
                     <td><b>${item.loaiChai}</b></td>
                     <td>${item.total}</td>
+                    <td style="color: #6f42c1; font-weight: bold; font-size:13px;">${ttName}</td>
                     <td style="font-size:13px;">${cnName}</td>
                     <td>${statusHtml}</td>
                     <td>
                      ${recreateBtnHtml}
-                        
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -510,14 +695,14 @@ window.closeModal = async function(id) {
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('Lich_Su_Nhap');
             
-            // Tiêu đề (Đổi từ F1 sang G1 vì có 7 cột)
-            ws.mergeCells('A1:G1');
+            // Tiêu đề (Đổi từ G1 sang H1 vì bảng có 8 cột)
+            ws.mergeCells('A1:H1');
             ws.getCell('A1').value = 'BÁO CÁO LỊCH SỬ NHẬP LIỆU';
             ws.getCell('A1').font = { name: 'Times New Roman', size: 16, bold: true };
             ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
             
-            // Header (Bổ sung cột Chi nhánh SD)
-            ws.addRow(['STT', 'Thời điểm lập (Hệ thống)', 'Kỳ kiểm định', 'Loại chai', 'Số lượng', 'Chi nhánh SD', 'Trạng thái (KĐ/Hủy)']);
+            // Header (Tách riêng Trung tâm và Chi nhánh với văn phong nguyên bản)
+            ws.addRow(['STT', 'Thời điểm nhập liệu', 'Thời điểm kiểm định', 'Loại chai', 'Số lượng', 'Trung tâm kiểm định', 'Chi nhánh sử dụng', 'Trạng thái (KĐ/Hủy)']);
             const headerRow = ws.getRow(2);
             headerRow.font = { name: 'Times New Roman', size: 12, bold: true };
             headerRow.alignment = { horizontal: 'center' };
@@ -526,9 +711,9 @@ window.closeModal = async function(id) {
                 cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
             });
 
-            // Định dạng độ rộng cho 7 cột
+            // Định dạng độ rộng cho 8 cột
             ws.columns = [
-                { width: 8 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 12 }, { width: 25 }, { width: 20 }
+                { width: 8 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 12 }, { width: 25 }, { width: 25 }, { width: 20 }
             ];
 
             // Đổ dữ liệu
@@ -536,12 +721,17 @@ window.closeModal = async function(id) {
             filteredData.forEach((item, index) => {
                 totalChai += (item.total || 0);
                 
-                // Lấy tên chi nhánh từ ID
+                // Lấy tên chi nhánh
                 let cnName = "Không xác định";
                 if (item.chiNhanhSD) {
                     let cnObj = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD);
                     if(cnObj) cnName = cnObj.ten;
                 }
+
+                // Lấy tên Trung tâm
+                let ttName = "N/A";
+                let ttObj = danhSachTrungTam.find(t => t.id === item.trungTamId);
+                if(ttObj) ttName = ttObj.ten;
 
                 const row = ws.addRow([
                     index + 1,
@@ -549,7 +739,8 @@ window.closeModal = async function(id) {
                     item.thoiDiemKD || "N/A",
                     item.loaiChai,
                     item.total,
-                    cnName, // Thêm dữ liệu Chi nhánh vào cột 6
+                    ttName, // Cột Trung tâm kiểm định
+                    cnName, // Cột Chi nhánh sử dụng
                     item.isHuy ? "Hủy" : "Kiểm định"
                 ]);
                 row.font = { name: 'Times New Roman', size: 11 };
@@ -559,17 +750,18 @@ window.closeModal = async function(id) {
                 row.getCell(4).alignment = { horizontal: 'center' };
                 row.getCell(5).alignment = { horizontal: 'center' };
                 row.getCell(6).alignment = { horizontal: 'left' };
-                row.getCell(7).alignment = { horizontal: 'center' };
+                row.getCell(7).alignment = { horizontal: 'left' };
+                row.getCell(8).alignment = { horizontal: 'center' };
             });
 
-            // Dòng tổng cộng (Thêm 1 ô trống vào cuối để khớp 7 cột)
-            const sumRow = ws.addRow(['', '', '', 'TỔNG CỘNG:', totalChai, '', '']);
+            // Dòng tổng cộng (Khớp 8 cột)
+            const sumRow = ws.addRow(['', '', '', 'TỔNG CỘNG:', totalChai, '', '', '']);
             sumRow.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFF0000' } };
             sumRow.eachCell(cell => { cell.border = { top: {style:'double'}, bottom: {style:'double'} }; });
 
             // Lưu file
             const buffer = await wb.xlsx.writeBuffer(); 
-            saveAs(new Blob([buffer]), `BaoCao_LichSu_${getTrungTamDuocChon()}.xlsx`);
+            saveAs(new Blob([buffer]), `BaoCao_LichSu_Nhaplieu.xlsx`);
             window.closeModal('exportHistoryModal');
         }
 
@@ -578,11 +770,20 @@ window.closeModal = async function(id) {
         
         window.recalculateStats = async function() {
             if(!confirm("Hệ thống sẽ quét toàn bộ CSDL để tính toán lại thống kê. Quá trình này có thể mất vài phút. Bạn có muốn tiếp tục?")) return;
-            addLog("Đang tính toán lại thống kê...");
+            addLog("Đang tính toán lại thống kê, bộ đếm luỹ kế và Bảng số liệu...");
             
             let newStats = {};
             
-            // Bước 1: Quét Lô Chai (Tính node chaiDuocCT)
+            // TẢI VÀ LÀM SẠCH BỘ ĐẾM CHAI HUỶ TRONG LŨY KẾ
+            let snapLuyKe = await get(child(ref(db), 'Tonghop/ThongtinLuyke'));
+            let luyKeData = snapLuyKe.exists() ? snapLuyKe.val() : {};
+            for(let cn in luyKeData) {
+                for(let lc in luyKeData[cn]) {
+                    for(let y in luyKeData[cn][lc]) luyKeData[cn][lc][y].chaiHuy = 0;
+                }
+            }
+            
+            // Bước 1: Quét Lô Chai
             const snapNguon = await get(child(ref(db), 'Tonghop/Thongtinnguon'));
             if(snapNguon.exists()){
                 const dNguon = snapNguon.val();
@@ -598,18 +799,27 @@ window.closeModal = async function(id) {
                                 const isThue = lot.chaiThue === true;
 
                                 if(!newStats[lc]) newStats[lc] = {};
-                                if(!newStats[lc][yCT]) newStats[lc][yCT] = { 
-                                    chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, 
-                                    chaiKDtrongNam: {}, 
-                                    soKDtheoNamCT: {} 
-                                };
+                                if(!newStats[lc][yCT]) newStats[lc][yCT] = { chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, chaiKDtrongNam: {}, soKDtheoNamCT: {}, chaiDenHanKD: {} };
+                                if(!newStats[lc][yCT].chaiDenHanKD) newStats[lc][yCT].chaiDenHanKD = {};
+                                
+                                if (isThue) newStats[lc][yCT].chaiDuocCT.chaiThueDuocCT += sl;
+                                else newStats[lc][yCT].chaiDuocCT.chaiKothueDuocCT += sl;
+                                newStats[lc][yCT].chaiDuocCT.tongChaiDuocCT += sl;
+
+                                const targetYear = String(parseInt(yCT) + 5);
+                                if(!newStats[lc][targetYear]) newStats[lc][targetYear] = { chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, chaiKDtrongNam: {}, soKDtheoNamCT: {}, chaiDenHanKD: {} };
+                                if(!newStats[lc][targetYear].chaiDenHanKD) newStats[lc][targetYear].chaiDenHanKD = {};
+                                
+                                if(!newStats[lc][targetYear].chaiDenHanKD.Toan_dien) {
+                                    newStats[lc][targetYear].chaiDenHanKD.Toan_dien = { oldChaiDenHanKD: 0, newChaiDenHanKD: 0, tongChaiDenHanKD: 0, newThueDenHanKD: 0 };
+                                }
+                                
+                                newStats[lc][targetYear].chaiDenHanKD.Toan_dien.newChaiDenHanKD += sl;
+                                newStats[lc][targetYear].chaiDenHanKD.Toan_dien.tongChaiDenHanKD += sl;
                                 
                                 if (isThue) {
-                                    newStats[lc][yCT].chaiDuocCT.chaiThueDuocCT += sl;
-                                } else {
-                                    newStats[lc][yCT].chaiDuocCT.chaiKothueDuocCT += sl;
+                                    newStats[lc][targetYear].chaiDenHanKD.Toan_dien.newThueDenHanKD += sl;
                                 }
-                                newStats[lc][yCT].chaiDuocCT.tongChaiDuocCT += sl;
                             }
                         }
                     }
@@ -617,7 +827,7 @@ window.closeModal = async function(id) {
             }
 
             // Bước 2: Quét toàn bộ DanhSachChai
-            const centers = ['tt1', 'tt2', 'tt3'];
+            const centers = danhSachTrungTam.map(tt => tt.id);
             for(let tt of centers){
                 const snapTT = await get(child(ref(db), tt));
                 if(snapTT.exists()){
@@ -634,28 +844,79 @@ window.closeModal = async function(id) {
                                     for(let cid in ds){
                                         const chai = ds[cid];
                                         const rY = (chai.recentCheck || "").split('/')[1];
+                                        const isThue = chai.chaiThue === true;
+                                        const cn = chai.chiNhanhSD; 
+
+                                        const nDate = chai.nextDate || "";
+                                        const nYear = nDate.split('/')[1];
+                                        if (nYear && parseInt(yCT) < parseInt(nYear)) {
+                                            if(!newStats[lc]) newStats[lc] = {};
+                                            if(!newStats[lc][nYear]) newStats[lc][nYear] = { chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, chaiKDtrongNam: {}, soKDtheoNamCT: {}, chaiDenHanKD: {} };
+                                            if(!newStats[lc][nYear].chaiDenHanKD) newStats[lc][nYear].chaiDenHanKD = {};
+                                            
+                                            if(!newStats[lc][nYear].chaiDenHanKD[tt]) newStats[lc][nYear].chaiDenHanKD[tt] = { oldChaiDenHanKD: 0, newChaiDenHanKD: 0, tongChaiDenHanKD: 0, newThueDenHanKD: 0 };
+                                            if(!newStats[lc][nYear].chaiDenHanKD.Toan_dien) newStats[lc][nYear].chaiDenHanKD.Toan_dien = { oldChaiDenHanKD: 0, newChaiDenHanKD: 0, tongChaiDenHanKD: 0, newThueDenHanKD: 0 };
+                                            
+                                            newStats[lc][nYear].chaiDenHanKD[tt].oldChaiDenHanKD += 1;
+                                            newStats[lc][nYear].chaiDenHanKD[tt].tongChaiDenHanKD += 1;
+                                            newStats[lc][nYear].chaiDenHanKD.Toan_dien.oldChaiDenHanKD += 1;
+                                            newStats[lc][nYear].chaiDenHanKD.Toan_dien.tongChaiDenHanKD += 1;
+
+                                            if (cn) {
+                                                if(!newStats[lc][nYear].chaiDenHanKD[cn]) {
+                                                    newStats[lc][nYear].chaiDenHanKD[cn] = { oldChaiDenHanKD: 0, newChaiDenHanKD: 0, tongChaiDenHanKD: 0, newThueDenHanKD: 0 };
+                                                }
+                                                newStats[lc][nYear].chaiDenHanKD[cn].oldChaiDenHanKD += 1;
+                                            }
+                                        }
+
                                         if(rY){
                                             if(!newStats[lc]) newStats[lc] = {};
-                                            if(!newStats[lc][rY]) newStats[lc][rY] = { 
-                                                chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, 
-                                                chaiKDtrongNam: {}, 
-                                                soKDtheoNamCT: {} 
-                                            };
+                                            if(!newStats[lc][rY]) newStats[lc][rY] = { chaiDuocCT: { chaiThueDuocCT: 0, chaiKothueDuocCT: 0, tongChaiDuocCT: 0 }, chaiKDtrongNam: {}, soKDtheoNamCT: {}, chaiDenHanKD: {} };
                                             
-                                            if(!newStats[lc][rY].chaiKDtrongNam[tt]) newStats[lc][rY].chaiKDtrongNam[tt] = { tongChaiDuocKD: 0 };
-                                            if(!newStats[lc][rY].chaiKDtrongNam.Toan_dien) newStats[lc][rY].chaiKDtrongNam.Toan_dien = { tongChaiDuocKD: 0 };
+                                            if(!newStats[lc][rY].chaiKDtrongNam) newStats[lc][rY].chaiKDtrongNam = {};
+                                            if(!newStats[lc][rY].chaiKDtrongNam[tt]) newStats[lc][rY].chaiKDtrongNam[tt] = { tongChaiDuocKD: 0, chaiThueDuocKD: 0, chaiKoThueDuocKD: 0 };
+                                            if(!newStats[lc][rY].chaiKDtrongNam.Toan_dien) newStats[lc][rY].chaiKDtrongNam.Toan_dien = { tongChaiDuocKD: 0, chaiThueDuocKD: 0, chaiKoThueDuocKD: 0 };
+                                            if(cn && !newStats[lc][rY].chaiKDtrongNam[cn]) newStats[lc][rY].chaiKDtrongNam[cn] = { tongChaiDuocKD: 0, chaiThueDuocKD: 0, chaiKoThueDuocKD: 0 };
                                             
                                             newStats[lc][rY].chaiKDtrongNam[tt].tongChaiDuocKD += 1;
                                             newStats[lc][rY].chaiKDtrongNam.Toan_dien.tongChaiDuocKD += 1;
+                                            if(cn) newStats[lc][rY].chaiKDtrongNam[cn].tongChaiDuocKD += 1;
                                             
+                                            if (isThue) {
+                                                newStats[lc][rY].chaiKDtrongNam[tt].chaiThueDuocKD += 1;
+                                                newStats[lc][rY].chaiKDtrongNam.Toan_dien.chaiThueDuocKD += 1;
+                                                if(cn) newStats[lc][rY].chaiKDtrongNam[cn].chaiThueDuocKD += 1;
+                                            } else {
+                                                newStats[lc][rY].chaiKDtrongNam[tt].chaiKoThueDuocKD += 1;
+                                                newStats[lc][rY].chaiKDtrongNam.Toan_dien.chaiKoThueDuocKD += 1;
+                                                if(cn) newStats[lc][rY].chaiKDtrongNam[cn].chaiKoThueDuocKD += 1;
+                                            }
+                                            
+                                            if(!newStats[lc][rY].soKDtheoNamCT) newStats[lc][rY].soKDtheoNamCT = {};
                                             if(!newStats[lc][rY].soKDtheoNamCT[tt]) newStats[lc][rY].soKDtheoNamCT[tt] = {};
                                             if(!newStats[lc][rY].soKDtheoNamCT.Toan_dien) newStats[lc][rY].soKDtheoNamCT.Toan_dien = {};
+                                            if(cn && !newStats[lc][rY].soKDtheoNamCT[cn]) newStats[lc][rY].soKDtheoNamCT[cn] = {};
                                             
-                                            if(!newStats[lc][rY].soKDtheoNamCT[tt][yCT]) newStats[lc][rY].soKDtheoNamCT[tt][yCT] = { soChaiKiemdinhThuocNamCT: 0 };
+                                            if(!newStats[lc][rY].soKDtheoNamCT[tt][yCT]) newStats[lc][rY].soKDtheoNamCT[tt][yCT] = { soChaiKiemdinhThuocNamCT: 0, soChaiThueKDthuocNamCT: 0, soChaiKoThueKDthuocNamCT: 0 };
+                                            if(!newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT]) newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT] = { soChaiKiemdinhThuocNamCT: 0, soChaiThueKDthuocNamCT: 0, soChaiKoThueKDthuocNamCT: 0 };
+                                            if(cn && !newStats[lc][rY].soKDtheoNamCT[cn][yCT]) {
+                                                newStats[lc][rY].soKDtheoNamCT[cn][yCT] = { soChaiKiemdinhThuocNamCT: 0, soChaiThueKDthuocNamCT: 0, soChaiKoThueKDthuocNamCT: 0 };
+                                            }
+                                            
                                             newStats[lc][rY].soKDtheoNamCT[tt][yCT].soChaiKiemdinhThuocNamCT += 1;
-                                            
-                                            if(!newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT]) newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT] = { soChaiKiemdinhThuocNamCT: 0 };
                                             newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT].soChaiKiemdinhThuocNamCT += 1;
+                                            if(cn) newStats[lc][rY].soKDtheoNamCT[cn][yCT].soChaiKiemdinhThuocNamCT += 1;
+                                            
+                                            if (isThue) {
+                                                newStats[lc][rY].soKDtheoNamCT[tt][yCT].soChaiThueKDthuocNamCT += 1;
+                                                newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT].soChaiThueKDthuocNamCT += 1;
+                                                if(cn) newStats[lc][rY].soKDtheoNamCT[cn][yCT].soChaiThueKDthuocNamCT += 1;
+                                            } else {
+                                                newStats[lc][rY].soKDtheoNamCT[tt][yCT].soChaiKoThueKDthuocNamCT += 1;
+                                                newStats[lc][rY].soKDtheoNamCT.Toan_dien[yCT].soChaiKoThueKDthuocNamCT += 1;
+                                                if(cn) newStats[lc][rY].soKDtheoNamCT[cn][yCT].soChaiKoThueKDthuocNamCT += 1;
+                                            }
                                         }
                                     }
                                 }
@@ -665,8 +926,148 @@ window.closeModal = async function(id) {
                 }
             }
 
-            await update(ref(db), { 'Tonghop/Thongke': newStats });
-            addLog("Hoàn tất tính toán lại Thống kê!");
+            // Bước 3: QUÉT LỊCH SỬ NHẬP ĐỂ TÍNH SỐ CHAI HỦY
+            for(let tt of centers) {
+                const snapLS = await get(child(ref(db), `${tt}/LichSuNhap`));
+                if(snapLS.exists()){
+                    const dataLS = snapLS.val();
+                    for(let key in dataLS){
+                        const entry = dataLS[key];
+                        if(entry.isHuy === true && entry.chiNhanhSD && entry.thoiDiemKD && entry.thoiDiemKD !== "Nhiều thời điểm") {
+                            let yHuy = entry.thoiDiemKD.split('/')[1];
+                            let cn = entry.chiNhanhSD;
+                            let lc = entry.loaiChai;
+                            let total = entry.total || 0; 
+
+                            if (!luyKeData[cn]) luyKeData[cn] = {};
+                            if (!luyKeData[cn][lc]) luyKeData[cn][lc] = {};
+                            if (!luyKeData[cn][lc][yHuy]) luyKeData[cn][lc][yHuy] = { chaiGiao: 0, chaiThueGiao: 0, chaiHuy: 0, luyKeVo: 0, luyKeVoThue: 0 };
+                            
+                            luyKeData[cn][lc][yHuy].chaiHuy = (luyKeData[cn][lc][yHuy].chaiHuy || 0) + total;
+                        }
+                    }
+                }
+            }
+
+            // Bước 4: TÍNH TOÁN LAN TRUYỀN LŨY KẾ
+            const startYear = 2005; const currentYear = new Date().getFullYear();
+            for(let cn in luyKeData) {
+                for(let lc in luyKeData[cn]) {
+                    let dataLC = luyKeData[cn][lc];
+                    for(let y = startYear; y <= currentYear; y++) {
+                        if (!dataLC[y]) dataLC[y] = { chaiGiao: 0, chaiThueGiao: 0, chaiHuy: 0, luyKeVo: 0, luyKeVoThue: 0 };
+                        let prevLuyKe = dataLC[y-1] ? dataLC[y-1].luyKeVo || 0 : 0;
+                        let prevHuy = dataLC[y-1] ? dataLC[y-1].chaiHuy || 0 : 0;
+                        let chaiGiao = dataLC[y].chaiGiao || 0;
+                        dataLC[y].luyKeVo = prevLuyKe + chaiGiao - prevHuy; 
+
+                        let prevThue = dataLC[y-1] ? dataLC[y-1].luyKeVoThue || 0 : 0;
+                        let chaiThueGiao = dataLC[y].chaiThueGiao || 0;
+                        dataLC[y].luyKeVoThue = prevThue + chaiThueGiao;
+                    }
+                }
+            }
+
+            // BƯỚC 5: TÍNH TOÁN BỔ SUNG CHAI ĐẾN HẠN TỪ LŨY KẾ CHO CHI NHÁNH
+            for (let lc in newStats) {
+                for (let yStr in newStats[lc]) {
+                    let y = parseInt(yStr);
+                    let targetPastYear = y - 5;
+                    if (!newStats[lc][yStr].chaiDenHanKD) newStats[lc][yStr].chaiDenHanKD = {};
+
+                    danhSachChiNhanh.forEach(branch => {
+                        let cn = branch.id;
+                        let luyKeYearData = (luyKeData[cn] && luyKeData[cn][lc] && luyKeData[cn][lc][targetPastYear]) ? luyKeData[cn][lc][targetPastYear] : null;
+                        
+                        let cg = luyKeYearData ? (luyKeYearData.chaiGiao || 0) : 0;
+                        let ctg = luyKeYearData ? (luyKeYearData.chaiThueGiao || 0) : 0;
+
+                        if (cg > 0 || ctg > 0 || newStats[lc][yStr].chaiDenHanKD[cn]) {
+                            if (!newStats[lc][yStr].chaiDenHanKD[cn]) {
+                                newStats[lc][yStr].chaiDenHanKD[cn] = { oldChaiDenHanKD: 0, newChaiDenHanKD: 0, tongChaiDenHanKD: 0, newThueDenHanKD: 0 };
+                            }
+                            let bData = newStats[lc][yStr].chaiDenHanKD[cn];
+                            bData.newChaiDenHanKD = cg;
+                            bData.newThueDenHanKD = ctg;
+                            bData.tongChaiDenHanKD = bData.oldChaiDenHanKD + cg;
+                        }
+                    });
+                }
+            }
+
+            // ==============================================================================
+            // BƯỚC 6: XÂY DỰNG BẢNG SỐ LIỆU TỔNG HỢP (BangSolieu)
+            // ==============================================================================
+            let bangSoLieuData = {};
+            const lcTypes = ['V12', 'V45', 'Com'];
+            const allNodes = ['Toan_dien', ...danhSachChiNhanh.map(c => c.id)];
+
+            lcTypes.forEach(lc => {
+                bangSoLieuData[lc] = {};
+                // TĂNG GIỚI HẠN VÒNG LẶP LÊN (currentYear + 1) ĐỂ TÍNH LUÔN DỮ LIỆU NĂM TIẾP THEO
+                for(let y = 2005; y <= currentYear + 1; y++) {
+                    bangSoLieuData[lc][y] = {};
+                    let y5 = y - 5, y6 = y - 6, y7 = y - 7, y8 = y - 8;
+                    
+                    allNodes.forEach(node => {
+                        let obj = {};
+                        let isTD = (node === 'Toan_dien');
+
+                        // 1. Tổng số chai được chế tạo 5 năm trước
+                        obj['1tscdct5nt'] = isTD 
+                            ? (newStats[lc]?.[y]?.chaiDenHanKD?.Toan_dien?.newChaiDenHanKD || 0)
+                            : (luyKeData[node]?.[lc]?.[y5]?.chaiGiao || 0);
+
+                        // 2. Số chai thuê được chế tạo 5 năm trước
+                        obj['2sctdct5nt'] = isTD 
+                            ? (newStats[lc]?.[y]?.chaiDenHanKD?.Toan_dien?.newThueDenHanKD || 0)
+                            : (luyKeData[node]?.[lc]?.[y5]?.chaiThueGiao || 0);
+
+                        // 3. Tổng số chai đến hạn kiểm định trong năm
+                        obj['3tscdhkdtn'] = newStats[lc]?.[y]?.chaiDenHanKD?.[node]?.tongChaiDenHanKD || 0;
+
+                        // 4. Tổng số chai được kiểm định trong năm
+                        obj['4tscdkdtn'] = newStats[lc]?.[y]?.chaiKDtrongNam?.[node]?.tongChaiDuocKD || 0;
+
+                        // 5. Số chai chế tạo 5 năm trước được KĐ trong năm
+                        obj['5scct5ntdkdtn'] = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y5]?.soChaiKiemdinhThuocNamCT || 0;
+
+                        // 6. Tỷ lệ %
+                        obj['6tlcct5ntdkdtn'] = obj['1tscdct5nt'] > 0 ? parseFloat(((obj['5scct5ntdkdtn'] / obj['1tscdct5nt']) * 100).toFixed(2)) : 0;
+
+                        // 7. Số chai thuê CT 5 năm trước được KĐ trong năm
+                        obj['7sctct5ntdkdtn'] = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y5]?.soChaiThueKDthuocNamCT || 0;
+
+                        // 8. Tỷ lệ %
+                        obj['8tlctct5ntdkdtn'] = obj['2sctdct5nt'] > 0 ? parseFloat(((obj['7sctct5ntdkdtn'] / obj['2sctdct5nt']) * 100).toFixed(2)) : 0;
+
+                        // 9. Số chai muộn đến kỳ kiểm định (Tính tổng của năm thứ 5, 6, 7, 8)
+                        let v5 = obj['5scct5ntdkdtn'];
+                        let v6 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y6]?.soChaiKiemdinhThuocNamCT || 0;
+                        let v7 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y7]?.soChaiKiemdinhThuocNamCT || 0;
+                        let v8 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y8]?.soChaiKiemdinhThuocNamCT || 0;
+                        obj['9scmdtkdldtn'] = v5 + v6 + v7 + v8;
+
+                        // 91. Số chai THUÊ muộn đến kỳ kiểm định
+                        let t5 = obj['7sctct5ntdkdtn'];
+                        let t6 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y6]?.soChaiThueKDthuocNamCT || 0;
+                        let t7 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y7]?.soChaiThueKDthuocNamCT || 0;
+                        let t8 = newStats[lc]?.[y]?.soKDtheoNamCT?.[node]?.[y8]?.soChaiThueKDthuocNamCT || 0;
+                        obj['91sctdtkdldtn'] = t5 + t6 + t7 + t8;
+
+                        bangSoLieuData[lc][y][node] = obj;
+                    });
+                }
+            });
+
+            // GHI DỮ LIỆU ĐỒNG LOẠT VÀO CSDL
+            await update(ref(db), { 
+                'Tonghop/Thongke': newStats, 
+                'Tonghop/ThongtinLuyke': luyKeData,
+                'Tonghop/BangSolieu': bangSoLieuData 
+            });
+            
+            addLog("Hoàn tất tính toán lại Thống kê, Luỹ kế & Bảng Số Liệu!");
             alert("Tính toán lại thống kê hoàn tất!");
         }
 
@@ -1111,7 +1512,7 @@ window.closeModal = async function(id) {
             
             try {
                 let updates = {};
-                const centers = ['tt1', 'tt2', 'tt3'];
+                const centers = danhSachTrungTam.map(tt => tt.id);
                 
                 for(let lot of window.dirtyLots) {
                     let yearLot = lot.ns.split('-')[1]; // Lấy yyyy từ Lô nguồn
@@ -1180,7 +1581,7 @@ window.closeModal = async function(id) {
             
             try {
                 let updates = {};
-                const centers = ['tt1', 'tt2', 'tt3'];
+                const centers = danhSachTrungTam.map(tt => tt.id);
                 const types = ['V12', 'V45', 'Com'];
                 
                 // 1. Lấy toàn bộ Lô Nguồn để đối chiếu
@@ -1272,7 +1673,294 @@ window.closeModal = async function(id) {
                 document.getElementById('lotsLoading').style.display = 'none';
             }
         }
-	
+	// ==========================================
+        // QUẢN LÝ LUỸ KẾ TỔNG VÀ CHI TIẾT
+        // ==========================================
+        window.thongTinLuyKe = {}; 
+        window.showAllYears = false;
+
+        window.openLuyKeTongModal = async function() {
+            window.closeModal('sourceChoiceModal');
+            document.getElementById('luyKeTongModal').style.display = 'flex';
+            
+            // Tải dữ liệu từ CSDL
+            const snap = await get(child(ref(db), 'Tonghop/ThongtinLuyke'));
+            window.thongTinLuyKe = snap.exists() ? snap.val() : {};
+
+            // Nạp chi nhánh vào dropdown
+            let cnList = danhSachChiNhanh.map(cn => `<option value="${cn.id}">${cn.ten}</option>`).join('');
+            document.getElementById('luyKeBranchSelect').innerHTML = cnList;
+
+            // Đổ 3 bảng tổng hợp
+            const types = ['V12', 'V45', 'Com'];
+            const currentYear = new Date().getFullYear();
+            let html = '';
+            
+            types.forEach(lc => {
+                html += `<h4 style="color:#007bff; border-bottom: 2px solid #007bff; padding-bottom:5px;">Loại chai: ${lc}</h4>
+                <table class="history-table" style="margin-bottom: 20px;">
+                    <thead><tr><th style="width:5%;">STT</th><th style="width:25%;">Tên chi nhánh</th><th style="width:10%;">Loại chai</th><th style="width:20%;">Số lượng vỏ luỹ kế</th><th style="width:20%;">Vỏ thuê luỹ kế</th><th style="width:20%;">Số lượng đã huỷ</th></tr></thead>
+                    <tbody>`;
+                
+                let stt = 1;
+                danhSachChiNhanh.forEach(cn => {
+                    const dataLC = (window.thongTinLuyKe[cn.id] || {})[lc] || {};
+                    let luyKeVo = dataLC[currentYear] ? dataLC[currentYear].luyKeVo || 0 : 0;
+                    let luyKeVoThue = dataLC[currentYear] ? dataLC[currentYear].luyKeVoThue || 0 : 0;
+                    let tongHuy = 0;
+                    for (let y = 2005; y <= currentYear; y++) tongHuy += (dataLC[y] ? dataLC[y].chaiHuy || 0 : 0);
+
+                    // Sử dụng .toLocaleString() để định dạng số hàng nghìn theo chuẩn máy tính
+                    html += `<tr>
+                        <td>${stt++}</td>
+                        <td style="text-align:left; font-weight:bold;">${cn.ten}</td>
+                        <td>${lc}</td>
+                        <td style="color:#28a745; font-weight:bold;">${luyKeVo.toLocaleString('vi-VN')}</td>
+                        <td style="color:#ffc107; font-weight:bold;">${luyKeVoThue.toLocaleString('vi-VN')}</td>
+                        <td style="color:#dc3545; font-weight:bold;">${tongHuy.toLocaleString('vi-VN')}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            });
+            document.getElementById('luyKeTongContainer').innerHTML = html;
+        }
+
+        window.viewLuyKeChiTiet = function() {
+            window.currentLuyKeBranch = document.getElementById('luyKeBranchSelect').value;
+            let tenCN = danhSachChiNhanh.find(c => c.id === window.currentLuyKeBranch).ten;
+            document.getElementById('luyKeChiTietTitle').innerText = "Chi tiết Luỹ kế - " + tenCN;
+            
+            window.isEditingLuyKe = false;
+            document.getElementById('btnEditLuyKe').innerText = "Sửa Dữ Liệu";
+            document.getElementById('btnEditLuyKe').style.backgroundColor = "#ffc107";
+            
+            window.closeModal('luyKeTongModal');
+            document.getElementById('luyKeChiTietModal').style.display = 'flex';
+            renderLuyKeChiTiet();
+        }
+
+        window.renderLuyKeChiTiet = function() {
+            const types = ['V12', 'V45', 'Com'];
+            const currentYear = new Date().getFullYear();
+            const startYear = 2005;
+            
+            let html = '';
+            types.forEach(lc => {
+                html += `<h4 style="color:#007bff; position: sticky; left: 0; display: inline-block; padding: 5px 10px 5px 0; z-index: 4; margin-top: 15px; background-color: white;">Loại chai: ${lc}</h4>`;
+                
+                html += `<div class="table-responsive"><table class="history-table" style="border-collapse: separate; border-spacing: 0;"><thead><tr>
+                <th style="min-width:50px; max-width:50px; position: sticky; left: 0; z-index: 3; background: #f4f4f4; border-right: 1px solid #ddd; border-bottom: 2px solid #ddd;">STT</th>
+                <th style="min-width:250px; max-width:250px; position: sticky; left: 50px; z-index: 3; background: #f4f4f4; border-right: 1px solid #ddd; border-bottom: 2px solid #ddd;">Nội dung</th>`;
+                
+                for(let y = startYear; y <= currentYear; y++) {
+                    html += `<th style="min-width: 90px; border-bottom: 2px solid #ddd;">${y}</th>`;
+                }
+                html += `</tr></thead><tbody>`;
+
+                const dataLC = (window.thongTinLuyKe[window.currentLuyKeBranch] || {})[lc] || {};
+                
+                const rows = [
+                    { key: 'chaiGiao', label: 'Chai được giao trong năm', editable: true, color: '#212529' },
+                    { key: 'chaiThueGiao', label: 'Chai thuê được giao trong năm', editable: true, color: '#17a2b8' },
+                    { key: 'chaiHuy', label: 'Chai huỷ trong năm', editable: false, color: '#dc3545' },
+                    { key: 'luyKeVo', label: 'Luỹ kế vỏ của năm', editable: false, color: '#28a745' },
+                    { key: 'luyKeVoThue', label: 'Luỹ kế vỏ thuê của năm', editable: false, color: '#6f42c1' }
+                ];
+
+                rows.forEach((row, idx) => {
+                    let bgCol1 = (row.key === 'luyKeVo' || row.key === 'luyKeVoThue') ? '#ffeeba' : 'white';
+                    
+                    html += `<tr>
+                        <td style="position: sticky; left: 0; z-index: 1; background: ${bgCol1}; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd;">${idx+1}</td>
+                        <td style="text-align:left; font-weight:bold; color:${row.color}; position: sticky; left: 50px; z-index: 1; background: ${bgCol1}; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd;">${row.label}</td>`;
+                    
+                    for(let y = startYear; y <= currentYear; y++) {
+                        let val = dataLC[y] ? dataLC[y][row.key] || 0 : 0;
+                        let valStr = val.toLocaleString('vi-VN'); // Chuyển đổi số có dấu phân cách hàng nghìn
+
+                        let tdStyle = `color:${row.color}; border-bottom: 1px solid #ddd; border-right: 1px solid #ddd; min-width: 90px;`;
+                        if (row.key === 'luyKeVo' || row.key === 'luyKeVoThue') {
+                            tdStyle += ` background:#ffeeba; font-size:16px; font-weight:bold;`;
+                        } else if (!row.editable) {
+                            tdStyle += ` font-weight:bold; background:#f9f9f9;`;
+                        }
+
+                        if (window.isEditingLuyKe && row.editable) {
+                            // Cải tiến: onwheel="this.blur()" chặn lăn chuột; event.key==='Enter' this.blur() giúp gõ Enter là thoát ô nhập
+                            html += `<td style="${tdStyle}"><input type="number" class="input-inline" id="edit_${lc}_${row.key}_${y}" value="${val}" onkeydown="if(event.key==='ArrowUp' || event.key==='ArrowDown') event.preventDefault(); if(event.key==='Enter') this.blur();" onwheel="this.blur();"></td>`;
+                        } else {
+                            html += `<td style="${tdStyle}">${valStr}</td>`;
+                        }
+                    }
+                    html += `</tr>`;
+                });
+                html += `</tbody></table></div>`;
+            });
+
+            document.getElementById('luyKeChiTietContainer').innerHTML = html;
+
+            // Tự động cuộn đến cuối (những năm gần nhất) khi mở hoặc chuyển chế độ
+            // Tự động cuộn đến cuối (những năm gần nhất) khi mở hoặc chuyển chế độ
+            setTimeout(() => {
+                const containers = document.querySelectorAll('#luyKeChiTietContainer .table-responsive');
+                containers.forEach(c => {
+                    // Tăng độ trễ lên 200ms để chờ trình duyệt vẽ xong bảng, 
+                    // đồng thời ép giá trị cuộn cực đại (99999px) để chắc chắn về tận cùng bên phải
+                    c.scrollLeft = 99999; 
+                });
+            }, 200);
+        }
+
+        window.toggleEditLuyKe = async function() {
+            if (!window.isEditingLuyKe) {
+                window.isEditingLuyKe = true;
+                const btn = document.getElementById('btnEditLuyKe');
+                btn.innerText = "LƯU DỮ LIỆU LUỸ KẾ";
+                btn.style.backgroundColor = "#28a745";
+                renderLuyKeChiTiet();
+            } else {
+                // Tiết hành LƯU VÀ LAN TRUYỀN TÍNH TOÁN
+                const cn = window.currentLuyKeBranch;
+                const currentYear = new Date().getFullYear();
+                const startYear = 2005;
+
+                if (!window.thongTinLuyKe[cn]) window.thongTinLuyKe[cn] = {};
+
+                ['V12', 'V45', 'Com'].forEach(lc => {
+                    if (!window.thongTinLuyKe[cn][lc]) window.thongTinLuyKe[cn][lc] = {};
+                    let dataLC = window.thongTinLuyKe[cn][lc];
+
+                    for(let y = startYear; y <= currentYear; y++) {
+                        if (!dataLC[y]) dataLC[y] = { chaiGiao: 0, chaiThueGiao: 0, chaiHuy: 0, luyKeVo: 0, luyKeVoThue: 0 };
+                        let inputGiao = document.getElementById(`edit_${lc}_chaiGiao_${y}`);
+                        let inputThue = document.getElementById(`edit_${lc}_chaiThueGiao_${y}`);
+                        
+                        if (inputGiao) dataLC[y].chaiGiao = parseInt(inputGiao.value) || 0;
+                        if (inputThue) dataLC[y].chaiThueGiao = parseInt(inputThue.value) || 0;
+                    }
+
+                    // Lan truyền phép tính
+                    for(let y = startYear; y <= currentYear; y++) {
+                        let prevLuyKe = dataLC[y-1] ? dataLC[y-1].luyKeVo || 0 : 0;
+                        let prevHuy = dataLC[y-1] ? dataLC[y-1].chaiHuy || 0 : 0;
+                        let chaiGiao = dataLC[y].chaiGiao || 0;
+                        dataLC[y].luyKeVo = prevLuyKe + chaiGiao - prevHuy;
+
+                        let prevThue = dataLC[y-1] ? dataLC[y-1].luyKeVoThue || 0 : 0;
+                        let chaiThueGiao = dataLC[y].chaiThueGiao || 0;
+                        dataLC[y].luyKeVoThue = prevThue + chaiThueGiao;
+                    }
+                });
+
+                document.getElementById('btnEditLuyKe').innerText = "ĐANG LƯU...";
+                await update(ref(db), { [`Tonghop/ThongtinLuyke/${cn}`]: window.thongTinLuyKe[cn] });
+
+                window.isEditingLuyKe = false;
+                document.getElementById('btnEditLuyKe').innerText = "Sửa Dữ Liệu";
+                document.getElementById('btnEditLuyKe').style.backgroundColor = "#ffc107";
+                renderLuyKeChiTiet();
+                alert("Đã lưu và lan truyền tính toán luỹ kế thành công!");
+            }
+        }
+		
+     // ==========================================
+        // QUẢN LÝ BẢNG SỐ LIỆU (DASHBOARD)
+        // ==========================================
+        window.globalBangSoLieu = null;
+
+        const bangSoLieuConfig = [
+            { stt: 1, label: "Tổng số chai được chế tạo 5 năm trước", key: "1tscdct5nt" },
+            { stt: 2, label: "Số chai thuê được chế tạo 5 năm trước", key: "2sctdct5nt" },
+            { stt: 3, label: "Tổng số chai đến hạn kiểm định trong năm", key: "3tscdhkdtn" },
+            { stt: 4, label: "Tổng số chai được kiểm định trong năm", key: "4tscdkdtn" },
+            { stt: 5, label: "Số chai chế tạo 5 năm trước được kiểm định trong năm", key: "5scct5ntdkdtn" },
+            { stt: 6, label: "Tỷ lệ chai chế tạo 5 năm trước được kiểm định trong năm", key: "6tlcct5ntdkdtn", isPercent: true },
+            { stt: 7, label: "Số chai thuê chế tạo 5 năm trước được kiểm định trong năm", key: "7sctct5ntdkdtn" },
+            { stt: 8, label: "Tỷ lệ chai thuê chế tạo 5 năm trước được kiểm định trong năm", key: "8tlctct5ntdkdtn", isPercent: true },
+            { stt: 9, label: "Số chai mới được tái kiểm định lần đầu trong năm", key: "9scmdtkdldtn" },
+            { stt: 10, label: "Số chai thuê được tái kiểm định lần đầu trong năm", key: "91sctdtkdldtn" }
+        ];
+
+        window.fetchAndRenderBangSoLieu = async function() {
+            document.getElementById('bangSoLieuTableContainer').innerHTML = "<p style='text-align:center;'>Đang tải dữ liệu Bảng số liệu từ CSDL...</p>";
+            
+            // Nạp danh sách Chi nhánh vào Menu thả xuống nếu chưa có
+            const selDonVi = document.getElementById('bslDonVi');
+            if(selDonVi.options.length <= 1) { 
+                danhSachChiNhanh.forEach(cn => {
+                    let opt = document.createElement('option');
+                    opt.value = cn.id; opt.text = cn.ten;
+                    selDonVi.appendChild(opt);
+                });
+            }
+
+            try {
+                const snap = await get(child(ref(db), 'Tonghop/BangSolieu'));
+                window.globalBangSoLieu = snap.exists() ? snap.val() : {};
+                window.renderBangSoLieu();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('bangSoLieuTableContainer').innerHTML = "<p style='color:red;'>Lỗi tải dữ liệu!</p>";
+            }
+        }
+
+        window.renderBangSoLieu = function() {
+            if(!window.globalBangSoLieu) return;
+            const lc = document.getElementById('bslLoaiChai').value;
+            const dv = document.getElementById('bslDonVi').value;
+            const dataLC = window.globalBangSoLieu[lc] || {};
+            
+            const currentYear = new Date().getFullYear();
+            const startYear = 2021; 
+            const endYear = currentYear + 1; // Thêm 1 năm tương lai (sau năm hiện hành)
+            
+            // Ép font-size 11px, tinh chỉnh padding và min-width để bảng thu gọn lại khoảng 70%
+            let html = `<table class="history-table" style="border-collapse: separate; border-spacing: 0; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th style="width:35px; min-width:35px; box-sizing:border-box; padding: 6px 2px; position: sticky; top: 0; left: 0; z-index: 4; background: #e9ecef; border-right: 1px solid #ccc; border-bottom: 2px solid #ccc;">STT</th>
+                        <th style="width:350px; min-width:350px; box-sizing:border-box; padding: 6px 4px; position: sticky; top: 0; left: 35px; z-index: 4; background: #e9ecef; border-right: 1px solid #ccc; border-bottom: 2px solid #ccc;">Chỉ tiêu thống kê</th>`;
+                        
+            for(let y = startYear; y <= endYear; y++) {
+                html += `<th style="width: 50px; padding: 6px 4px; position: sticky; top: 0; z-index: 3; background: #e9ecef; border-bottom: 2px solid #ccc; border-right: 1px solid #ccc;">${y}</th>`;
+            }
+            html += `<th style="width: 40px; padding: 6px 2px; position: sticky; top: 0; z-index: 3; background: #e9ecef; border-bottom: 2px solid #ccc;">Biểu đồ</th>`;
+            html += `</tr></thead><tbody>`;
+            
+            bangSoLieuConfig.forEach(row => {
+                let bgMain = row.isPercent ? "#e8f4f8" : "white";
+                let textCol = row.isPercent ? "#0c5460" : "#333";
+
+                html += `<tr>
+                    <td style="width:35px; min-width:35px; box-sizing:border-box; position: sticky; left: 0; z-index: 2; padding: 6px 2px; background: ${bgMain}; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; text-align: center; font-weight:bold;">${row.stt}</td>
+                    <td style="width:250px; min-width:250px; box-sizing:border-box; position: sticky; left: 35px; z-index: 2; padding: 6px 4px; background: ${bgMain}; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; font-weight: bold; color: ${textCol}; text-align: left;">${row.label}</td>`;
+                    
+                for(let y = startYear; y <= endYear; y++) {
+                    let val = 0;
+                    if(dataLC[y] && dataLC[y][dv]) { val = dataLC[y][dv][row.key] || 0; }
+                    
+                    let displayVal = row.isPercent ? `${val}%` : val.toLocaleString('vi-VN');
+                    
+                    // CHỈ áp dụng dấu gạch ngang "-" nếu giá trị = 0 VÀ đó là năm tương lai (> năm hiện tại)
+                    if (val === 0 && y > currentYear) displayVal = "-";
+                    
+                    html += `<td style="padding: 6px 4px; background: ${bgMain}; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; text-align: center; color: ${textCol};">${displayVal}</td>`;
+                }
+                
+                // Nút Biểu đồ được thu nhỏ thành một dấu tích vuông vắn
+                html += `<td style="padding: 6px 4px; background: ${bgMain}; border-bottom: 1px solid #ccc; text-align: center;">
+                    <button class="primary-btn" style="padding: 4px 4px; width: 20px; margin: 0; font-size: 11px; line-height: 1; border-radius: 3px;" title="Xem biểu đồ">▶</button>
+                </td></tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            document.getElementById('bangSoLieuTableContainer').innerHTML = html;
+
+            setTimeout(() => {
+                const container = document.getElementById('bangSoLieuTableContainer');
+                if (container) container.scrollLeft = 99999;
+            }, 100);
+        }
 	</script>
 </body>
 </html>
