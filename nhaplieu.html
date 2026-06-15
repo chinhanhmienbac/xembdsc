@@ -1337,11 +1337,22 @@
                         }
                     }
 
-                    if (serialWarningTriggered) {
-                        if (!confirm(`Cảnh báo: Lô chai trong file này khả năng đã được lập hồ sơ (Trùng chuỗi Serial với ${dupDetails}).\n\nNhấn Cancel để hủy bỏ. Nhấn OK để tiếp tục.`)) { 
+            /*  === Mã cũ cho phép nhập dữ liệu trùng dãy serial ==     
+						if (serialWarningTriggered) {
+                        if (!confirm(`Cảnh báo: Lô chai trong file này khả năng đã được lập hồ sơ (Trùng chuỗi Serial vớid ${upDetails}).\n\nNhấn Cancel để hủy bỏ. Nhấn OK để tiếp tục.`)) { 
                             addLog("Đã hủy thao tác."); document.getElementById('status').innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; 
                         }
+                    }			
+			*/
+			
+			// Mã mới không cho phép nhập khi phát hiện trùng dãy serial
+			if (serialWarningTriggered) {
+                        alert(`CẤM NHẬP LIỆU: Hệ thống phát hiện lô chai trong file này TRÙNG CHUỖI SERIAL với dữ liệu đã nhập trước đó!\nChi tiết trùng lặp: ${dupDetails}\n\nHành động bị từ chối hoàn toàn để tránh ghi đè dữ liệu lỗi.`);
+                        addLog("Tiến trình bị chặn đứng do phát hiện trùng chuỗi Serial."); 
+                        document.getElementById('status').innerHTML = "<span class='text-danger'>Bị chặn hoàn toàn (Trùng chuỗi Serial).</span>"; 
+                        return; // Chặn cứng, dừng hàm vô điều kiện không cho đi tiếp
                     }
+			//Kết thúc mã mới
 
                     for(let lc in sessionStats) {
                         for(let rY in sessionStats[lc]) {
@@ -1578,11 +1589,19 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                         }
                     }
                 }
-                if (serialWarningTriggered) {
+		/* === Mã cũ, cho phép nhập trùng serial ===
+					if (serialWarningTriggered) {
                     if (!confirm(`Cảnh báo: Lô chai trong ${dupDetails} khả năng đã được lập hồ sơ rồi (Trùng chuỗi Serial).\n\nNhấn Cancel để chọn file khác. Nếu biết rõ không phải dữ liệu trùng thì nhấn OK để tiếp tục.`)) { statusDiv.innerHTML = "<span class='text-danger'>Đã hủy thao tác.</span>"; return; }
                     addLog("Bỏ qua cảnh báo trùng Serial.");
                 }
-
+		*/
+				if (serialWarningTriggered) {
+                    alert(`CẤM NHẬP LIỆU: Lô chai trong ${dupDetails} đã được lập hồ sơ rồi (Phát hiện trùng dải chuỗi Serial với lịch sử hệ thống)!\n\nHành động bị từ chối hoàn toàn. Vui lòng kiểm tra lại file Excel đầu vào.`);
+                    addLog("Tiến trình bị chặn đứng do phát hiện trùng chuỗi Serial.");
+                    statusDiv.innerHTML = "<span class='text-danger'>Bị chặn hoàn toàn (Trùng chuỗi Serial).</span>"; 
+                    return; // Chặn cứng, dừng hàm vô điều kiện không cho đi tiếp
+                }
+				
                 statusDiv.innerHTML = "<span class='text-warning'>Đang đồng bộ dữ liệu lên Firebase RTDB...</span>";
                 const batchTimestamp = Date.now().toString(); 
                 let updates = {}; let batchPathsList = []; let sessionStats = {}; let opCount = 0; let promises = [];
@@ -1710,6 +1729,11 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                     let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+                    
+                    let cnObjHuy2 = danhSachChiNhanh.find(c => c.id === summary.chiNhanhSD); 
+                    let cnNameHuy2 = cnObjHuy2 ? cnObjHuy2.ten : "";
+                    let a8Cell = activeSheet.cell("A8"); 
+                    if (a8Cell.value()) { let txt8 = String(a8Cell.value()); a8Cell.value(txt8.split("chinhanhSD").join(cnNameHuy2)); }
 
                     let destRow = 13; 
                     for (let k = 0; k < taphopData.length; k++) {
@@ -1735,7 +1759,14 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                     function buildSheet(sheetName, data) {
     if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
     const aaa = data.length; // BỔ SUNG DÒNG NÀY
-    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+	let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+    
+    let cnObjKd1 = danhSachChiNhanh.find(c => c.id === chiNhanhSD); 
+    let cnNameKd1 = cnObjKd1 ? cnObjKd1.ten : "";
+    let a6Cell = sheet.cell("A6"); 
+    if (a6Cell.value()) { let txt6 = String(a6Cell.value()); a6Cell.value(txt6.split("chinhanhSD").join(cnNameKd1)); }
+	
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
@@ -1815,30 +1846,6 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 const aaa = fetchedDocs.length;
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
                 const ghichuSheet = workbook.sheet("ghichu");
-		// --- KHỞI TẠO LOGIC LẤY TÊN CHI NHÁNH AN TOÀN TUYỆT ĐỐI ---
-let chiNhanhId = "";
-const snapshotVal = snapshot.val(); // Định nghĩa biến snapshotVal cục bộ rõ ràng
-
-if (snapshotVal) {
-    // Duyệt qua các bản ghi bên trong để lấy thuộc tính chiNhanhSD
-    for (let k in snapshotVal) {
-        if (snapshotVal[k] && snapshotVal[k].chiNhanhSD) {
-            chiNhanhId = snapshotVal[k].chiNhanhSD;
-            break;
-        }
-    }
-}
-
-// Nếu dữ liệu cũ không có chiNhanhSD, lấy giá trị đang chọn trên giao diện làm dự phòng
-if (!chiNhanhId) {
-    chiNhanhId = document.getElementById("chiNhanh")?.value || "";
-}
-
-// Tra cứu trực tiếp từ hằng số danhSachChiNhanh đã có sẵn trong mã nguồn của bạn
-const chiNhanhTimDuoc = danhSachChiNhanh.find(item => item.id === chiNhanhId);
-const chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
-// --- KẾT THÚC LOGIC LẤY TÊN CHI NHÁNH ---
-				
 
                 if (isHuy) {
                     let activeSheet = workbook.sheet("vohuy");
@@ -1847,7 +1854,12 @@ const chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
                     
                     let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
-                    let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+                    let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+    
+    let cnObjKd2 = danhSachChiNhanh.find(c => c.id === summary.chiNhanhSD); 
+    let cnNameKd2 = cnObjKd2 ? cnObjKd2.ten : "";
+    let a6Cell = sheet.cell("A6"); 
+    if (a6Cell.value()) { let txt6 = String(a6Cell.value()); a6Cell.value(txt6.split("chinhanhSD").join(cnNameKd2)); }
 
                     let destRow = 13; 
                     for (let k = 0; k < fetchedDocs.length; k++) {
@@ -1885,19 +1897,6 @@ const chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
     if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
     const aaa = data.length; // BỔ SUNG DÒNG NÀY
     let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
-
-// --- THỰC HIỆN THAY THẾ CHINHANHSD VÀO CÁC Ô MỤC TIÊU ---
-    // Biên bản hủy (isHuy = true) xử lý ô A8, Biên bản thường xử lý ô A6
-    const targetCellRef = isHuy ? "A8" : "A6"; 
-    const targetCell = sheet.cell(targetCellRef);
-    let cellVal = targetCell.value();
-    
-    if (cellVal && typeof cellVal === "string") {
-        // Thay thế từ khóa "chinhanhSD" bằng tên đầy đủ (ví dụ: "Chi nhánh Miền Bắc")
-        cellVal = cellVal.replace("chinhanhSD", chiNhanhFullText);
-        targetCell.value(cellVal);
-    }
-    // ------------------------------------------------------
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
