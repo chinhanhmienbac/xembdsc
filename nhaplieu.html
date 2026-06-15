@@ -266,7 +266,7 @@
                 <h3>Bổ sung dữ liệu cũ</h3>
                 <button class="btn-close" onclick="window.closeModal('oldDataModal')">&times;</button>
             </div>
-            <p style="font-size: 14px; color: #555;">Chức năng nhập trực tiếp dữ liệu cũ vào Cơ sở dữ liệu.</p>
+            <p style="font-size: 14px; color: #555;">Chức năng nhập dữ liệu kiểm định cũ vào Cơ sở dữ liệu. Không nhập danh sách chai huỷ vào phần này. Chai huỷ nhập tại bảng chính!</p>
             <button class="primary-btn" style="margin-bottom:15px; background-color: #28a745;" onclick="window.downloadOldDataTemplate()">1. Tải mẫu Excel</button>
             <button class="primary-btn" onclick="document.getElementById('importOldDataFile').click()">2. Nhập từ Excel</button>
             <input type="file" id="importOldDataFile" style="display:none;" accept=".xlsx, .xls" onchange="window.importOldDataFromExcel(event)">
@@ -787,10 +787,26 @@
                 if (sessionData.paths && Array.isArray(sessionData.paths)) dataPaths = sessionData.paths; 
                 else if (sessionData.paths) dataPaths = Object.values(sessionData.paths);
 
+                let logCount = 0;
+                let currentTime = Date.now();
+
                 dataPaths.forEach(p => {
                     if (p.includes('/DanhSachChai/')) {
                         if (newThoiDiem) updates[`${p}/recentCheck`] = newThoiDiem;
                         updates[`${p}/chiNhanhSD`] = newChiNhanh;
+                        
+                        // --- GHI NHẬT KÝ CHANGELOG ---
+                        const clKey = push(child(ref(db), 'System/Changelog')).key;
+                        let payload = { chiNhanhSD: newChiNhanh };
+                        if (newThoiDiem) payload.recentCheck = newThoiDiem;
+                        
+                        updates[`System/Changelog/${clKey}`] = { 
+                            timestamp: currentTime + logCount, 
+                            action: 'UPDATE', 
+                            path: p, 
+                            data: payload 
+                        };
+                        logCount++;
                     }
                 });
                 
@@ -1011,8 +1027,26 @@
                 const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
                 if (snap.exists()) {
                     const data = snap.val(); let delUpdates = {};
-                    if (data.paths && Array.isArray(data.paths)) data.paths.forEach(p => { delUpdates[p] = null; });
-                    else if (data.paths) Object.values(data.paths).forEach(p => { delUpdates[p] = null; });
+                    
+                    let logCount = 0;
+                    let currentTime = Date.now();
+                    const pathsArray = (data.paths && Array.isArray(data.paths)) ? data.paths : (data.paths ? Object.values(data.paths) : []);
+                    
+                    pathsArray.forEach(p => { 
+                        delUpdates[p] = null; 
+                        
+                        // --- GHI NHẬT KÝ CHANGELOG ---
+                        // Chỉ ghi log cho phần dữ liệu lõi (DanhSachChai) để Local Cache dọn dẹp
+                        if (p.includes('/DanhSachChai/')) {
+                            const clKey = push(child(ref(db), 'System/Changelog')).key;
+                            delUpdates[`System/Changelog/${clKey}`] = {
+                                timestamp: currentTime + logCount,
+                                action: 'DELETE',
+                                path: p
+                            };
+                            logCount++;
+                        }
+                    });
                     
                     if (data.stats) {
                         for(let lc in data.stats) {
@@ -1042,14 +1076,14 @@
         window.openOldDataModal = function() { document.getElementById('oldDataModal').style.display = 'flex'; }
 
         // ==========================================
-        // BỔ SUNG DỮ LIỆU CŨ (VỊ TRÍ CỘT ĐÃ ĐƯỢC DỊCH TRÁI)
+        // XUẤT BIỂU MẪU NHẬP LIỆU EXCEL 
         // ==========================================
         window.downloadOldDataTemplate = async function() {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Mau_BoSungDuLieu');
-            // Mẫu mới chỉ còn 10 cột do đã bỏ cột Loại chai và Thời điểm
-            ws.addRow(['STT', 'Nhà CT', 'Năm CT (mm/yyyy)', 'Mã hiệu', 'Serial', 'Khối lượng', 'Kiểm định lần trước (mm/yyyy)', 'Kiểm định kỳ tới (mm/yyyy)', 'Chai hủy (để trống/k = Không)', 'Lý do hủy']);
+            // Mẫu mới chỉ còn 8 cột do đã bỏ cột Chai hủy và Lý do hủy
+            ws.addRow(['STT', 'Nhà CT', 'Năm CT (mm/yyyy)', 'Mã hiệu', 'Serial', 'Khối lượng', 'Kiểm định lần trước (mm/yyyy)', 'Kiểm định kỳ tới (mm/yyyy)']);
             ws.getRow(1).font = { bold: true }; 
-            ws.columns = [{width: 10},{width: 25},{width: 25},{width: 15},{width: 15},{width: 15},{width: 25},{width: 25},{width: 30},{width: 35}];
+            ws.columns = [{width: 10},{width: 25},{width: 25},{width: 15},{width: 15},{width: 15},{width: 25},{width: 25}];
             ws.columns.forEach(column => { column.numFmt = '@'; });
             const buffer = await wb.xlsx.writeBuffer(); saveAs(new Blob([buffer]), "Mau_BoSung_DuLieuCu.xlsx");
         }
@@ -1136,21 +1170,17 @@
                     
                     let rowNumber = rIdx + 1; // Tính bù STT Header của Excel
                     
-                    // Cột 9 (I) - Index 8: Chai hủy
-                    let voHuyRaw = String(row[8] || "").trim().toLowerCase(); 
-                    let isHuyRow = !(voHuyRaw === "" || voHuyRaw.startsWith("k"));
-
                     // Cột 3 (C) - Index 2: Năm CT
                     let namCT_orig_raw = String(row[2] || "").trim();
-                    let namCT_orig = (!isHuyRow && namCT_orig_raw) ? window.fixDateString(namCT_orig_raw, "Năm CT", rowNumber) : namCT_orig_raw;
+                    let namCT_orig = namCT_orig_raw ? window.fixDateString(namCT_orig_raw, "Năm CT", rowNumber) : namCT_orig_raw;
 
                     // Cột 7 (G) - Index 6: KĐ lần trước
                     let lastCheck_orig_raw = String(row[6] || "").trim();
-                    let lastCheck_orig = (!isHuyRow && lastCheck_orig_raw) ? window.fixDateString(lastCheck_orig_raw, "Kiểm định lần trước", rowNumber) : lastCheck_orig_raw;
+                    let lastCheck_orig = lastCheck_orig_raw ? window.fixDateString(lastCheck_orig_raw, "Kiểm định lần trước", rowNumber) : lastCheck_orig_raw;
 
                     // Cột 8 (H) - Index 7: KĐ kỳ tới
                     let nextDate_orig_raw = String(row[7] || "").trim(); 
-                    let nextDate_orig = (!isHuyRow && nextDate_orig_raw) ? window.fixDateString(nextDate_orig_raw, "Kiểm định kỳ tới", rowNumber) : nextDate_orig_raw;
+                    let nextDate_orig = nextDate_orig_raw ? window.fixDateString(nextDate_orig_raw, "Kiểm định kỳ tới", rowNumber) : nextDate_orig_raw;
 
                     if (!nextDate_orig) missingNextDate = true;
                     else {
@@ -1166,9 +1196,7 @@
                         serial: String(row[4] || "").trim(),     // Cột 5 (E) - Index 4: Serial
                         khoiLuong: String(row[5] || "").trim(),  // Cột 6 (F) - Index 5: Khối lượng
                         lastCheck_orig: lastCheck_orig,
-                        nextDate_orig: nextDate_orig,
-                        isHuyRow: isHuyRow,
-                        lyDoHuy: String(row[9] || "").trim()     // Cột 10 (J) - Index 9: Lý do hủy
+                        nextDate_orig: nextDate_orig
                     });
                 }
 
@@ -1204,7 +1232,7 @@
 
                 // Xử lý đẩy dữ liệu (Quét qua mảng rowData đã được xử lý)
                 for (let r of rowData) {
-                    let { rowNumber, nhaCT_orig, namCT_orig, maHieu, serial, khoiLuong, lastCheck_orig, nextDate_orig, isHuyRow, lyDoHuy } = r;
+                    let { rowNumber, nhaCT_orig, namCT_orig, maHieu, serial, khoiLuong, lastCheck_orig, nextDate_orig } = r;
 
                     if (!nhaCT_orig || !namCT_orig) { console.warn(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc.`); errorCount++; continue; }
 
@@ -1219,8 +1247,19 @@
                         if (found) {
                             nhaCT_id = found; 
                         } else {
-                            sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhaCT_id}`] = { tenDayDu: nhaCT_orig };
-                            existingNhaCT[nhaCT_id] = { tenDayDu: nhaCT_orig }; 
+                            const exactPathCT = `Tonghop/DanhsachnhaCT/${nhaCT_id}`;
+                            const newDataCT = { tenDayDu: nhaCT_orig };
+                            sourceStructureUpdates[exactPathCT] = newDataCT;
+                            existingNhaCT[nhaCT_id] = newDataCT; 
+                            
+                            // --- GHI NHẬT KÝ CHANGELOG TẠO NHÀ CT ---
+                            const clKeyCT = push(child(ref(db), 'System/Changelog')).key;
+                            sourceStructureUpdates[`System/Changelog/${clKeyCT}`] = {
+                                timestamp: Date.now(),
+                                action: 'PUT',
+                                path: exactPathCT,
+                                data: newDataCT
+                            };
                         }
                     }
                     sourceStructureUpdates[`Tonghop/Thongtinnguon/${globalLoaiChai}/${namCT_id}/${nhaCT_id}/_initialized`] = true;
@@ -1228,12 +1267,12 @@
                     const newChaiKey = push(child(ref(db), 'temp')).key;
                     const dataPath = `${trungTamId}/${globalLoaiChai}/${namCT_id}/${nhaCT_id}/DanhSachChai/${newChaiKey}`;
                     
+                    // Mặc định voHuy luôn bằng false vì chức năng này chỉ áp dụng cho KĐ
                     let chaiData = { 
-                        maHieu, serial, khoiLuong, lastCheck: lastCheck_orig.replace(/\//g, '-'), lastCheckOriginal: lastCheck_orig, 
-                        timeStamp: batchTimestamp, voHuy: isHuyRow, recentCheck: globalThoiDiem, nextDate: nextDate_orig, 
-                        nhaCT: nhaCT_orig, namCT: namCT_orig, chiNhanhSD: globalChiNhanh // ĐƯA TRƯỜNG CHINHANHSD VÀO
-                    };
-                    if (isHuyRow) chaiData.lyDoHuy = lyDoHuy; 
+    maHieu, serial, khoiLuong, lastCheck: lastCheck_orig.replace(/\//g, '-'), 
+    timeStamp: batchTimestamp, voHuy: false, recentCheck: globalThoiDiem, nextDate: nextDate_orig, 
+    nhaCT: nhaCT_orig, namCT: namCT_orig, chiNhanhSD: globalChiNhanh 
+};
 
                     // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG
                     let matchedLot = allLots.find(lot => {
@@ -1253,9 +1292,21 @@
                         chaiData.chaiThue = matchedLot.chaiThue === true;
                     }
 
-                    updates[dataPath] = chaiData; batchPathsList.push(dataPath); validCount++;
+                    updates[dataPath] = chaiData; 
+                    batchPathsList.push(dataPath); 
+                    
+                    // --- GHI NHẬT KÝ CHANGELOG TẠO CHAI ---
+                    const clKeyChai = push(child(ref(db), 'System/Changelog')).key;
+                    updates[`System/Changelog/${clKeyChai}`] = {
+                        timestamp: parseInt(batchTimestamp) + validCount,
+                        action: 'PUT',
+                        path: dataPath,
+                        data: chaiData
+                    };
+                    
+                    validCount++;
 
-                    if(yCT && rY && !isHuyRow) {
+                    if(yCT && rY) {
                         if(!sessionStats[globalLoaiChai]) sessionStats[globalLoaiChai] = {};
                         if(!sessionStats[globalLoaiChai][rY]) sessionStats[globalLoaiChai][rY] = { total: 0, byNamCT: {} };
                         sessionStats[globalLoaiChai][rY].total += 1;
@@ -1427,8 +1478,19 @@ if (!nhCT_id) {
         nhCT_id = found; // Dùng lại ID cũ, bỏ qua ghi đè tenDayDu
     } else {
         // Chưa có thì tạo mới
-        sourceStructureUpdates[`Tonghop/DanhsachnhaCT/${nhCT_id}`] = { tenDayDu: nhCT_orig };
-        existingNhaCT[nhCT_id] = { tenDayDu: nhCT_orig };
+        const exactPathCT = `Tonghop/DanhsachnhaCT/${nhCT_id}`;
+        const newDataCT = { tenDayDu: nhCT_orig };
+        sourceStructureUpdates[exactPathCT] = newDataCT;
+        existingNhaCT[nhCT_id] = newDataCT;
+        
+        // --- GHI NHẬT KÝ CHANGELOG TẠO NHÀ CT ---
+        const clKeyCT = push(child(ref(db), 'System/Changelog')).key;
+        sourceStructureUpdates[`System/Changelog/${clKeyCT}`] = {
+            timestamp: Date.now(),
+            action: 'PUT',
+            path: exactPathCT,
+            data: newDataCT
+        };
     }
 }
 
@@ -1558,7 +1620,7 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                     if (isHuy) {
                         chaiObj.khoiLuong = ""; chaiObj.lastCheck = ""; chaiObj.lastCheckOriginal = ""; chaiObj.nextDate = ""; chaiObj.lyDoHuy = d.lyDoHuy;
                     } else {
-                        chaiObj.khoiLuong = d.khoiLuong; chaiObj.lastCheckOriginal = d.lastCheck_orig; chaiObj.lastCheck = d.lastCheck_orig.replace(/\//g, '-'); chaiObj.nextDate = d.nextDate_str;
+                        chaiObj.khoiLuong = d.khoiLuong; chaiObj.lastCheck = d.lastCheck_orig.replace(/\//g, '-'); chaiObj.nextDate = d.nextDate_str;
                         const yCT = d.namCT_orig.split('/')[1];
                         if(yCT) {
                             if(!sessionStats[loaiChai]) sessionStats[loaiChai] = {};
@@ -1587,10 +1649,21 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                         chaiObj.chaiThue = matchedLot.chaiThue === true;
                     }
 
-                    updates[dataPath] = chaiObj; batchPathsList.push(dataPath);
+                    updates[dataPath] = chaiObj; 
+                    batchPathsList.push(dataPath);
+
+                    // --- GHI NHẬT KÝ CHANGELOG TẠO CHAI ---
+                    const clKeyChai = push(child(ref(db), 'System/Changelog')).key;
+                    updates[`System/Changelog/${clKeyChai}`] = {
+                        timestamp: parseInt(batchTimestamp) + opCount, // Tịnh tiến thời gian
+                        action: 'PUT',
+                        path: dataPath,
+                        data: chaiObj
+                    };
 
                     opCount++;
-                    if (opCount >= 300) { promises.push(update(ref(db), updates)); updates = {}; opCount = 0; }
+                    // Giảm giới hạn Push từ 300 xuống 200 để phòng tránh giới hạn dung lượng do đã gánh thêm Log
+                    if (opCount >= 200) { promises.push(update(ref(db), updates)); updates = {}; opCount = 0; }
                 }
 
                 if (!isHuy) {
@@ -1775,7 +1848,7 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 } else {
                     let tren20Nam = []; let duoi20Nam = [];
                     fetchedDocs.forEach(d => {
-                        let row = { nhaCT_orig: d.nhaCT||"", namCT_orig: d.namCT||"", maHieu: d.maHieu||"", serial: d.serial||"", khoiLuong: d.khoiLuong||"", lastCheck_orig: d.lastCheckOriginal||"", nextDate_str: d.nextDate||"", tick: "√" };
+                        let row = { nhaCT_orig: d.nhaCT||"", namCT_orig: d.namCT||"", maHieu: d.maHieu||"", serial: d.serial||"", khoiLuong: d.khoiLuong||"", lastCheck_orig: d.lastCheck ? d.lastCheck.replace(/-/g, '/') : "", nextDate_str: d.nextDate||"", tick: "√" };
                         if (d.namCT) { 
                             let mKiemDinh = thoiDiemKiemDinh; if(!mKiemDinh && d.recentCheck) mKiemDinh = parseDateMMYYYY(d.recentCheck);
                             if(mKiemDinh) { const dateC = parseDateMMYYYY(d.namCT); const diff = diffMonths(dateC, mKiemDinh); if (diff < 240) duoi20Nam.push(row); else tren20Nam.push(row); } else { duoi20Nam.push(row); }
