@@ -1815,6 +1815,29 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 const aaa = fetchedDocs.length;
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
                 const ghichuSheet = workbook.sheet("ghichu");
+		// --- LOGIC MỚI: LẤY TÊN CHI NHÁNH ĐẦY ĐỦ TỪ DANH SÁCH HẰNG SỐ ---
+let chiNhanhId = "";
+
+// 1. Tìm ID chi nhánh từ dữ liệu bản ghi đầu tiên trong CSDL kéo về
+if (data) {
+    for (let k in data) {
+        if (data[k] && data[k].chiNhanhSD) {
+            chiNhanhId = data[k].chiNhanhSD;
+            break; 
+        }
+    }
+}
+
+// 2. Dự phòng: Nếu bản ghi cũ không có, lấy ID đang chọn tại combobox trên UI
+if (!chiNhanhId) {
+    chiNhanhId = document.getElementById("chiNhanh")?.value || "";
+}
+
+// 3. Tra cứu trực tiếp từ mảng danhSachChiNhanh bằng hàm .find()
+const chiNhanhTimDuoc = danhSachChiNhanh.find(item => item.id === chiNhanhId);
+let chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
+// --- KẾT THÚC LOGIC TRA CỨU ---		
+				
 
                 if (isHuy) {
                     let activeSheet = workbook.sheet("vohuy");
@@ -1861,6 +1884,19 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
     if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
     const aaa = data.length; // BỔ SUNG DÒNG NÀY
     let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+
+// --- THỰC HIỆN THAY THẾ CHINHANHSD VÀO CÁC Ô MỤC TIÊU ---
+    // Biên bản hủy (isHuy = true) xử lý ô A8, Biên bản thường xử lý ô A6
+    const targetCellRef = isHuy ? "A8" : "A6"; 
+    const targetCell = sheet.cell(targetCellRef);
+    let cellVal = targetCell.value();
+    
+    if (cellVal && typeof cellVal === "string") {
+        // Thay thế từ khóa "chinhanhSD" bằng tên đầy đủ (ví dụ: "Chi nhánh Miền Bắc")
+        cellVal = cellVal.replace("chinhanhSD", chiNhanhFullText);
+        targetCell.value(cellVal);
+    }
+    // ------------------------------------------------------
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
