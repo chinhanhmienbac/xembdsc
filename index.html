@@ -2188,6 +2188,11 @@ window.closeModal = async function(id) {
                     let a3Cell = activeSheet.cell("A3"); if (a3Cell.value()) { let txt2 = String(a3Cell.value()); a3Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a5Cell = activeSheet.cell("A5"); if (a5Cell.value()) { let txt3 = String(a5Cell.value()); a5Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
                     let a6Cell = activeSheet.cell("A6"); if (a6Cell.value()) { let txt4 = String(a6Cell.value()); a6Cell.value(txt4.split("aaa").join(aaa)); }
+                    
+                    let cnObjHuy2 = danhSachChiNhanh.find(c => c.id === summary.chiNhanhSD); 
+                    let cnNameHuy2 = cnObjHuy2 ? cnObjHuy2.ten : "";
+                    let a8Cell = activeSheet.cell("A8"); 
+                    if (a8Cell.value()) { let txt8 = String(a8Cell.value()); a8Cell.value(txt8.split("chinhanhSD").join(cnNameHuy2)); }
 
                     let destRow = 13; 
                     for (let k = 0; k < fetchedDocs.length; k++) {
@@ -2224,7 +2229,13 @@ window.closeModal = async function(id) {
                     function buildSheet(sheetName, data) {
     if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
     const aaa = data.length; // BỔ SUNG DÒNG NÀY
-    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+	let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+    
+    let cnObjKd2 = danhSachChiNhanh.find(c => c.id === summary.chiNhanhSD); 
+    let cnNameKd2 = cnObjKd2 ? cnObjKd2.ten : "";
+    let a6Cell = sheet.cell("A6"); 
+    if (a6Cell.value()) { let txt6 = String(a6Cell.value()); a6Cell.value(txt6.split("chinhanhSD").join(cnNameKd2)); }
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
