@@ -1815,28 +1815,29 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 const aaa = fetchedDocs.length;
                 const workbook = await XlsxPopulate.fromDataAsync(templateDataBuffer); 
                 const ghichuSheet = workbook.sheet("ghichu");
-		// --- LOGIC MỚI: LẤY TÊN CHI NHÁNH ĐẦY ĐỦ TỪ DANH SÁCH HẰNG SỐ ---
+		// --- KHỞI TẠO LOGIC LẤY TÊN CHI NHÁNH AN TOÀN TUYỆT ĐỐI ---
 let chiNhanhId = "";
+const snapshotVal = snapshot.val(); // Định nghĩa biến snapshotVal cục bộ rõ ràng
 
-// 1. Tìm ID chi nhánh từ dữ liệu bản ghi đầu tiên trong CSDL kéo về
-if (data) {
-    for (let k in data) {
-        if (data[k] && data[k].chiNhanhSD) {
-            chiNhanhId = data[k].chiNhanhSD;
-            break; 
+if (snapshotVal) {
+    // Duyệt qua các bản ghi bên trong để lấy thuộc tính chiNhanhSD
+    for (let k in snapshotVal) {
+        if (snapshotVal[k] && snapshotVal[k].chiNhanhSD) {
+            chiNhanhId = snapshotVal[k].chiNhanhSD;
+            break;
         }
     }
 }
 
-// 2. Dự phòng: Nếu bản ghi cũ không có, lấy ID đang chọn tại combobox trên UI
+// Nếu dữ liệu cũ không có chiNhanhSD, lấy giá trị đang chọn trên giao diện làm dự phòng
 if (!chiNhanhId) {
     chiNhanhId = document.getElementById("chiNhanh")?.value || "";
 }
 
-// 3. Tra cứu trực tiếp từ mảng danhSachChiNhanh bằng hàm .find()
+// Tra cứu trực tiếp từ hằng số danhSachChiNhanh đã có sẵn trong mã nguồn của bạn
 const chiNhanhTimDuoc = danhSachChiNhanh.find(item => item.id === chiNhanhId);
-let chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
-// --- KẾT THÚC LOGIC TRA CỨU ---		
+const chiNhanhFullText = chiNhanhTimDuoc ? chiNhanhTimDuoc.ten : chiNhanhId;
+// --- KẾT THÚC LOGIC LẤY TÊN CHI NHÁNH ---
 				
 
                 if (isHuy) {
