@@ -81,12 +81,13 @@
             </div>
 
             <h3>Hệ thống</h3>
-            <button id="btnAuthAction" class="primary-btn" style="background-color: #007bff; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: 15px;" onclick="window.openLoginModal()">Đăng nhập Hệ thống</button>
+            <button id="btnAuthAction" class="primary-btn" style="background-color: #007bff; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: 8px;" onclick="window.openLoginModal()">Đăng nhập Hệ thống</button>
             
-			<button class="primary-btn" style="background-color: #28a745; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: 0px;" onclick="window.location.href='nhaplieu.html'">Vào trang nhập liệu</button>
+			<button class="primary-btn" style="background-color: #28a745; font-size: 14px; padding: 10px; margin-top: 0; margin-bottom: -5px;" onclick="window.location.href='nhaplieu.html'">Vào trang nhập liệu</button>
             <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
             <button class="info-btn" onclick="window.openSourceChoiceModal()">Thông tin nguồn</button>
             <button class="warning-btn" onclick="window.recalculateStats()">Tính toán lại Thống kê</button>
+			<button id="btnOfflineExport" class="danger-btn" style="display:none; margin-top: 0; margin-bottom: 5px; background-color: #856404; padding: 10px; color: white; border: 1px solid #ffeeba;" onclick="window.openOfflineExportModal()">Tách data Offline</button>
 			
 			<h3 style="margin-top: 10px;">Nhật ký</h3>
             <div id="logArea"><i>Sẵn sàng...</i></div>
@@ -476,10 +477,10 @@
                     <thead>
                         <tr>
                             <th style="width: 4%;">STT</th>
-                            <th id="th-ttkd" style="width: 20%;">TTKĐ<span class="filter-btn" onclick="window.showFilterPopup(event, 'ttkd')">▼</span></th>
+                            <th id="th-ttkd" style="width: 19%;">TTKĐ<span class="filter-btn" onclick="window.showFilterPopup(event, 'ttkd')">▼</span></th>
                             <th id="th-loaiChai" style="width: 8%;">Loại chai<span class="filter-btn" onclick="window.showFilterPopup(event, 'loaiChai')">▼</span></th>
                             <th id="th-cheTao" style="width: 8%;">Chế tạo<span class="filter-btn" onclick="window.showFilterPopup(event, 'cheTao')">▼</span></th>
-                            <th id="th-nhaCT" style="width: 8%;">Nhà CT<span class="filter-btn" onclick="window.showFilterPopup(event, 'nhaCT')">▼</span></th>
+                            <th id="th-nhaCT" style="width: 7%;">Nhà CT<span class="filter-btn" onclick="window.showFilterPopup(event, 'nhaCT')">▼</span></th>
                             <th style="width: 4%;">Mã</th>
                             <th id="th-serial" style="width: 8%;">Serial<span class="filter-btn" title="Sắp xếp tăng/giảm dần" onclick="window.toggleSerialSort(event)">↕</span></th>
                             <th style="width: 4%;">KL</th>
@@ -487,7 +488,7 @@
                             <th id="th-thue" style="width: 6%;">Thuê<span class="filter-btn" onclick="window.showFilterPopup(event, 'thue')">▼</span></th>
                             <th id="th-huy" style="width: 6%;">Hủy<span class="filter-btn" onclick="window.showFilterPopup(event, 'huy')">▼</span></th>
 							<th id="th-lot" style="width: 5%;">Lot<span class="filter-btn" onclick="window.showFilterPopup(event, 'lot')">▼</span></th>
-                            <th id="th-chiNhanh" style="width: 15%;">Chi nhánh<span class="filter-btn" onclick="window.showFilterPopup(event, 'chiNhanh')">▼</span></th>
+                            <th id="th-chiNhanh" style="width: 16%;">Chi nhánh<span class="filter-btn" onclick="window.showFilterPopup(event, 'chiNhanh')">▼</span></th>
                         </tr>
                     </thead>
                     <tbody id="chiTietTableBody"></tbody>
@@ -511,6 +512,48 @@
                     <button class="secondary-btn" style="padding: 3px 10px; font-size:11px; margin:0;" onclick="document.getElementById('filterPopup').style.display='none'">Đóng</button>
                 </div>
             </div>
+        </div>
+    </div>
+	<div id="offlineExportModal" class="modal-overlay" style="z-index: 1050;">
+        <div class="modal-content modal-content-sm" style="border-top: 4px solid #856404;">
+            <div class="modal-header">
+                <h3>Tách Dữ Liệu Offline (Cold Archive)</h3>
+                <button class="btn-close" onclick="window.closeModal('offlineExportModal')">&times;</button>
+            </div>
+            <p style="font-size: 13px; color: #dc3545; font-weight: bold;">LƯU Ý QUAN TRỌNG: Quá trình này sẽ trích xuất và XÓA VĨNH VIỄN dữ liệu gốc từ năm đã chọn khỏi Server!</p>
+            <div style="display: flex; gap: 15px; margin-top: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Tách Từ năm KĐ:</label>
+                    <select id="offlineTuNam" class="form-control" style="padding: 8px;"></select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Đến năm KĐ:</label>
+                    <select id="offlineDenNam" class="form-control" style="padding: 8px;"></select>
+                </div>
+            </div>
+            <div id="offlineExportStatus" style="font-size: 12px; margin-top: 10px; font-weight: bold;"></div>
+            <button class="primary-btn" id="btnConfirmOffline" style="background-color: #dc3545; margin-top: 15px;" onclick="window.executeOfflineExport()">XÁC NHẬN TÁCH & XÓA SERVER</button>
+        </div>
+    </div>
+	
+	<div id="offlineRequireModal" class="modal-overlay" style="z-index: 1060;">
+        <div class="modal-content modal-content-sm" style="border-top: 4px solid #007bff; text-align: center;">
+            <h3 style="color: #007bff; border-bottom: none; margin-bottom: 10px;">YÊU CẦU CẬP NHẬT FILE DỮ LIỆU</h3>
+            <p style="font-size: 14px; color: #333; margin-bottom: 15px; text-align: justify;">Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi tính toán.</p>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px; text-align: left; font-size: 13px;">
+                <b>Hướng dẫn:</b><br>
+                1. Tải file Dữ liệu Offline mới nhất tại đây: <a href="https://bit.ly/datafileoffline" target="_blank" style="color: #007bff; font-weight: bold; text-decoration: underline;">Tải File Offline</a><br>
+                2. Lưu file và giải nén (nếu là file nén).<br>
+                3. Bấm nút bên dưới để chọn file vừa tải về (giải nén trước nếu là file nén) để nạp dữ liệu vào hệ thống.
+            </div>
+
+            <input type="file" id="offlineFileInput" accept=".json" style="display: none;" onchange="window.processOfflineFileUpload(event)">
+            <button class="primary-btn" style="background-color: #007bff; font-size: 14px; padding: 12px; margin-bottom: 10px;" onclick="document.getElementById('offlineFileInput').click()">CHỌN FILE ĐỂ NẠP</button>
+
+            <div id="offlineFileStatus" style="font-weight: bold; font-size: 13px; margin-bottom: 10px;"></div>
+            
+            <button class="secondary-btn" style="background-color: #6c757d; margin-top: 0;" onclick="window.proceedWithoutOffline()">Bỏ qua (Sử dụng dữ liệu không đầy đủ)</button>
         </div>
     </div>
     <script type="module">
@@ -615,6 +658,15 @@
                 } catch (e) {
                     console.error("Lỗi tự động thống kê sau đăng nhập:", e);
                 }
+				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
+                const btnOffline = document.getElementById('btnOfflineExport');
+                if (btnOffline) {
+                    if (email === 'admin@pvgaslpg.com.vn') {
+                        btnOffline.style.display = 'block';
+                    } else {
+                        btnOffline.style.display = 'none';
+                    }
+                }
             } else {
                 window.currentUserRole = { role: 'user' };
                 console.log("Trạng thái: Chưa đăng nhập hệ thống. Quyền hiện tại: User");
@@ -624,6 +676,15 @@
                     authButton.innerText = "Đăng nhập Hệ thống";
                     authButton.style.backgroundColor = "#007bff"; // Trả về màu xanh ban đầu
                     authButton.setAttribute("onclick", "window.openLoginModal()"); // Đổi lệnh về lại mở Modal đăng nhập
+                }
+				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
+                const btnOffline = document.getElementById('btnOfflineExport');
+                if (btnOffline) {
+                    if (email === 'admin@pvgaslpg.com.vn') {
+                        btnOffline.style.display = 'block';
+                    } else {
+                        btnOffline.style.display = 'none';
+                    }
                 }
             }
             
@@ -810,29 +871,56 @@ window.closeModal = async function(id) {
         }
 
         async function loadHistoryTable() {
-            const tbody = document.getElementById('historyTableBody'); const loading = document.getElementById('historyLoading');
+            const tbody = document.getElementById('historyTableBody'); 
+            const loading = document.getElementById('historyLoading');
             const tfoot = document.getElementById('historyTableFooter');
             tbody.innerHTML = ''; if(tfoot) tfoot.innerHTML = ''; 
             loading.style.display = 'block';
             
             let allData = [];
             try {
-                // Tải đồng thời tất cả các trung tâm để bộ lọc chéo Excel chạy mượt mà nhất
-                const promises = danhSachTrungTam.map(tt => get(child(ref(db), `${tt.id}/LichSuNhap`)));
-                const snaps = await Promise.all(promises);
-                
-                snaps.forEach((snap, index) => {
-                    if (snap.exists()) {
-                        const data = snap.val();
-                        const ttId = danhSachTrungTam[index].id;
-                        Object.keys(data).forEach(key => {
-                            let item = data[key];
-                            item.trungTamId = ttId;
-                            allData.push(item);
-                        });
+                // 1. Lấy dữ liệu Online từ Cache
+                let localCache = await getFromLocalCache('full_db_snapshot');
+                let onlineDb = (localCache && localCache.data) ? localCache.data : {};
+
+                // 2. Lấy dữ liệu Offline từ Cache
+                let offlineCache = await getFromLocalCache('offline_archive_db');
+                let offlineDb = (offlineCache && offlineCache.data) ? offlineCache.data : {};
+
+                // 3. Gom dữ liệu Lịch sử từ cả 2 nguồn
+                let mergedLichSu = {}; 
+                danhSachTrungTam.forEach(tt => { mergedLichSu[tt.id] = {}; });
+
+                // 3.1 Nạp từ Online
+                danhSachTrungTam.forEach(tt => {
+                    if (onlineDb[tt.id] && onlineDb[tt.id].LichSuNhap) {
+                        Object.assign(mergedLichSu[tt.id], onlineDb[tt.id].LichSuNhap);
                     }
                 });
-            } catch(e) { console.error(e); }
+
+                // 3.2 Nạp từ Offline (Key Offline có dạng "tt1/LichSuNhap/1718000000")
+                for (let path in offlineDb) {
+                    let parts = path.split('/');
+                    if (parts.length === 3 && parts[1] === 'LichSuNhap') {
+                        let ttId = parts[0];
+                        let ts = parts[2];
+                        if (mergedLichSu[ttId]) {
+                            mergedLichSu[ttId][ts] = offlineDb[path];
+                        }
+                    }
+                }
+
+                // 4. Đẩy toàn bộ vào mảng để vẽ bảng
+                Object.keys(mergedLichSu).forEach(ttId => {
+                    let centerData = mergedLichSu[ttId];
+                    Object.keys(centerData).forEach(key => {
+                        let item = centerData[key];
+                        item.trungTamId = ttId;
+                        allData.push(item);
+                    });
+                });
+                
+            } catch(e) { console.error("Lỗi tải lịch sử:", e); }
 
             loading.style.display = 'none';
             window.currentHistoryData = allData.sort((a, b) => b.timeStamp - a.timeStamp);
@@ -1226,7 +1314,15 @@ window.closeModal = async function(id) {
         }
 		//=== HÀM THỐNG KÊ (KIẾN TRÚC NHẬT KÝ CHANGELOG TỐI ƯU 100%)
         window.recalculateStats = async function() {
-            if(!confirm("Hệ thống sẽ đồng bộ dữ liệu qua Nhật ký thay đổi (Changelog). Tiếp tục?")) return;
+		
+            // --- CHỐT CHẶN BẢO MẬT: KIỂM TRA BẢN QUYỀN OFFLINE ---
+            let isOfflineValid = await window.checkOfflineRequirement();
+            if (!isOfflineValid) return; // Dừng lại ngay lập tức để chờ người dùng nạp file
+            
+            const btn = document.getElementById('btnCalculateStats');
+            // ... (Phần code cũ của bạn bắt đầu từ đây) ...
+
+			if(!confirm("Hệ thống sẽ đồng bộ dữ liệu qua Nhật ký thay đổi (Changelog). Tiếp tục?")) return;
             
             const centers = danhSachTrungTam.map(tt => tt.id);
             addLog("Đang đọc Local Cache...");
@@ -1283,10 +1379,44 @@ window.closeModal = async function(id) {
                 }
             }
 
-            if (isCacheUpdated) {
+        if (isCacheUpdated) {
                 addLog("Đang lưu Local Cache mới...");
-                await saveToLocalCache('full_db_snapshot', localCache);
+                // --- ĐÓNG DẤU CỜ OFFLINE VÀO LOCAL CACHE ---
+            // Đánh dấu nhận diện để Trạm gác không xóa nhầm vào lần khởi động sau
+            if (window.offlineArchiveConfig) {
+                localCache.archiveId = window.offlineArchiveConfig.archiveId;
             }
+            await saveToLocalCache('full_db_snapshot', localCache);
+            
+            // --- LỒNG GHÉP DỮ LIỆU OFFLINE VÀO RAM ---
+            // Dữ liệu Offline chỉ được "nhúng" tạm vào RAM để tính toán, tuyệt đối không lưu lại vào Cache Online
+            if (window.localOfflineData && window.localOfflineData.data) {
+                addLog("Đang hòa trộn dữ liệu Offline Archive vào RAM để thống kê...");
+                if (!localCache.data) localCache.data = {};
+                for (let path in window.localOfflineData.data) {
+                    let parts = path.split('/');
+                    let obj = window.localOfflineData.data[path];
+                    let curr = localCache.data;
+                    
+                    // Dựng cây thư mục ảo trong RAM
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        if (!curr[parts[i]]) curr[parts[i]] = {};
+                        curr = curr[parts[i]];
+                    }
+                    let leaf = parts[parts.length - 1];
+                    
+                    // Hợp nhất (Merge) mượt mà không làm ghi đè các dòng vỏ chai Online
+                    if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+                        curr[leaf] = { ...(curr[leaf] || {}), ...obj };
+                    } else {
+                        curr[leaf] = obj;
+                    }
+                }
+            }
+            
+            // =====================================
+            // BƯỚC 4: BẮT ĐẦU VÒNG LẶP TÍNH TOÁN
+		}
 
             addLog("Đang xử lý dữ liệu và tính toán Bảng số liệu...");
             let newStats = {};
@@ -2144,19 +2274,66 @@ window.closeModal = async function(id) {
             e.target.value = "";
         }
 
-        // --- HÀM TÁI TẠO FILE TỪ CSDL ---
+        // --- HÀM TÁI TẠO FILE TỪ CSDL HOẶC OFFLINE CACHE ---
         window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
-            const loading = document.getElementById('historyLoading'); loading.innerText = 'Đang tải dữ liệu từ CSDL...'; loading.style.display = 'block';
+            const loading = document.getElementById('historyLoading'); 
+            loading.innerText = 'Đang tải dữ liệu từ CSDL và Kho Offline...'; 
+            loading.style.display = 'block';
 
             try {
-                const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
-                if (!snap.exists()) { alert("Dữ liệu gốc của lần nhập này không còn tồn tại!"); loading.style.display = 'none'; return; }
-                const summary = snap.val(); let dataPaths = [];
-                if (summary.paths && Array.isArray(summary.paths)) dataPaths = summary.paths; else if (summary.paths) dataPaths = Object.values(summary.paths);
-                dataPaths = dataPaths.filter(p => p.includes('/DanhSachChai/'));
-                let fetchedDocs = []; loading.innerText = `Đang trích xuất ${dataPaths.length} chai...`;
+                // 1. Tải cả 2 kho dữ liệu lên
+                let localCache = await getFromLocalCache('full_db_snapshot');
+                let onlineDb = (localCache && localCache.data) ? localCache.data : {};
+                let offlineCache = await getFromLocalCache('offline_archive_db');
+                let offlineDb = (offlineCache && offlineCache.data) ? offlineCache.data : {};
 
-                for (let i = 0; i < dataPaths.length; i += 100) { const chunk = dataPaths.slice(i, i + 100); const chunkSnaps = await Promise.all(chunk.map(p => get(child(ref(db), p)))); chunkSnaps.forEach(s => { if(s.exists()) fetchedDocs.push(s.val()); }); }
+                // Hàm nội bộ: Tìm kiếm ưu tiên Offline -> Online -> Server
+                async function fetchSmartData(path) {
+                    // A. Tìm trong Offline
+                    if (offlineDb[path]) return offlineDb[path];
+                    
+                    // B. Tìm trong Online Cache
+                    let parts = path.split('/');
+                    let curr = onlineDb;
+                    for (let part of parts) {
+                        if (curr !== undefined && curr !== null) curr = curr[part];
+                        else curr = null;
+                    }
+                    if (curr) return curr;
+
+                    // C. Bí quá thì gọi Server
+                    const snap = await get(child(ref(db), path));
+                    return snap.exists() ? snap.val() : null;
+                }
+
+                // 2. Trích xuất Summary Lịch Sử
+                let summaryPath = `${trungTamId}/LichSuNhap/${timeStamp}`;
+                const summary = await fetchSmartData(summaryPath);
+                
+                if (!summary) { 
+                    alert("Dữ liệu gốc của lần nhập này không còn tồn tại trên cả Server lẫn Kho Offline!"); 
+                    loading.style.display = 'none'; 
+                    return; 
+                }
+
+                let dataPaths = [];
+                if (summary.paths && Array.isArray(summary.paths)) dataPaths = summary.paths; 
+                else if (summary.paths) dataPaths = Object.values(summary.paths);
+                
+                dataPaths = dataPaths.filter(p => p.includes('/DanhSachChai/'));
+                
+                // 3. Trích xuất toàn bộ Vỏ Chai
+                let fetchedDocs = []; 
+                loading.innerText = `Đang trích xuất ${dataPaths.length} chai...`;
+
+                for (let p of dataPaths) {
+                    let doc = await fetchSmartData(p);
+                    if (doc) fetchedDocs.push(doc);
+                }
+
+                if (fetchedDocs.length === 0) {
+                    throw new Error("Không thể trích xuất dữ liệu chi tiết vỏ chai!");
+                }
 
                 loading.innerText = 'Đang tải file mẫu từ máy chủ...';
                 let templateDataBuffer;
@@ -3491,7 +3668,315 @@ window.addEventListener('resize', function() {
                 console.error("Lỗi xuất Excel:", e); alert("Lỗi khi tạo file Excel: " + e.message);
             }
         };
+// ==========================================
+        // MODULE: LƯU TRỮ LẠNH (COLD ARCHIVE / OFFLINE EXPORT)
+        // ==========================================
+        window.openOfflineExportModal = async function() {
+            // Nạp danh sách năm khả dụng vào Dropdown
+            let currentYear = new Date().getFullYear();
+            let yHtml = '';
+            for(let y = 2020; y <= currentYear; y++) yHtml += `<option value="${y}">${y}</option>`;
+            
+            document.getElementById('offlineTuNam').innerHTML = yHtml;
+            document.getElementById('offlineDenNam').innerHTML = yHtml;
+            document.getElementById('offlineTuNam').value = currentYear - 2; // Mặc định gợi ý tách các năm cũ
+            document.getElementById('offlineDenNam').value = currentYear - 1;
+            document.getElementById('offlineExportStatus').innerHTML = '';
+            document.getElementById('offlineExportModal').style.display = 'flex';
+        };
 
+        window.executeOfflineExport = async function() {
+            const tuNam = parseInt(document.getElementById('offlineTuNam').value);
+            const denNam = parseInt(document.getElementById('offlineDenNam').value);
+            const statusDiv = document.getElementById('offlineExportStatus');
+            const btnConfirm = document.getElementById('btnConfirmOffline');
+
+            if (tuNam > denNam) {
+                alert("Năm 'Từ' không được lớn hơn năm 'Đến'!");
+                return;
+            }
+
+            if (!confirm(`CẢNH BÁO MỨC ĐỘ CAO: Bạn chuẩn bị trích xuất và XÓA VĨNH VIỄN toàn bộ lịch sử kiểm định từ năm ${tuNam} đến ${denNam} trên Server.\n\nFile Offline sẽ được tải về ngay sau đó. Bạn có chắc chắn muốn thực hiện?`)) {
+                return;
+            }
+
+            btnConfirm.disabled = true;
+            statusDiv.innerHTML = "<span style='color: blue;'>Đang tải CSDL toàn cục để phân tích. Vui lòng không đóng trình duyệt...</span>";
+
+            try {
+                // 1. Tải toàn bộ CSDL về RAM để dò tìm
+                const snap = await get(ref(db));
+                if (!snap.exists()) throw new Error("CSDL trống!");
+                const fullDb = snap.val();
+
+                // --- FIX LỖI 1: LẤY DỮ LIỆU OFFLINE CŨ ĐỂ DUNG HỢP TRƯỚC KHI ĐÓNG GÓI ---
+                let existingOffline = window.localOfflineData || await getFromLocalCache('offline_archive_db');
+                let oldData = (existingOffline && existingOffline.data) ? existingOffline.data : {};
+                
+                let combinedTuNam = tuNam;
+                let combinedDenNam = denNam;
+                
+                // Mở rộng Metadata để bao trùm cả số liệu cũ lẫn mới
+                if (existingOffline && existingOffline.metadata) {
+                     combinedTuNam = Math.min(combinedTuNam, existingOffline.metadata.tuNam || tuNam);
+                     combinedDenNam = Math.max(combinedDenNam, existingOffline.metadata.denNam || denNam);
+                }
+
+                // Cấu trúc File Offline (Cold Archive) mới được đặt trên nền tảng Data cũ
+                let archivePayload = {
+                    metadata: {
+                        type: "PVGAS_OFFLINE_ARCHIVE",
+                        tuNam: combinedTuNam,
+                        denNam: combinedDenNam,
+                        exportTime: Date.now()
+                    },
+                    data: oldData // Toàn bộ dữ liệu offline các năm trước nằm ở đây
+                };
+                
+                let serverUpdates = {};
+                let matchCount = 0;
+                let bottleCount = 0;
+
+                const centers = danhSachTrungTam.map(t => t.id);
+                // 2. Quét qua lịch sử nhập của tất cả các Trung tâm để bóc dữ liệu mới
+                for (let tt of centers) {
+                    if (!fullDb[tt] || !fullDb[tt].LichSuNhap) continue;
+                    let lsn = fullDb[tt].LichSuNhap;
+                    
+                    for (let ts in lsn) {
+                        let session = lsn[ts];
+                        if (!session.thoiDiemKD || session.thoiDiemKD === "Nhiều thời điểm") continue;
+                        
+                        let year = parseInt(session.thoiDiemKD.split('/')[1]);
+                        
+                        // 3. Khớp năm -> Đưa vào danh sách trích xuất
+                        if (year >= tuNam && year <= denNam) {
+                            matchCount++;
+                            
+                            // 3.1. Copy thông tin Phiên nhập và xóa khỏi Server
+                            archivePayload.data[`${tt}/LichSuNhap/${ts}`] = session;
+                            serverUpdates[`${tt}/LichSuNhap/${ts}`] = null; 
+
+                            // 3.2. Truy quét tất cả các vỏ chai thuộc phiên nhập này
+                            let paths = session.paths || [];
+                            if (!Array.isArray(paths)) paths = Object.values(paths);
+
+                            for (let p of paths) {
+                                let pathParts = p.split('/');
+                                let curr = fullDb;
+                                for (let part of pathParts) {
+                                    if (curr) curr = curr[part];
+                                    else break;
+                                }
+                                if (curr !== undefined && curr !== null) {
+                                    archivePayload.data[p] = curr; // Bơm dữ liệu mới vào chung ổ với dữ liệu cũ
+                                    if (p.includes('/DanhSachChai/')) bottleCount++;
+                                }
+                                serverUpdates[p] = null; // Kê khai lệnh Xóa node chai khỏi server
+                            }
+
+                            // 3.3. Bóc tách và Khấu trừ Thống kê Tổng hợp
+                            if (session.stats) {
+                                for(let lc in session.stats) {
+                                    for(let rY in session.stats[lc]) {
+                                        serverUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/${tt}/tongChaiDuocKD`] = increment(-session.stats[lc][rY].total);
+                                        serverUpdates[`Tonghop/Thongke/${lc}/${rY}/chaiKDtrongNam/Toan_dien/tongChaiDuocKD`] = increment(-session.stats[lc][rY].total);
+
+                                        for(let yCT in session.stats[lc][rY].byNamCT) {
+                                            serverUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/${tt}/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-session.stats[lc][rY].byNamCT[yCT]);
+                                            serverUpdates[`Tonghop/Thongke/${lc}/${rY}/soKDtheoNamCT/Toan_dien/${yCT}/soChaiKiemdinhThuocNamCT`] = increment(-session.stats[lc][rY].byNamCT[yCT]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+              
+                if (matchCount === 0) {
+                    statusDiv.innerHTML = "<span style='color: #dc3545;'>Không tìm thấy dữ liệu kiểm định nào thuộc khoảng thời gian này!</span>";
+                    btnConfirm.disabled = false;
+                    return;
+                }
+
+                // 4. KÍCH HOẠT CHẾ ĐỘ THIẾT QUÂN LUẬT (Với ID Phiên bản mới)
+                const clKey = push(child(ref(db), 'System/Changelog')).key;
+                
+                // Sử dụng Timestamp làm Mã Phiên Bản (Version ID) duy nhất
+                let exportTime = archivePayload.metadata.exportTime; 
+                let versionId = `v${exportTime}`; // Ví dụ: v1718524680000
+                
+                let changelogEntry = {
+                    timestamp: exportTime,
+                    action: 'REQUIRE_OFFLINE_ARCHIVE',
+                    tuNam: combinedTuNam,
+                    denNam: combinedDenNam,
+                    archiveId: `ARCHIVE_${versionId}`, // ID gắn ngầm vào file
+                    path: 'System/OfflineConfig'
+                };
+                
+                serverUpdates[`System/Changelog/${clKey}`] = changelogEntry;
+                serverUpdates[`System/OfflineConfig/latestArchive`] = changelogEntry;
+
+                // Gắn mã phiên bản vào lõi file Offline
+                archivePayload.changelog = changelogEntry;
+                archivePayload.metadata.version = versionId;
+
+                statusDiv.innerHTML = `<span style='color: #ffc107;'>Đang đóng gói ${bottleCount.toLocaleString('vi-VN')} vỏ chai và xóa sạch khỏi Server...</span>`;
+
+                // 5. Cắt nhỏ gói lệnh cập nhật Server
+                let keys = Object.keys(serverUpdates);
+                let chunk = {}; let count = 0; let promises = [];
+                for (let k of keys) { 
+                    chunk[k] = serverUpdates[k]; 
+                    count++; 
+                    if (count >= 1000) { 
+                        promises.push(update(ref(db), chunk)); 
+                        chunk = {}; count = 0; 
+                    } 
+                }
+                if (count > 0) promises.push(update(ref(db), chunk));
+                
+                await Promise.all(promises); 
+
+                // 6. XUẤT FILE JSON VỚI TÊN GỌI THEO PHIÊN BẢN
+                statusDiv.innerHTML = "<span style='color: #28a745;'>Đã xóa thành công khỏi Server! Đang tạo file tải xuống...</span>";
+                
+                const jsonString = JSON.stringify(archivePayload);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                
+                // Đổi tên file theo đúng chuẩn Version
+                const fileName = `PVGAS_OfflineData_${versionId}.json`;
+                saveAs(blob, fileName); 
+
+                alert(`TÁCH DỮ LIỆU THÀNH CÔNG!\n- Đã trích xuất và xóa sạch ${bottleCount.toLocaleString('vi-VN')} vỏ chai khỏi Server.\n- Phiên bản Offline mới nhất là [ ${versionId} ] đã được tải về máy của bạn: ${fileName}\n\n* Lưu ý: File này đã bao gồm cả dữ liệu Offline cũ. Hãy phân phát file này cho người dùng để họ cập nhật.`);
+                
+                window.closeModal('offlineExportModal');
+                window.location.reload();
+
+            } catch (error) {
+                console.error("Lỗi Archive:", error);
+                statusDiv.innerHTML = `<span style='color: red;'>Lỗi hệ thống: ${error.message}</span>`;
+                btnConfirm.disabled = false;
+            }
+        };
+		
+		// ==========================================
+        // MODULE: TRẠM GÁC KIỂM SOÁT VÀ NẠP FILE OFFLINE
+        // ==========================================
+        window.offlineArchiveConfig = null;
+        window.localOfflineData = null;
+        window.ignoreOfflineWarning = false;
+
+        // Bỏ qua cảnh báo để chạy tiếp
+        window.proceedWithoutOffline = function() {
+            window.ignoreOfflineWarning = true;
+            window.closeModal('offlineRequireModal');
+            window.recalculateStats(); // Tái kích hoạt Thống kê
+        };
+
+       // Hàm Trạm Gác: Soi chiếu phiên bản và Dọn rác
+        window.checkOfflineRequirement = async function() {
+            try {
+                if (window.ignoreOfflineWarning) return true; // Đặc quyền cho qua
+
+                // Dò tìm cờ lệnh trên Server
+                const snap = await get(child(ref(db), 'System/OfflineConfig/latestArchive'));
+                if (!snap.exists()) return true; // Chưa có yêu cầu offline nào
+                
+                window.offlineArchiveConfig = snap.val();
+                
+                // ==========================================================
+                // BƯỚC TỰ DỌN DẸP CACHE CŨ (HARD RESET DATABASE Y NHƯ XÓA BẰNG TAY)
+                // ==========================================================
+                let currentLocalCache = await getFromLocalCache('full_db_snapshot');
+                if (currentLocalCache && currentLocalCache.data) {
+                    // Nếu phát hiện Local Cache di sản (Chưa có cờ Offline)
+                    if (!currentLocalCache.archiveId) {
+                        console.warn("Phát hiện bộ nhớ đệm lỗi thời. Bắt đầu quy trình Hard Reset...");
+                        
+                        // Lệnh xóa sạch toàn bộ Database PVGasLPG_LocalDB
+                        const deleteReq = indexedDB.deleteDatabase('PVGasLPG_LocalDB');
+                        
+                        deleteReq.onsuccess = function() {
+                            alert("Hệ thống đã tự động dọn dẹp dữ liệu cũ để tương thích với tính năng Offline.\nTrang web sẽ tự khởi động lại ngay bây giờ!");
+                            window.location.reload(true);
+                        };
+                        
+                        deleteReq.onerror = function() {
+                            console.error("Không thể tự xóa Database. Vui lòng nhấn F5.");
+                            window.location.reload(true);
+                        };
+                        
+                        deleteReq.onblocked = function() {
+                            console.warn("Tiến trình xóa bị kẹt. Đang ép tải lại trang...");
+                            window.location.reload(true);
+                        };
+                        
+                        // Rút cầu, bắt buộc dừng mọi tiến trình JavaScript hiện tại để chờ Reload
+                        return false; 
+                    }
+                }
+                // ==========================================================
+
+                window.localOfflineData = await getFromLocalCache('offline_archive_db');
+                
+                // Phán xét: Nếu chưa có file Local hoặc mã ID không khớp
+                if (!window.localOfflineData || !window.localOfflineData.changelog || window.localOfflineData.changelog.archiveId !== window.offlineArchiveConfig.archiveId) {
+                    document.getElementById('offlineRequireModal').style.display = 'flex';
+                    return false; // Rút cầu, chặn luồng Thống kê
+                }
+                return true; // Hợp lệ, mở cổng
+            } catch (e) {
+                console.error("Lỗi kiểm tra Offline:", e);
+                return true; 
+            }
+        };
+
+        // Hàm Nạp và Khâu file (Blending)
+        window.processOfflineFileUpload = async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const statusDiv = document.getElementById('offlineFileStatus');
+            statusDiv.innerHTML = "<span style='color: blue;'>Đang đọc dữ liệu... Vui lòng chờ!</span>";
+            
+            try {
+                const text = await file.text();
+                const jsonData = JSON.parse(text);
+                
+                if (jsonData.metadata && jsonData.metadata.type === "PVGAS_OFFLINE_ARCHIVE") {
+                    if (window.offlineArchiveConfig && jsonData.changelog.archiveId !== window.offlineArchiveConfig.archiveId) {
+                        statusDiv.innerHTML = "<span style='color: red;'>Lỗi: File này chưa phải là bản update mới nhất!</span>";
+                        e.target.value = ''; return;
+                    }
+                    
+                    statusDiv.innerHTML = "<span style='color: blue;'>Đang khâu nối dữ liệu vào bộ nhớ đệm...</span>";
+                    
+                    // Cơ chế Dung hợp (Append): Giữ lại các năm đã lưu trước đó nếu có
+                    let existingOffline = await getFromLocalCache('offline_archive_db');
+                    if (existingOffline && existingOffline.data) {
+                        // Khâu chồng Data mới lên Data cũ (Dữ liệu mới sẽ đè nếu trùng, giữ nguyên nếu không trùng)
+                        jsonData.data = { ...existingOffline.data, ...jsonData.data };
+                    }
+
+                    await saveToLocalCache('offline_archive_db', jsonData);
+                    window.localOfflineData = jsonData;
+                    window.ignoreOfflineWarning = false; // Xóa án tích bỏ qua
+                    
+                    statusDiv.innerHTML = "<span style='color: green;'>Nạp file thành công! Đang kích hoạt Thống kê...</span>";
+                    setTimeout(() => {
+                        window.closeModal('offlineRequireModal');
+                        window.recalculateStats();
+                    }, 1500);
+                } else {
+                    statusDiv.innerHTML = "<span style='color: red;'>Định dạng file không hợp lệ!</span>";
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<span style='color: red;'>Lỗi nạp file: ${err.message}</span>`;
+            }
+            e.target.value = '';
+        };
 	</script>
 </body>
 </html>
