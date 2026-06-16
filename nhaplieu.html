@@ -1347,7 +1347,7 @@
 			
 			// Mã mới không cho phép nhập khi phát hiện trùng dãy serial
 			if (serialWarningTriggered) {
-                        alert(`CẤM NHẬP LIỆU: Hệ thống phát hiện lô chai trong file này TRÙNG CHUỖI SERIAL với dữ liệu đã nhập trước đó!\nChi tiết trùng lặp: ${dupDetails}\n\nHành động bị từ chối hoàn toàn để tránh ghi đè dữ liệu lỗi.`);
+                        alert(`CHẶN NHẬP LIỆU: Hệ thống phát hiện lô chai trong file này trùng hàng loạt SERIAL liên tiếp với dữ liệu đã nhập trước đó!\nChi tiết trùng lặp: ${dupDetails}\n\nHành động bị từ chối hoàn toàn để tránh ghi đè dữ liệu lỗi.`);
                         addLog("Tiến trình bị chặn đứng do phát hiện trùng chuỗi Serial."); 
                         document.getElementById('status').innerHTML = "<span class='text-danger'>Bị chặn hoàn toàn (Trùng chuỗi Serial).</span>"; 
                         return; // Chặn cứng, dừng hàm vô điều kiện không cho đi tiếp
@@ -1596,7 +1596,7 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 }
 		*/
 				if (serialWarningTriggered) {
-                    alert(`CẤM NHẬP LIỆU: Lô chai trong ${dupDetails} đã được lập hồ sơ rồi (Phát hiện trùng dải chuỗi Serial với lịch sử hệ thống)!\n\nHành động bị từ chối hoàn toàn. Vui lòng kiểm tra lại file Excel đầu vào.`);
+                    alert(`CHẶN NHẬP LIỆU: Lô chai trong ${dupDetails} đã được lập hồ sơ rồi (Phát hiện trùng dải chuỗi Serial với lịch sử hệ thống)!\n\nHành động bị từ chối hoàn toàn. Vui lòng kiểm tra lại file Excel đầu vào.`);
                     addLog("Tiến trình bị chặn đứng do phát hiện trùng chuỗi Serial.");
                     statusDiv.innerHTML = "<span class='text-danger'>Bị chặn hoàn toàn (Trùng chuỗi Serial).</span>"; 
                     return; // Chặn cứng, dừng hàm vô điều kiện không cho đi tiếp
