@@ -399,16 +399,16 @@
             
             <div class="form-group" style="text-align: left; margin-bottom: 15px;">
                 <label>Tài khoản (Email):</label>
-                <input type="text" id="loginEmail" list="emailList" placeholder="Nhập hoặc chọn tài khoản...">
+                <input type="text" id="loginEmail" list="emailList" placeholder="Nhập hoặc chọn tài khoản..." onkeydown="if(event.key === 'Enter') document.getElementById('loginPassword').focus();">
                 <datalist id="emailList">
                     <option value="user@pvgaslpg.com.vn"></option>
                     <option value="admin@pvgaslpg.com.vn"></option>
-                    <option value="manager@pvgaslpg.com.vn"></option>
+                    <option value="quantri@pvgaslpg.com.vn"></option>
                 </datalist>
             </div>
             <div class="form-group" style="text-align: left; margin-bottom: 20px;">
                 <label>Mật khẩu:</label>
-                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu...">
+                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu..." onkeydown="if(event.key === 'Enter') window.executeLogin();">
             </div>
             <div id="loginError" style="color: #dc3545; font-size: 13px; margin-bottom: 10px; display: none; text-align: center; font-weight: bold;"></div>
             <button id="btnLoginSubmit" class="primary-btn" style="margin-top: 0; font-size: 16px;" onclick="window.executeLogin()">ĐĂNG NHẬP</button>
@@ -531,7 +531,14 @@
                     <select id="offlineDenNam" class="form-control" style="padding: 8px;"></select>
                 </div>
             </div>
-            <div id="offlineExportStatus" style="font-size: 12px; margin-top: 10px; font-weight: bold;"></div>
+            <div class="form-group" style="margin-top: 15px; border: 1px dashed #dc3545; padding: 10px; background: #fff3cd;">
+                <label style="display: flex; align-items: center; gap: 8px; color: #856404; font-weight: bold; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="offlineForceAll" style="width: 20px; height: 20px;">
+                    Cập nhật Cứng (Ép buộc TẤT CẢ các máy phải tải lại file mới)
+                </label>
+                <p style="font-size: 11px; font-weight: normal; margin: 5px 0 0 28px;">* Bỏ chọn (Cập nhật Mềm): Các máy đã có file Offline cũ vẫn tiếp tục dùng. Chỉ máy tính mới hoặc mất dữ liệu mới phải nạp file này.</p>
+            </div>
+			<div id="offlineExportStatus" style="font-size: 12px; margin-top: 10px; font-weight: bold;"></div>
             <button class="primary-btn" id="btnConfirmOffline" style="background-color: #dc3545; margin-top: 15px;" onclick="window.executeOfflineExport()">XÁC NHẬN TÁCH & XÓA SERVER</button>
         </div>
     </div>
@@ -560,6 +567,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, child, get, set, update, remove, push, onValue, query, orderByChild, startAfter, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+		import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDltV6zgLaOHZANarD4I87ckl0jBWY8leU",
@@ -578,7 +586,12 @@
             .catch((error) => {
                 console.error("Lỗi cài đặt phiên đăng nhập:", error);
             });
-		
+		// 2. Khởi tạo App Check - ĐÂY LÀ NƠI BẠN DÙNG SITE KEY
+  window.appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LczK0ssAAAAALjCOZ3duO7WAmvcA83MgbVm6RtP'), 
+    isTokenAutoRefreshEnabled: true
+  });
+	
 		// Bản đồ liên kết Trung tâm với File mẫu tương ứng
         const templateMap = {
             "tt1": { kiemDinh: "sample1.xlsx", huy: "samplehuy1.xlsx" },
@@ -592,6 +605,7 @@
         const ACCOUNT_ROLES = {
             'admin@pvgaslpg.com.vn': { role: 'admin' },
             'quantri@pvgaslpg.com.vn': { role: 'admin' },
+			'fulladmin@pvgaslpg.com.vn': { role: 'admin' },
             
             'cnmb@pvgaslpg.com.vn': { role: 'branch', branchId: 'cnMB' },
             'cntb@pvgaslpg.com.vn': { role: 'branch', branchId: 'cnTB' },
@@ -661,7 +675,7 @@
 				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
                 const btnOffline = document.getElementById('btnOfflineExport');
                 if (btnOffline) {
-                    if (email === 'admin@pvgaslpg.com.vn') {
+                    if (email === 'fulladmin@pvgaslpg.com.vn') {
                         btnOffline.style.display = 'block';
                     } else {
                         btnOffline.style.display = 'none';
@@ -680,7 +694,7 @@
 				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
                 const btnOffline = document.getElementById('btnOfflineExport');
                 if (btnOffline) {
-                    if (email === 'admin@pvgaslpg.com.vn') {
+                    if (email === 'fulladmin@pvgaslpg.com.vn') {
                         btnOffline.style.display = 'block';
                     } else {
                         btnOffline.style.display = 'none';
@@ -1363,17 +1377,56 @@ window.closeModal = async function(id) {
                 const clRef = query(ref(db, 'System/Changelog'), orderByChild('timestamp'), startAfter(localCache.lastSyncTime));
                 const snap = await get(clRef);
                 
+                let isOfflineChanged = false; // Cờ theo dõi sự thay đổi của kho Offline
+
                 if (snap.exists()) {
                     const logs = snap.val();
                     const sortedLogs = Object.values(logs).sort((a, b) => a.timestamp - b.timestamp);
                     addLog(`Phát hiện ${sortedLogs.length} thay đổi mới. Đang vá vào CSDL...`);
                     
                     sortedLogs.forEach(log => {
+                        // 1. Luôn vá dữ liệu vào CSDL Online mặc định
                         applyLogToCache(localCache.data, log.path, log.action, log.data);
+                        
+                        // 2. CƠ CHẾ HOT-PATCH: Kiểm tra và "vá nóng" trực tiếp vào Kho Offline nếu dữ liệu nằm ở đó
+                        if (window.localOfflineData && window.localOfflineData.data) {
+                            let keys = log.path.split('/');
+                            let curr = window.localOfflineData.data;
+                            let isInOffline = true;
+                            
+                            // Dò tìm xem đường dẫn cha có tồn tại trong kho Offline không
+                            for (let i = 0; i < keys.length - 1; i++) {
+                                if (!curr[keys[i]]) { isInOffline = false; break; }
+                                curr = curr[keys[i]];
+                            }
+                            
+                            // Nếu tìm thấy dấu vết trong Offline, tiến hành phẫu thuật
+                            if (isInOffline) {
+                                let lastKey = keys[keys.length - 1];
+                                if (curr.hasOwnProperty(lastKey)) {
+                                    if (log.action === 'DELETE') {
+                                        delete curr[lastKey]; // Giết tận gốc thây ma
+                                    } else if (log.action === 'UPDATE') {
+                                        Object.assign(curr[lastKey], log.data);
+                                    } else {
+                                        curr[lastKey] = log.data;
+                                    }
+                                    isOfflineChanged = true;
+                                    console.log(`Đã Hot-patch dữ liệu Offline tại: ${log.path}`);
+                                }
+                            }
+                        }
+
                         // Cập nhật mốc thời gian đồng bộ
                         if (log.timestamp > localCache.lastSyncTime) localCache.lastSyncTime = log.timestamp;
                     });
                     isCacheUpdated = true;
+                    
+                    // 3. LƯU LẠI KHO OFFLINE XUỐNG Ổ CỨNG SAU KHI ĐÃ VÁ XONG
+                    if (isOfflineChanged) {
+                        saveToLocalCache('offline_archive_db', window.localOfflineData);
+                        addLog("Đã cập nhật (vá nóng) trực tiếp các thay đổi vào bộ nhớ File Offline cục bộ!");
+                    }
                 } else {
                     addLog("Dữ liệu dưới máy bạn đã là mới nhất, bỏ qua tải xuống!");
                 }
@@ -3800,30 +3853,39 @@ window.addEventListener('resize', function() {
                     return;
                 }
 
-                // 4. KÍCH HOẠT CHẾ ĐỘ THIẾT QUÂN LUẬT (Với ID Phiên bản mới)
+                // 4. KÍCH HOẠT CHẾ ĐỘ PHÂN QUYỀN PHIÊN BẢN (MỀM / CỨNG)
                 const clKey = push(child(ref(db), 'System/Changelog')).key;
-                
-                // Sử dụng Timestamp làm Mã Phiên Bản (Version ID) duy nhất
                 let exportTime = archivePayload.metadata.exportTime; 
-                let versionId = `v${exportTime}`; // Ví dụ: v1718524680000
+                let versionId = `v${exportTime}`;
+                let newArchiveId = `ARCHIVE_${versionId}`;
                 
                 let changelogEntry = {
                     timestamp: exportTime,
                     action: 'REQUIRE_OFFLINE_ARCHIVE',
                     tuNam: combinedTuNam,
                     denNam: combinedDenNam,
-                    archiveId: `ARCHIVE_${versionId}`, // ID gắn ngầm vào file
+                    archiveId: newArchiveId,
                     path: 'System/OfflineConfig'
                 };
                 
+                // Đọc trạng thái Checkbox của Admin
+                const forceAll = document.getElementById('offlineForceAll') ? document.getElementById('offlineForceAll').checked : false;
+                
+                // Lấy phiên bản tối thiểu hiện tại trên Server (nếu có)
+                const snapMinReq = await get(child(ref(db), 'System/OfflineConfig/minRequiredArchive'));
+                let currentMinReq = snapMinReq.exists() ? snapMinReq.val() : newArchiveId;
+                
+                // Nếu Admin ép buộc, hoặc hệ thống chưa từng có phiên bản nào -> Nâng mức tối thiểu lên bằng bản mới nhất
+                let finalMinReq = forceAll ? newArchiveId : currentMinReq;
+                
                 serverUpdates[`System/Changelog/${clKey}`] = changelogEntry;
                 serverUpdates[`System/OfflineConfig/latestArchive`] = changelogEntry;
+                serverUpdates[`System/OfflineConfig/minRequiredArchive`] = finalMinReq;
 
-                // Gắn mã phiên bản vào lõi file Offline
                 archivePayload.changelog = changelogEntry;
                 archivePayload.metadata.version = versionId;
 
-                statusDiv.innerHTML = `<span style='color: #ffc107;'>Đang đóng gói ${bottleCount.toLocaleString('vi-VN')} vỏ chai và xóa sạch khỏi Server...</span>`;
+                statusDiv.innerHTML = `<span style='color: #ffc107;'>Đang đóng gói ${bottleCount.toLocaleString('vi-VN')} vỏ chai và phân quyền Phiên bản...</span>`;
 
                 // 5. Cắt nhỏ gói lệnh cập nhật Server
                 let keys = Object.keys(serverUpdates);
@@ -3831,26 +3893,24 @@ window.addEventListener('resize', function() {
                 for (let k of keys) { 
                     chunk[k] = serverUpdates[k]; 
                     count++; 
-                    if (count >= 1000) { 
-                        promises.push(update(ref(db), chunk)); 
-                        chunk = {}; count = 0; 
-                    } 
+                    if (count >= 1000) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; } 
                 }
                 if (count > 0) promises.push(update(ref(db), chunk));
-                
                 await Promise.all(promises); 
 
-                // 6. XUẤT FILE JSON VỚI TÊN GỌI THEO PHIÊN BẢN
-                statusDiv.innerHTML = "<span style='color: #28a745;'>Đã xóa thành công khỏi Server! Đang tạo file tải xuống...</span>";
+                // 6. XUẤT FILE JSON VÀ HIỂN THỊ PHIÊN BẢN RÚT GỌN
+                statusDiv.innerHTML = "<span style='color: #28a745;'>Hoàn tất! Đang tạo file tải xuống...</span>";
                 
                 const jsonString = JSON.stringify(archivePayload);
                 const blob = new Blob([jsonString], { type: "application/json" });
                 
-                // Đổi tên file theo đúng chuẩn Version
-                const fileName = `PVGAS_OfflineData_${versionId}.json`;
+                // --- RÚT GỌN PHIÊN BẢN: CẮT BỎ 5 SỐ CUỐI CHO ĐỠ DÀI ---
+                let shortVersionId = 'v' + String(exportTime).slice(0, -5);
+                const fileName = `PVGAS_OfflineData_${shortVersionId}.json`;
                 saveAs(blob, fileName); 
 
-                alert(`TÁCH DỮ LIỆU THÀNH CÔNG!\n- Đã trích xuất và xóa sạch ${bottleCount.toLocaleString('vi-VN')} vỏ chai khỏi Server.\n- Phiên bản Offline mới nhất là [ ${versionId} ] đã được tải về máy của bạn: ${fileName}\n\n* Lưu ý: File này đã bao gồm cả dữ liệu Offline cũ. Hãy phân phát file này cho người dùng để họ cập nhật.`);
+                let modeText = forceAll ? "CẬP NHẬT CỨNG (Bắt buộc tất cả mọi người tải lại)" : "CẬP NHẬT MỀM (Chỉ máy mới mới cần tải)";
+                alert(`TÁCH DỮ LIỆU THÀNH CÔNG!\n- Chế độ: ${modeText}\n- Phiên bản Offline mới: [ ${shortVersionId} ] đã được tải về máy của bạn: ${fileName}`);
                 
                 window.closeModal('offlineExportModal');
                 window.location.reload();
@@ -3876,45 +3936,34 @@ window.addEventListener('resize', function() {
             window.recalculateStats(); // Tái kích hoạt Thống kê
         };
 
-       // Hàm Trạm Gác: Soi chiếu phiên bản và Dọn rác
+       // Hàm Trạm Gác: Soi chiếu phiên bản Mềm / Cứng
         window.checkOfflineRequirement = async function() {
             try {
                 if (window.ignoreOfflineWarning) return true; // Đặc quyền cho qua
 
-                // Dò tìm cờ lệnh trên Server
-                const snap = await get(child(ref(db), 'System/OfflineConfig/latestArchive'));
-                if (!snap.exists()) return true; // Chưa có yêu cầu offline nào
+                // Dò tìm cấu hình Offline trên Server
+                const snapConfig = await get(child(ref(db), 'System/OfflineConfig'));
+                if (!snapConfig.exists() || !snapConfig.val().latestArchive) return true; 
                 
-                window.offlineArchiveConfig = snap.val();
+                let offlineConfig = snapConfig.val();
+                window.offlineArchiveConfig = offlineConfig.latestArchive;
+                
+                // Chốt kiểm soát: Phiên bản tối thiểu được phép chạy
+                let minReqArchiveId = offlineConfig.minRequiredArchive || window.offlineArchiveConfig.archiveId;
                 
                 // ==========================================================
-                // BƯỚC TỰ DỌN DẸP CACHE CŨ (HARD RESET DATABASE Y NHƯ XÓA BẰNG TAY)
+                // BƯỚC TỰ DỌN DẸP CACHE ONLINE CŨ
                 // ==========================================================
                 let currentLocalCache = await getFromLocalCache('full_db_snapshot');
                 if (currentLocalCache && currentLocalCache.data) {
-                    // Nếu phát hiện Local Cache di sản (Chưa có cờ Offline)
                     if (!currentLocalCache.archiveId) {
                         console.warn("Phát hiện bộ nhớ đệm lỗi thời. Bắt đầu quy trình Hard Reset...");
-                        
-                        // Lệnh xóa sạch toàn bộ Database PVGasLPG_LocalDB
                         const deleteReq = indexedDB.deleteDatabase('PVGasLPGtest_LocalDB');
-                        
                         deleteReq.onsuccess = function() {
-                            alert("Hệ thống đã tự động dọn dẹp dữ liệu cũ để tương thích với tính năng Offline.\nTrang web sẽ tự khởi động lại ngay bây giờ!");
+                            alert("Hệ thống đã dọn dẹp dữ liệu cũ. Trang web sẽ khởi động lại!");
                             window.location.reload(true);
                         };
-                        
-                        deleteReq.onerror = function() {
-                            console.error("Không thể tự xóa Database. Vui lòng nhấn F5.");
-                            window.location.reload(true);
-                        };
-                        
-                        deleteReq.onblocked = function() {
-                            console.warn("Tiến trình xóa bị kẹt. Đang ép tải lại trang...");
-                            window.location.reload(true);
-                        };
-                        
-                        // Rút cầu, bắt buộc dừng mọi tiến trình JavaScript hiện tại để chờ Reload
+                        deleteReq.onerror = function() { window.location.reload(true); };
                         return false; 
                     }
                 }
@@ -3922,19 +3971,56 @@ window.addEventListener('resize', function() {
 
                 window.localOfflineData = await getFromLocalCache('offline_archive_db');
                 
-                // Phán xét: Nếu chưa có file Local hoặc mã ID không khớp
-                if (!window.localOfflineData || !window.localOfflineData.changelog || window.localOfflineData.changelog.archiveId !== window.offlineArchiveConfig.archiveId) {
+                // Phán xét 1: Máy CHƯA CÓ file Offline -> Bắt buộc phải tải file mới nhất
+                if (!window.localOfflineData || !window.localOfflineData.changelog) {
+                    window.requiredUploadArchiveId = window.offlineArchiveConfig.archiveId; // Lưu mốc yêu cầu
+                    
+                    // --- CẬP NHẬT GIAO DIỆN HIỂN THỊ PHIÊN BẢN (RÚT GỌN 5 SỐ CUỐI) ---
+                    let msgParagraph = document.querySelector('#offlineRequireModal p');
+                    if (msgParagraph) {
+                        // Tách lấy dải số thời gian và cắt bỏ 5 chữ số ở đuôi
+                        let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
+                        let targetVer = 'v' + rawTimeStr.slice(0, -5);
+                        
+                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi tính toán.`;
+                    }
+                   // ---------------------------------------------
+
                     document.getElementById('offlineRequireModal').style.display = 'flex';
-                    return false; // Rút cầu, chặn luồng Thống kê
+                    return false; 
                 }
-                return true; // Hợp lệ, mở cổng
+
+                // Phán xét 2: Máy ĐÃ CÓ file Offline -> Kiểm tra xem có đạt chuẩn tối thiểu không?
+                let localArchiveId = window.localOfflineData.changelog.archiveId;
+                
+                if (localArchiveId < minReqArchiveId) {
+                    // Phiên bản trong máy quá cũ so với mức quy định của Admin
+                    console.warn(`File Offline đã hết hạn (${localArchiveId} < ${minReqArchiveId}). Yêu cầu nạp bản mới nhất!`);
+                    window.requiredUploadArchiveId = window.offlineArchiveConfig.archiveId;
+                    
+                    // --- CẬP NHẬT GIAO DIỆN HIỂN THỊ PHIÊN BẢN (RÚT GỌN 5 SỐ CUỐI) ---
+                    let msgParagraph = document.querySelector('#offlineRequireModal p');
+                    if (msgParagraph) {
+                        // Tách lấy dải số thời gian và cắt bỏ 5 chữ số ở đuôi
+                        let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
+                        let targetVer = 'v' + rawTimeStr.slice(0, -5);
+                        
+                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi tính toán.`;
+                    }
+                    // ---------------------------------------------
+
+                    document.getElementById('offlineRequireModal').style.display = 'flex';
+                    return false;
+                }
+
+                return true; // Hợp lệ! Trạm gác mở cổng (Bao gồm cả file cũ nhưng vẫn đạt chuẩn minReq).
             } catch (e) {
                 console.error("Lỗi kiểm tra Offline:", e);
                 return true; 
             }
         };
 
-        // Hàm Nạp và Khâu file (Blending)
+        // Hàm Nạp và Khâu file (Blending) - Chặn nạp file cũ
         window.processOfflineFileUpload = async function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -3946,23 +4032,25 @@ window.addEventListener('resize', function() {
                 const jsonData = JSON.parse(text);
                 
                 if (jsonData.metadata && jsonData.metadata.type === "PVGAS_OFFLINE_ARCHIVE") {
-                    if (window.offlineArchiveConfig && jsonData.changelog.archiveId !== window.offlineArchiveConfig.archiveId) {
-                        statusDiv.innerHTML = "<span style='color: red;'>Lỗi: File này chưa phải là bản update mới nhất!</span>";
+                    
+                    let uploadedArchiveId = jsonData.changelog.archiveId;
+                    
+                    // CHỐT CHẶN: Máy mới/Máy mất dữ liệu BẮT BUỘC phải nạp phiên bản MỚI NHẤT
+                    if (window.requiredUploadArchiveId && uploadedArchiveId !== window.requiredUploadArchiveId) {
+                        statusDiv.innerHTML = `<span style='color: red;'>Lỗi: Hệ thống yêu cầu nạp bản mới nhất [${window.requiredUploadArchiveId.replace('ARCHIVE_','')}]. Bạn không được dùng file cũ!</span>`;
                         e.target.value = ''; return;
                     }
                     
                     statusDiv.innerHTML = "<span style='color: blue;'>Đang khâu nối dữ liệu vào bộ nhớ đệm...</span>";
                     
-                    // Cơ chế Dung hợp (Append): Giữ lại các năm đã lưu trước đó nếu có
                     let existingOffline = await getFromLocalCache('offline_archive_db');
                     if (existingOffline && existingOffline.data) {
-                        // Khâu chồng Data mới lên Data cũ (Dữ liệu mới sẽ đè nếu trùng, giữ nguyên nếu không trùng)
                         jsonData.data = { ...existingOffline.data, ...jsonData.data };
                     }
 
                     await saveToLocalCache('offline_archive_db', jsonData);
                     window.localOfflineData = jsonData;
-                    window.ignoreOfflineWarning = false; // Xóa án tích bỏ qua
+                    window.ignoreOfflineWarning = false; 
                     
                     statusDiv.innerHTML = "<span style='color: green;'>Nạp file thành công! Đang kích hoạt Thống kê...</span>";
                     setTimeout(() => {
