@@ -1383,10 +1383,21 @@
                     updates[`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`] = { fileName: file.name, sheetName: sheetName, serialString: serialStrings }; 
                     batchPathsList.push(`${trungTamId}/${globalLoaiChai}/LichSuFile/${batchTimestamp}/${pushKey}`); 
 
-                    updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                    let sessionDataInfo = { 
                         loaiChai: globalLoaiChai, total: validCount, timeStamp: batchTimestamp, 
                         thoiDiemKD: globalThoiDiem, chiNhanhSD: globalChiNhanh, paths: batchPathsList, stats: sessionStats, isOldData: true 
                     };
+                    updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = sessionDataInfo;
+
+                    // --- FIX LỖI: GHI NHẬT KÝ CHANGELOG CHO PHIÊN LỊCH SỬ ---
+                    const clKeySession = push(child(ref(db), 'System/Changelog')).key;
+                    updates[`System/Changelog/${clKeySession}`] = {
+                        timestamp: parseInt(batchTimestamp) + validCount + 10, 
+                        action: 'PUT',
+                        path: `${trungTamId}/LichSuNhap/${batchTimestamp}`,
+                        data: sessionDataInfo
+                    };
+                    // ---------------------------------------------------------
 
                     addLog(`Đang đẩy ${validCount} dòng dữ liệu lên RTDB...`);
                     let chunkUpdates = {}; let count = 0; let promises = [];
@@ -1717,10 +1728,23 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                 });
 
                 const chiNhanhSD = document.getElementById('chiNhanhInput').value; // Lấy dữ liệu chi nhánh
-                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = { 
+                
+                // Đóng gói dữ liệu Lịch sử
+                let sessionDataInfo = { 
                     loaiChai: loaiChai, total: taphopData.length, timeStamp: batchTimestamp, 
                     thoiDiemKD: thoiDiemStr, chiNhanhSD: chiNhanhSD, paths: batchPathsList, isHuy: isHuy, stats: isHuy ? null : sessionStats 
                 };
+                updates[`${trungTamId}/LichSuNhap/${batchTimestamp}`] = sessionDataInfo;
+
+                // --- FIX LỖI: GHI NHẬT KÝ CHANGELOG CHO PHIÊN LỊCH SỬ ---
+                const clKeySession = push(child(ref(db), 'System/Changelog')).key;
+                updates[`System/Changelog/${clKeySession}`] = {
+                    timestamp: parseInt(batchTimestamp) + opCount + 10, // Cộng thêm 10 để đảm bảo log này nằm sau cùng
+                    action: 'PUT',
+                    path: `${trungTamId}/LichSuNhap/${batchTimestamp}`,
+                    data: sessionDataInfo
+                };
+                // ---------------------------------------------------------
                 
                 if (Object.keys(updates).length > 0) promises.push(update(ref(db), updates));
                 await Promise.all(promises);
