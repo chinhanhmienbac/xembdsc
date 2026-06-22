@@ -1250,7 +1250,7 @@ window.closeModal = async function(id) {
 		// ==========================================
         // KHỞI TẠO BỘ NHỚ ĐỆM Ổ CỨNG (INDEXEDDB)
         // ==========================================
-        const CACHE_DB_NAME = "PVGasLPG_LocalDB";
+        const CACHE_DB_NAME = "PVGasLPGtest_LocalDB";
         const CACHE_STORE_NAME = "DataSnapshot";
 
         function initIndexedDB() {
@@ -3897,7 +3897,7 @@ window.addEventListener('resize', function() {
                         console.warn("Phát hiện bộ nhớ đệm lỗi thời. Bắt đầu quy trình Hard Reset...");
                         
                         // Lệnh xóa sạch toàn bộ Database PVGasLPG_LocalDB
-                        const deleteReq = indexedDB.deleteDatabase('PVGasLPG_LocalDB');
+                        const deleteReq = indexedDB.deleteDatabase('PVGasLPGtest_LocalDB');
                         
                         deleteReq.onsuccess = function() {
                             alert("Hệ thống đã tự động dọn dẹp dữ liệu cũ để tương thích với tính năng Offline.\nTrang web sẽ tự khởi động lại ngay bây giờ!");
