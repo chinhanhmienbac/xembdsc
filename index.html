@@ -2329,6 +2329,13 @@ window.closeModal = async function(id) {
 
         // --- HÀM TÁI TẠO FILE TỪ CSDL HOẶC OFFLINE CACHE ---
         window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
+            let isGopDanhSach = false;
+            
+            // Hiện hộp thoại hỏi lựa chọn trước khi tải dữ liệu (Chỉ hỏi nếu không phải luồng Hủy)
+            if (!isHuy) {
+                isGopDanhSach = confirm("TÙY CHỌN ĐỊNH DẠNG XUẤT EXCEL:\n\n👉 Nhấn [ OK ]: Gộp chung danh sách vào 1 sheet.\n👉 Nhấn [ Cancel ]: Tách riêng 2 sheet Trên/Dưới 20 năm.");
+            }
+
             const loading = document.getElementById('historyLoading'); 
             loading.innerText = 'Đang tải dữ liệu từ CSDL và Kho Offline...'; 
             loading.style.display = 'block';
@@ -2456,43 +2463,67 @@ window.closeModal = async function(id) {
 
                     const sortData = (arr) => arr.sort((a, b) => parseDateMMYYYY(a.namCT_orig) - parseDateMMYYYY(b.namCT_orig)); sortData(tren20Nam); sortData(duoi20Nam);
 
-                    function buildSheet(sheetName, data) {
-    if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
-    const aaa = data.length; // BỔ SUNG DÒNG NÀY
-    let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
-	let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
-    
-    let cnObjKd2 = danhSachChiNhanh.find(c => c.id === summary.chiNhanhSD); 
-    let cnNameKd2 = cnObjKd2 ? cnObjKd2.ten : "";
-    let a6Cell = sheet.cell("A6"); 
-    if (a6Cell.value()) { let txt6 = String(a6Cell.value()); a6Cell.value(txt6.split("chinhanhSD").join(cnNameKd2)); }
+                    function buildSheet(sheetName, data, isHorizontalNumbering) {
+                        if (data.length === 0) return; const sheet = workbook.sheet(sheetName); if (!sheet) return;
+                        const aaa = data.length; 
+                        let a2Cell = sheet.cell("A2"); if (a2Cell.value()) { let txt2 = String(a2Cell.value()); a2Cell.value(txt2.split("xx").join(xx).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                        let a3Cell = sheet.cell("A3"); if (a3Cell.value()) { let txt3 = String(a3Cell.value()); a3Cell.value(txt3.split("aaa").join(aaa).split("bbb").join(bbb).split("mm").join(mm).split("yyyy").join(yyyy)); } 
+                        let a4Cell = sheet.cell("A4"); if (a4Cell.value()) { let txt4 = String(a4Cell.value()); a4Cell.value(txt4.split("aaa").join(aaa)); }
+                        
                         const grouped = data.reduce((acc, row) => { (acc[row.nextDate_str] = acc[row.nextDate_str] || []).push(row); return acc; }, {});
                         let destRow = 10; let groupNum = 1;
 
                         for (let key in grouped) {
-                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2); const N2 = totalData - N1;
- 
-                           sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); 
-                                                  
-                                sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: ${key}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
-                            
+                            const groupData = grouped[key]; const totalData = groupData.length; const N1 = Math.ceil(totalData / 2);
+                            sheet.cell(`A${destRow}`).value(toRoman(groupNum)).style({ bold: true, horizontalAlignment: "center", fontFamily: "Times New Roman", fontSize: 12 }); 
+                                                        
+                            let parts = key.split('/'); let gMonth = parts[0] || "?"; let gYear = parts[1] || "?";
+                            sheet.cell(`B${destRow}`).value(`Thời gian kiểm định tiếp theo: Tháng ${gMonth} năm ${gYear}`).style({ bold: true, horizontalAlignment: "left", fontFamily: "Times New Roman", fontSize: 12 });
+
                             for(let c = 1; c <= 16; c++) { if (c === 1) applyThinBorders(sheet.cell(destRow, c), false, false); else if (c === 2) applyThinBorders(sheet.cell(destRow, c), false, true); else if (c === 16) applyThinBorders(sheet.cell(destRow, c), true, false); else applyThinBorders(sheet.cell(destRow, c), true, true); }
                             
                             for (let k = 0; k < N1; k++) {
-                                const r = destRow + 1 + k; sheet.cell(r, 1).value(k + 1); 
-                                sheet.cell(r, 2).value(groupData[k].nhaCT_orig || ""); sheet.cell(r, 3).value(groupData[k].namCT_orig || ""); sheet.cell(r, 4).value(groupData[k].maHieu || ""); sheet.cell(r, 5).value(groupData[k].serial || ""); sheet.cell(r, 6).value(groupData[k].khoiLuong || ""); sheet.cell(r, 7).value(groupData[k].lastCheck_orig || ""); sheet.cell(r, 8).value(groupData[k].tick || "√");
-                                if (k < N2) { 
-                                    sheet.cell(r, 9).value(N1 + k + 1); 
-                                    sheet.cell(r, 10).value(groupData[N1 + k].nhaCT_orig || ""); sheet.cell(r, 11).value(groupData[N1 + k].namCT_orig || ""); sheet.cell(r, 12).value(groupData[N1 + k].maHieu || ""); sheet.cell(r, 13).value(groupData[N1 + k].serial || ""); sheet.cell(r, 14).value(groupData[N1 + k].khoiLuong || ""); sheet.cell(r, 15).value(groupData[N1 + k].lastCheck_orig || ""); sheet.cell(r, 16).value(groupData[N1 + k].tick || "√");
+                                const r = destRow + 1 + k; 
+
+                                // THUẬT TOÁN ĐÁNH SỐ (NGANG HOẶC DỌC)
+                                let leftIdx = isHorizontalNumbering ? (k * 2) : k;
+                                let rightIdx = isHorizontalNumbering ? (k * 2 + 1) : (N1 + k);
+
+                                if (leftIdx < totalData) {
+                                    sheet.cell(r, 1).value(leftIdx + 1); 
+                                    sheet.cell(r, 2).value(groupData[leftIdx].nhaCT_orig || ""); sheet.cell(r, 3).value(groupData[leftIdx].namCT_orig || ""); sheet.cell(r, 4).value(groupData[leftIdx].maHieu || ""); sheet.cell(r, 5).value(groupData[leftIdx].serial || ""); sheet.cell(r, 6).value(groupData[leftIdx].khoiLuong || ""); sheet.cell(r, 7).value(groupData[leftIdx].lastCheck_orig || ""); sheet.cell(r, 8).value(groupData[leftIdx].tick || "√");
                                 }
-                                for(let c = 1; c <= 16; c++) { const currentCell = sheet.cell(r, c); currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); else applyThinBorders(currentCell, false, false); }
+                                
+                                if (rightIdx < totalData) { 
+                                    sheet.cell(r, 9).value(rightIdx + 1); 
+                                    sheet.cell(r, 10).value(groupData[rightIdx].nhaCT_orig || ""); sheet.cell(r, 11).value(groupData[rightIdx].namCT_orig || ""); sheet.cell(r, 12).value(groupData[rightIdx].maHieu || ""); sheet.cell(r, 13).value(groupData[rightIdx].serial || ""); sheet.cell(r, 14).value(groupData[rightIdx].khoiLuong || ""); sheet.cell(r, 15).value(groupData[rightIdx].lastCheck_orig || ""); sheet.cell(r, 16).value(groupData[rightIdx].tick || "√");
+                                }
+
+                                for(let c = 1; c <= 16; c++) { 
+                                    const currentCell = sheet.cell(r, c); 
+                                    currentCell.style({ fontFamily: "Times New Roman", fontSize: 12 }); 
+                                    if (c === 4 || c === 12) applyThinBorders(currentCell, false, true); 
+                                    else if (c === 5 || c === 13) applyThinBorders(currentCell, true, false); 
+                                    else applyThinBorders(currentCell, false, false); 
+                                    if (rightIdx >= totalData && c >= 9) currentCell.value("");
+                                }
                             }
                             destRow += N1 + 1; groupNum++;
                         }
                         appendFooterSafe(sheet, ghichuSheet, destRow);
                     }
-                    buildSheet("tren20nam", tren20Nam); 
-                    buildSheet("duoi20nam", duoi20Nam);
+ 
+                    if (isGopDanhSach) {
+                        let sTren = workbook.sheet("tren20nam"); if (sTren) sTren.name("danhsach");
+                        let sDuoi = workbook.sheet("duoi20nam"); if (sDuoi) sDuoi.delete();
+                        
+                        let combinedData = [...tren20Nam, ...duoi20Nam];
+                        combinedData.sort((a, b) => parseDateMMYYYY(a.nextDate_str) - parseDateMMYYYY(b.nextDate_str));
+                        buildSheet("danhsach", combinedData, true);
+                    } else {
+                        buildSheet("tren20nam", tren20Nam, false); 
+                        buildSheet("duoi20nam", duoi20Nam, false);
+                    }
                 }
 
                 if (ghichuSheet) ghichuSheet.delete(); const blob = await workbook.outputAsync(); 
@@ -2579,43 +2610,50 @@ window.closeModal = async function(id) {
                             let yearChai = ns.split('-')[1];
                             if(yearChai !== yearLot) continue; // Năm CT phải trùng
                             
-                            let nxData = dLoai[ns][lot.nx];
-                            if(!nxData || !nxData.DanhSachChai) continue; // Phải trùng Nhà CT
-                            
-                            let dsChai = nxData.DanhSachChai;
-                            for(let cid in dsChai) {
-                                let chai = dsChai[cid];
-                                let exactPath = `${tt}/${lot.lc}/${ns}/${lot.nx}/DanhSachChai/${cid}`;
+                            // --- LOGIC MỚI: Duyệt qua tất cả nhà CT (nx) thay vì chỉ lấy lot.nx ---
+                            for(let nx in dLoai[ns]) {
+                                let nxData = dLoai[ns][nx];
+                                if(!nxData || !nxData.DanhSachChai) continue;
                                 
-                                // Nếu không phải tt1 thì mã hiệu phải khớp
-                                if (tt !== 'tt1') {
+                                let dsChai = nxData.DanhSachChai;
+                                for(let cid in dsChai) {
+                                    let chai = dsChai[cid];
+                                    let exactPath = `${tt}/${lot.lc}/${ns}/${nx}/DanhSachChai/${cid}`;
+                                    
+                                    // --- ÁP DỤNG ĐIỀU KIỆN LỌC MỚI THEO YÊU CẦU ---
                                     let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
                                     let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
-                                    if (chaiMaHieu !== lotMaHieu) continue;
-                                }
 
-                                // Nếu lọt vào dải Serial
-                                if (window.isSerialMatch(chai.serial, lot.serialMin, lot.serialMax)) {
-                                    
-                                    // 3. LỆNH CẬP NHẬT LÊN SERVER (Chỉ cập nhật 2 trường cụ thể)
-                                    updates[`${exactPath}/loNguon`] = lot.lid; 
-                                    updates[`${exactPath}/chaiThue`] = lot.chaiThue === true;
-                                    
-                                    // 4. LỆNH GHI NHẬT KÝ CHANGELOG (Dạng UPDATE để tránh ghi đè mất Serial)
-                                    const clKey = push(child(ref(db), 'System/Changelog')).key;
-                                    const payload = { loNguon: lot.lid, chaiThue: lot.chaiThue === true };
-                                    updates[`System/Changelog/${clKey}`] = {
-                                        timestamp: currentTime + logCount,
-                                        action: 'UPDATE', // Khác với PUT, UPDATE sẽ hòa trộn chứ không xóa trắng
-                                        path: exactPath,
-                                        data: payload
-                                    };
-                                    logCount++;
+                                    if (tt !== 'tt1' && chaiMaHieu !== "") {
+                                        // Có maHieu -> Bắt buộc trùng maHieu (BỎ QUA xét nhaCT)
+                                        if (chaiMaHieu !== lotMaHieu) continue;
+                                    } else {
+                                        // Không có maHieu (hoặc nhánh tt1) -> Bắt buộc trùng nhaCT
+                                        if (nx !== lot.nx) continue;
+                                    }
 
-                                    // 5. CẬP NHẬT TRỰC TIẾP VÀO BẢN SAO LOCAL CACHE
-                                    dsChai[cid].loNguon = lot.lid;
-                                    dsChai[cid].chaiThue = lot.chaiThue === true;
-                                    isCacheChanged = true;
+                                    // Nếu lọt vào dải Serial
+                                    if (window.isSerialMatch(chai.serial, lot.serialMin, lot.serialMax)) {
+                                        
+                                        // 3. LỆNH CẬP NHẬT LÊN SERVER (Chỉ cập nhật 2 trường cụ thể)
+                                        updates[`${exactPath}/loNguon`] = lot.lid; 
+                                        updates[`${exactPath}/chaiThue`] = lot.chaiThue === true;
+                                        
+                                        // 4. LỆNH GHI NHẬT KÝ CHANGELOG (Dạng UPDATE)
+                                        const clKey = push(child(ref(db), 'System/Changelog')).key;
+                                        const payload = { loNguon: lot.lid, chaiThue: lot.chaiThue === true };
+                                        updates[`System/Changelog/${clKey}`] = {
+                                            timestamp: currentTime + logCount,
+                                            action: 'UPDATE', 
+                                            path: exactPath,
+                                            data: payload
+                                        };
+                                        logCount++;
+
+                                        // 5. CẬP NHẬT TRỰC TIẾP VÀO BẢN SAO LOCAL CACHE
+                                        dsChai[cid].loNguon = lot.lid;
+                                        dsChai[cid].chaiThue = lot.chaiThue === true;
+                                        isCacheChanged = true;
                                 }
                             }
                         }
@@ -2735,18 +2773,28 @@ window.closeModal = async function(id) {
                                         isCacheChanged = true;
                                     }
 
-                                    // BƯỚC 3.2: TÌM LÔ MỚI PHÙ HỢP
+                                    // BƯỚC 3.2: TÌM LÔ MỚI PHÙ HỢP (LOGIC MỚI)
                                     let matchedLot = allLots.find(lot => {
-                                        if(lot.lc !== lc || lot.nx !== nx) return false;
+                                        // 1. Trùng loại chai
+                                        if (lot.lc !== lc) return false;
+
+                                        // 2. Trùng năm chế tạo
                                         let yearLot = lot.ns.split('-')[1];
-                                        if(yearChai !== yearLot) return false;
+                                        if (yearChai !== yearLot) return false;
                                         
-                                        // Quy tắc đặc biệt cho TT1 (Bỏ qua mã hiệu)
-                                        if (tt !== 'tt1') {
-                                            let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
-                                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                                        // 3. Xét maHieu và nhaCT theo nguyên tắc mới
+                                        let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
+                                        let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+
+                                        if (tt !== 'tt1' && chaiMaHieu !== "") {
+                                            // Có maHieu -> Bắt buộc trùng maHieu (BỎ QUA xét nhaCT)
                                             if (chaiMaHieu !== lotMaHieu) return false;
+                                        } else {
+                                            // Không có maHieu (hoặc nhánh tt1) -> Bắt buộc trùng nhaCT
+                                            if (lot.nx !== nx) return false;
                                         }
+
+                                        // 4. Trùng Serial nằm lọt giữa serialMin và serialMax
                                         return window.isSerialMatch(chai.serial, lot.serialMin, lot.serialMax);
                                     });
 
