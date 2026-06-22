@@ -1862,9 +1862,19 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
             }
         }
 
-        // --- HÀM TÁI TẠO FILE TỪ CSDL ---
+        			
+		// --- HÀM TÁI TẠO FILE TỪ CSDL HOẶC OFFLINE CACHE ---
         window.recreateSession = async function(trungTamId, timeStamp, isHuy) {
-            const loading = document.getElementById('historyLoading'); loading.innerText = 'Đang tải dữ liệu từ CSDL...'; loading.style.display = 'block';
+            let isGopDanhSach = false;
+            
+            // Hiện hộp thoại hỏi lựa chọn trước khi tải dữ liệu (Chỉ hỏi nếu không phải luồng Hủy)
+            if (!isHuy) {
+                isGopDanhSach = confirm("TÙY CHỌN ĐỊNH DẠNG XUẤT EXCEL:\n\n👉 Nhấn [ OK ]: Gộp chung danh sách vào 1 sheet.\n👉 Nhấn [ Cancel ]: Tách riêng 2 sheet Trên/Dưới 20 năm.");
+            }
+
+            const loading = document.getElementById('historyLoading'); 
+            loading.innerText = 'Đang tải dữ liệu từ CSDL và Kho Offline...'; 
+            loading.style.display = 'block';
 
             try {
                 const snap = await get(child(ref(db), `${trungTamId}/LichSuNhap/${timeStamp}`));
@@ -1994,8 +2004,6 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                         appendFooterSafe(sheet, ghichuSheet, destRow);
                     }
                     
-                    const isGopDanhSach = document.getElementById('gopDanhSachCb') ? document.getElementById('gopDanhSachCb').checked : false;
-
                     if (isGopDanhSach) {
                         let sTren = workbook.sheet("tren20nam"); if (sTren) sTren.name("danhsach");
                         let sDuoi = workbook.sheet("duoi20nam"); if (sDuoi) sDuoi.delete();
