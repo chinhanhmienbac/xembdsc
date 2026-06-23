@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -88,6 +89,7 @@
             <button class="info-btn" onclick="window.openSourceChoiceModal()">Thông tin nguồn</button>
             <button class="warning-btn" onclick="window.recalculateStats()">Tính toán lại Thống kê</button>
 			<button id="btnOfflineExport" class="danger-btn" style="display:none; margin-top: 0; margin-bottom: 5px; background-color: #856404; padding: 10px; color: white; border: 1px solid #ffeeba;" onclick="window.openOfflineExportModal()">Tách data Offline</button>
+			<button id="btnPruneChangelog" class="btn-action" style="background-color: #dc3545; display: none; margin-left: 10px;" onclick="window.preparePruneChangelog()">Dọn dẹp Changelog</button>
 			
 			<h3 style="margin-top: 10px;">Nhật ký</h3>
             <div id="logArea"><i>Sẵn sàng...</i></div>
@@ -318,7 +320,7 @@
                 <button class="btn-tool btn-tool-blue" onclick="document.getElementById('importLotFile').click()">Nhập từ Excel</button>
                 <input type="file" id="importLotFile" style="display:none;" accept=".xlsx" onchange="window.importLotsFromExcel(event)">
                 <button class="btn-tool btn-tool-blue" onclick="window.exportLotsToExcel()">Xuất Excel</button>
-				<button class="btn-tool" style="margin-left: auto; background-color: #6f42c1; color: white;" onclick="window.runGlobalLotUpdate()">Update Lot</button>
+				<button id="btnUpdateLot" class="btn-tool" style="margin-left: auto; background-color: #6f42c1; color: white;" onclick="window.runGlobalLotUpdate()" style="display: none;">Update Lot</button>
             </div>
         </div>
     </div>
@@ -565,7 +567,7 @@
     </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, child, get, set, update, remove, push, onValue, query, orderByChild, startAfter, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, child, get, set, update, remove, push, onValue, query, orderByChild, endAt, startAfter, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserSessionPersistence, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 		import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
 
@@ -672,14 +674,19 @@
                 } catch (e) {
                     console.error("Lỗi tự động thống kê sau đăng nhập:", e);
                 }
-				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
+				// --- KIỂM SOÁT NÚT TÁCH OFFLINE, UPDATE LOT VÀ DỌN DẸP DÀNH RIÊNG CHO ADMIN ---
                 const btnOffline = document.getElementById('btnOfflineExport');
-                if (btnOffline) {
-                    if (email === 'fulladmin@pvgaslpg.com.vn') {
-                        btnOffline.style.display = 'block';
-                    } else {
-                        btnOffline.style.display = 'none';
-                    }
+                const btnUpdateLot = document.getElementById('btnUpdateLot'); 
+                const btnPrune = document.getElementById('btnPruneChangelog'); // Nút mới
+                
+                if (email === 'fulladmin@pvgaslpg.com.vn') {
+                    if (btnOffline) btnOffline.style.display = 'block';
+                    if (btnUpdateLot) btnUpdateLot.style.display = 'inline-block'; 
+                    if (btnPrune) btnPrune.style.display = 'inline-block'; // Hiện
+                } else {
+                    if (btnOffline) btnOffline.style.display = 'none';
+                    if (btnUpdateLot) btnUpdateLot.style.display = 'none'; 
+                    if (btnPrune) btnPrune.style.display = 'none'; // Ẩn
                 }
             } else {
                 window.currentUserRole = { role: 'user' };
@@ -691,14 +698,19 @@
                     authButton.style.backgroundColor = "#007bff"; // Trả về màu xanh ban đầu
                     authButton.setAttribute("onclick", "window.openLoginModal()"); // Đổi lệnh về lại mở Modal đăng nhập
                 }
-				// --- KIỂM SOÁT NÚT TÁCH OFFLINE DÀNH RIÊNG CHO ADMIN ---
+				// --- KIỂM SOÁT NÚT TÁCH OFFLINE, UPDATE LOT VÀ DỌN DẸP DÀNH RIÊNG CHO ADMIN ---
                 const btnOffline = document.getElementById('btnOfflineExport');
-                if (btnOffline) {
-                    if (email === 'fulladmin@pvgaslpg.com.vn') {
-                        btnOffline.style.display = 'block';
-                    } else {
-                        btnOffline.style.display = 'none';
-                    }
+                const btnUpdateLot = document.getElementById('btnUpdateLot'); 
+                const btnPrune = document.getElementById('btnPruneChangelog'); // Nút mới
+                
+                if (email === 'fulladmin@pvgaslpg.com.vn') {
+                    if (btnOffline) btnOffline.style.display = 'block';
+                    if (btnUpdateLot) btnUpdateLot.style.display = 'inline-block'; 
+                    if (btnPrune) btnPrune.style.display = 'inline-block'; // Hiện
+                } else {
+                    if (btnOffline) btnOffline.style.display = 'none';
+                    if (btnUpdateLot) btnUpdateLot.style.display = 'none'; 
+                    if (btnPrune) btnPrune.style.display = 'none'; // Ẩn
                 }
             }
             
@@ -1334,7 +1346,7 @@ window.closeModal = async function(id) {
             if (!isOfflineValid) return; // Dừng lại ngay lập tức để chờ người dùng nạp file
             
             const btn = document.getElementById('btnCalculateStats');
-            // ... (Phần code cũ của bạn bắt đầu từ đây) ...
+            //--
 
 			if(!confirm("Hệ thống sẽ đồng bộ dữ liệu qua Nhật ký thay đổi (Changelog). Tiếp tục?")) return;
             
@@ -1382,44 +1394,86 @@ window.closeModal = async function(id) {
                 if (snap.exists()) {
                     const logs = snap.val();
                     const sortedLogs = Object.values(logs).sort((a, b) => a.timestamp - b.timestamp);
-                    addLog(`Phát hiện ${sortedLogs.length} thay đổi mới. Đang vá vào CSDL...`);
+                    addLog(`Phát hiện ${sortedLogs.length} lệnh thay đổi mới từ Server...`);
                     
+                    // ==============================================================
+                    // BƯỚC MỚI: TẢI ĐỘNG (BATCH FETCH) DỮ LIỆU TỪ CHANGELOG SIÊU NHẸ
+                    // ==============================================================
+                    let pathsToFetch = new Set();
                     sortedLogs.forEach(log => {
-                        // 1. Luôn vá dữ liệu vào CSDL Online mặc định
-                        applyLogToCache(localCache.data, log.path, log.action, log.data);
+                        // Nếu là lệnh Sửa/Thêm mà KHÔNG CÓ data đi kèm
+                        if ((log.action === 'PUT' || log.action === 'UPDATE') && log.data === undefined) {
+                            pathsToFetch.add(log.path);
+                        }
+                    });
+
+                    let fetchedData = {};
+                    if (pathsToFetch.size > 0) {
+                        addLog(`Đang tải chi tiết toàn bộ ${pathsToFetch.size} node dữ liệu từ Server...`);
+                        let pathArr = Array.from(pathsToFetch);
                         
-                        // 2. CƠ CHẾ HOT-PATCH: Kiểm tra và "vá nóng" trực tiếp vào Kho Offline nếu dữ liệu nằm ở đó
+                        // Chia nhỏ gói tải (300 requests / mẻ) để chống đứng trình duyệt
+                        for (let i = 0; i < pathArr.length; i += 300) {
+                            const chunk = pathArr.slice(i, i + 300);
+                            const chunkSnaps = await Promise.all(chunk.map(p => get(child(ref(db), p))));
+                            chunk.forEach((p, index) => {
+                                if (chunkSnaps[index].exists()) {
+                                    fetchedData[p] = chunkSnaps[index].val();
+                                } else {
+                                    fetchedData[p] = null; // Node này đã bị Admin xóa mất sau đó
+                                }
+                            });
+                        }
+                    }
+                    // ==============================================================
+
+                    let isOfflineChanged = false; // Cờ theo dõi sự thay đổi của kho Offline
+
+                    sortedLogs.forEach(log => {
+                        let finalData = log.data;
+                        let finalAction = log.action;
+
+                        // Nếu là log siêu nhẹ, trích xuất nguyên cụm data từ phần vừa tải về
+                        if ((log.action === 'PUT' || log.action === 'UPDATE') && log.data === undefined) {
+                            finalData = fetchedData[log.path];
+                            if (finalData === null) {
+                                finalAction = 'DELETE'; // Tải về bị trống -> Biến thành lệnh XÓA
+                            }
+                        }
+
+                        // 1. Luôn vá dữ liệu vào CSDL Online mặc định
+                        applyLogToCache(localCache.data, log.path, finalAction, finalData);
+                        
+                        // 2. CƠ CHẾ HOT-PATCH: Vá nóng trực tiếp vào Kho Offline
                         if (window.localOfflineData && window.localOfflineData.data) {
                             let keys = log.path.split('/');
                             let curr = window.localOfflineData.data;
                             let isInOffline = true;
                             
-                            // Dò tìm xem đường dẫn cha có tồn tại trong kho Offline không
                             for (let i = 0; i < keys.length - 1; i++) {
                                 if (!curr[keys[i]]) { isInOffline = false; break; }
                                 curr = curr[keys[i]];
                             }
                             
-                            // Nếu tìm thấy dấu vết trong Offline, tiến hành phẫu thuật
                             if (isInOffline) {
                                 let lastKey = keys[keys.length - 1];
-                                if (curr.hasOwnProperty(lastKey)) {
-                                    if (log.action === 'DELETE') {
-                                        delete curr[lastKey]; // Giết tận gốc thây ma
-                                    } else if (log.action === 'UPDATE') {
-                                        Object.assign(curr[lastKey], log.data);
-                                    } else {
-                                        curr[lastKey] = log.data;
-                                    }
-                                    isOfflineChanged = true;
-                                    console.log(`Đã Hot-patch dữ liệu Offline tại: ${log.path}`);
+                                if (finalAction === 'DELETE') {
+                                    delete curr[lastKey]; 
+                                } else if (finalAction === 'UPDATE') {
+                                    if (!curr[lastKey]) curr[lastKey] = {};
+                                    // Thay thế đè nguyên node bằng dữ liệu mới nhất
+                                    Object.assign(curr[lastKey], finalData); 
+                                } else {
+                                    curr[lastKey] = finalData;
                                 }
+                                isOfflineChanged = true;
                             }
                         }
 
                         // Cập nhật mốc thời gian đồng bộ
                         if (log.timestamp > localCache.lastSyncTime) localCache.lastSyncTime = log.timestamp;
                     });
+                    
                     isCacheUpdated = true;
                     
                     // 3. LƯU LẠI KHO OFFLINE XUỐNG Ổ CỨNG SAU KHI ĐÃ VÁ XONG
@@ -1468,7 +1522,7 @@ window.closeModal = async function(id) {
             }
             
             // =====================================
-            // BƯỚC 4: BẮT ĐẦU VÒNG LẶP TÍNH TOÁN
+            // BƯỚC 2: BẮT ĐẦU VÒNG LẶP TÍNH TOÁN
 		}
 
             addLog("Đang xử lý dữ liệu và tính toán Bảng số liệu...");
@@ -1770,28 +1824,36 @@ window.closeModal = async function(id) {
                             (JSON.stringify(oldBangSoLieu) !== JSON.stringify(bangSoLieuData));
 
             if (isChanged) {
-                // KỊCH BẢN A: CÓ THAY ĐỔI -> GHI LÊN SERVER VÀ GẮN CỜ MỚI
-                addLog("Phát hiện thay đổi số liệu. Đang đẩy dữ liệu lên Server...");
-                let currentTime = Date.now();
-                await update(ref(db), { 
-                    'Tonghop/Thongke': newStats, 
-                    'Tonghop/ThongtinLuyke': luyKeData,
-                    'Tonghop/BangSolieu': bangSoLieuData,
-                    // Gắn cờ để báo mạng lưới
-                    'System/Versions/luyke': currentTime,
-                    'System/Versions/thongke': currentTime,
-                    'System/Versions/bangsolieu': currentTime
-                });
+                // KỊCH BẢN A: CÓ THAY ĐỔI -> XỬ LÝ GHI LÊN SERVER VÀ CACHE
+                
+                // --- CHỐT CHẶN BẢO VỆ DỮ LIỆU SERVER ---
+                if (window.ignoreOfflineWarning) {
+                    addLog("<span style='color: #dc3545; font-weight: bold;'>⚠️ BẢO VỆ DỮ LIỆU: Đã CHẶN việc ghi đè Thống kê lên Server do bạn đang sử dụng dữ liệu chưa đầy đủ!</span>");
+                    console.warn("Chặn đẩy dữ liệu lên Server vì người dùng chọn Bỏ qua nạp file Offline (ignoreOfflineWarning = true)");
+                } else {
+                    addLog("Phát hiện thay đổi số liệu. Đang đẩy dữ liệu lên Server...");
+                    let currentTime = Date.now();
+                    await update(ref(db), { 
+                        'Tonghop/Thongke': newStats, 
+                        'Tonghop/ThongtinLuyke': luyKeData,
+                        'Tonghop/BangSolieu': bangSoLieuData,
+                        // Gắn cờ để báo mạng lưới
+                        'System/Versions/luyke': currentTime,
+                        'System/Versions/thongke': currentTime,
+                        'System/Versions/bangsolieu': currentTime
+                    });
+                    addLog("Đã đồng bộ dữ liệu thống kê mới lên Server!");
+                }
+                // ----------------------------------------
 
-                // BƯỚC 5: CẬP NHẬT LẠI LOCAL CACHE
-                localCache.lastSyncTime = currentTime;
+                // BƯỚC 5: CẬP NHẬT LẠI LOCAL CACHE (Vẫn lưu tạm vào máy để người dùng xem kết quả nháp)
+                localCache.lastSyncTime = Date.now();
                 if (!localCache.data.Tonghop) localCache.data.Tonghop = {};
                 localCache.data.Tonghop.ThongtinLuyke = luyKeData; 
                 localCache.data.Tonghop.Thongke = newStats; 
                 localCache.data.Tonghop.BangSolieu = bangSoLieuData; 
                 await saveToLocalCache('full_db_snapshot', localCache);
                 
-                addLog("Đã đồng bộ dữ liệu thống kê mới lên Server!");
             } else {
                 // KỊCH BẢN B: KHÔNG CÓ GÌ THAY ĐỔI -> HỦY LỆNH GHI SERVER
                 addLog("Kết quả tính toán giống hệt dữ liệu hiện tại. Bỏ qua bước tải lên để tiết kiệm băng thông!");
@@ -2618,7 +2680,9 @@ window.closeModal = async function(id) {
                         for(let ns in dLoai) {
                             if(ns === 'LichSuFile') continue;
                             let yearChai = ns.split('-')[1];
-                            if(yearChai !== yearLot) continue; // Năm CT phải trùng
+                            
+                            // LOGIC MỚI: Cho phép xê dịch năm chế tạo +- 1 năm (năm trước, năm hiện tại, năm sau)
+                            if (Math.abs(parseInt(yearChai) - parseInt(yearLot)) > 1) continue;
                             
                             // --- LOGIC MỚI: Duyệt qua tất cả nhà CT (nx) thay vì chỉ lấy lot.nx ---
                             for(let nx in dLoai[ns]) {
@@ -2789,9 +2853,9 @@ window.closeModal = async function(id) {
                                         // 1. Trùng loại chai
                                         if (lot.lc !== lc) return false;
 
-                                        // 2. Trùng năm chế tạo
+                                        // 2. Xét năm chế tạo (Cho phép xê dịch +- 1 năm)
                                         let yearLot = lot.ns.split('-')[1];
-                                        if (yearChai !== yearLot) return false;
+                                        if (Math.abs(parseInt(yearChai) - parseInt(yearLot)) > 1) return false;
                                         
                                         // 3. Xét maHieu và nhaCT theo nguyên tắc mới
                                         let chaiMaHieu = (chai.maHieu || "").trim().toLowerCase();
@@ -4000,6 +4064,27 @@ window.addEventListener('resize', function() {
             try {
                 if (window.ignoreOfflineWarning) return true; // Đặc quyền cho qua
 
+                // ==========================================================
+                // TRẠM GÁC 1: KIỂM TRA MỐC THỜI GIAN ONLINE (MIN_SYNC_TIME)
+                // ==========================================================
+                const snapSync = await get(child(ref(db), 'System/Config/minSyncTime'));
+                if (snapSync.exists()) {
+                    let minSyncTime = snapSync.val();
+                    let currentLocalCache = await getFromLocalCache('full_db_snapshot');
+                    // Nếu máy khách có dữ liệu nhưng mốc đồng bộ quá cũ -> Đập đi xây lại
+                    if (currentLocalCache && currentLocalCache.lastSyncTime && currentLocalCache.lastSyncTime < minSyncTime) {
+                        console.warn(`Cache Online quá cũ (Cập nhật cuối: ${new Date(currentLocalCache.lastSyncTime).toLocaleDateString()}). Tiến hành Hard Reset...`);
+                        await saveToLocalCache('full_db_snapshot', null); 
+                        alert("Hệ thống phát hiện máy bạn đã nghỉ quá lâu không đồng bộ. Changelog cũ đã được dọn dẹp. Trang web sẽ tự động khởi động lại để tải CSDL từ đầu!");
+                        window.location.reload(true);
+                        return false; 
+                    }
+                }
+
+                // ==========================================================
+                // TRẠM GÁC 2: KIỂM TRA PHIÊN BẢN OFFLINE
+                // ==========================================================
+
                 // Dò tìm cấu hình Offline trên Server
                 const snapConfig = await get(child(ref(db), 'System/OfflineConfig'));
                 if (!snapConfig.exists() || !snapConfig.val().latestArchive) return true; 
@@ -4123,6 +4208,112 @@ window.addEventListener('resize', function() {
                 statusDiv.innerHTML = `<span style='color: red;'>Lỗi nạp file: ${err.message}</span>`;
             }
             e.target.value = '';
+        };
+		
+		// =========================================================================
+        // QUY TRÌNH TỰ ĐỘNG: CẮT CHANGELOG - ÉP KHO OFFLINE - THIẾT LẬP CHỐT CHẶN
+        // =========================================================================
+        window.preparePruneChangelog = async function() {
+            let daysInput = prompt("BƯỚC 1: Nhập số ngày lùi về để cắt Changelog (Khuyến nghị: 200, 300 ngày).\n\nMọi thay đổi cũ hơn số ngày này sẽ BỊ XÓA khỏi Server. Các máy khách cũ sẽ bị ép tải lại CSDL toàn cục:", "200");
+            if (!daysInput) return;
+            let days = parseInt(daysInput);
+            if (isNaN(days) || days < 30) {
+                alert("Số ngày không hợp lệ hoặc quá nguy hiểm (Phải >= 30 ngày)!");
+                return;
+            }
+
+            if (!confirm(`CẢNH BÁO TỐI CAO: Bạn sắp XÓA VĨNH VIỄN nhật ký cũ hơn ${days} ngày.\n\nTiến trình tự động bao gồm:\n1. Nâng cấp File Offline hiện tại lên phiên bản mới.\n2. Thiết lập chốt chặn ép tất cả các máy phải cập nhật.\n3. Xóa sổ Changelog quá hạn trên Firebase.\n4. Tải file Offline về máy bạn.\n\nNhấn OK để BẮT ĐẦU (Vui lòng không đóng trình duyệt).`)) {
+                return;
+            }
+
+            // Mượn thẻ logArea để hiển thị tiến trình
+            const logArea = document.getElementById('logArea');
+            function sysLog(msg) { logArea.innerHTML += `<div style="color: #dc3545; font-weight: bold;">[HỆ THỐNG] ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
+
+            sysLog(`Đang khởi động tiến trình Dọn dẹp Changelog (Lùi ${days} ngày)...`);
+
+            try {
+                // 1. Tính toán mốc thời gian
+                const cutoffTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+
+                // 2. Lấy dữ liệu Offline đã được Hot-patch dưới máy Admin
+                let existingOffline = window.localOfflineData || await getFromLocalCache('offline_archive_db');
+                if (!existingOffline || !existingOffline.data) {
+                    alert("Lỗi: Máy bạn chưa có File Offline hoặc chưa đồng bộ xong! Hãy tải trang, chờ web chạy xong bảng Thống kê rồi thử lại.");
+                    return;
+                }
+                sysLog("Đã nạp Kho Offline cục bộ để chuẩn bị xuất bản...");
+
+                // 3. Tìm các log cũ cần xóa trên Server
+                sysLog("Đang truy vấn các bản ghi Changelog quá hạn trên Server...");
+    //--đã có trên đầu--          import { query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+                const logQuery = query(ref(db, 'System/Changelog'), orderByChild('timestamp'), endAt(cutoffTime));
+                const snapLogs = await get(logQuery);
+                
+                let serverUpdates = {};
+                let deleteCount = 0;
+                
+                if (snapLogs.exists()) {
+                    let oldLogs = snapLogs.val();
+                    for (let key in oldLogs) {
+                        serverUpdates[`System/Changelog/${key}`] = null; // Lệnh xóa
+                        deleteCount++;
+                    }
+                }
+                sysLog(`Phát hiện ${deleteCount} bản ghi Changelog nằm trong diện cần xóa.`);
+
+                // 4. Tạo mã phiên bản Offline mới (Rút gọn 5 số)
+                let exportTime = Date.now();
+                let shortVersionId = 'v' + String(exportTime).slice(0, -5);
+                let newArchiveId = `ARCHIVE_${shortVersionId}`;
+
+                let changelogEntry = {
+                    timestamp: exportTime,
+                    action: 'REQUIRE_OFFLINE_ARCHIVE',
+                    tuNam: existingOffline.metadata.tuNam || 1999,
+                    denNam: existingOffline.metadata.denNam || 2099,
+                    archiveId: newArchiveId,
+                    path: 'System/OfflineConfig'
+                };
+
+                // Nhúng cờ phiên bản mới vào ruột File Offline
+                existingOffline.changelog = changelogEntry;
+                if(!existingOffline.metadata) existingOffline.metadata = {};
+                existingOffline.metadata.version = shortVersionId;
+
+                // 5. Nạp lệnh Cập nhật Chốt chặn Server
+                serverUpdates[`System/OfflineConfig/latestArchive`] = changelogEntry;
+                serverUpdates[`System/OfflineConfig/minRequiredArchive`] = newArchiveId; // Bật cờ "Cập nhật Cứng"
+                serverUpdates[`System/Config/minSyncTime`] = cutoffTime; // Cắm chốt chặn Online
+
+                // 6. Thực thi lên Firebase (Cắt nhỏ gói dữ liệu để tránh kẹt)
+                sysLog(`Đang đẩy lệnh xóa và thiết lập chốt chặn lên Server...`);
+                let keys = Object.keys(serverUpdates);
+                let chunk = {}; let count = 0; let promises = [];
+                for (let k of keys) { 
+                    chunk[k] = serverUpdates[k]; 
+                    count++; 
+                    if (count >= 1000) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; } 
+                }
+                if (count > 0) promises.push(update(ref(db), chunk));
+                await Promise.all(promises);
+
+                // 7. Xuất File Offline mới cho Admin tải về
+                sysLog("Đóng gói thành công! Đang tạo file tải xuống...");
+                const jsonString = JSON.stringify(existingOffline);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const fileName = `PVGAS_OfflineData_${shortVersionId}.json`;
+                saveAs(blob, fileName);
+
+                alert(`HOÀN TẤT XÓA CHANGELOG CŨ VÀ XUẤT FILE!\n\n1. Đã xóa ${deleteCount} dòng rác Changelog cũ hơn ${days} ngày.\n2. Cắm chốt thời gian minSyncTime: ${new Date(cutoffTime).toLocaleDateString('vi-VN')}\n3. Cập nhật cứng bản Offline mới nhất: [ ${shortVersionId} ]\n\n* Vui lòng gửi File Offline vừa tải về cho các đơn vị! Trang web sẽ tự tải lại ngay bây giờ.`);
+                
+                window.location.reload();
+
+            } catch(e) {
+                console.error(e);
+                alert("Lỗi quá trình dọn dẹp: " + e.message);
+                sysLog("Tiến trình bị lỗi và đã bị hủy bỏ.");
+            }
         };
 	</script>
 </body>
