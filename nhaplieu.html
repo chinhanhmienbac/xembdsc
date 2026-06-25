@@ -809,14 +809,10 @@
                         
                         // --- GHI NHẬT KÝ CHANGELOG ---
                         const clKey = push(child(ref(db), 'System/Changelog')).key;
-                        let payload = { chiNhanhSD: newChiNhanh };
-                        if (newThoiDiem) payload.recentCheck = newThoiDiem;
-                        
                         updates[`System/Changelog/${clKey}`] = { 
                             timestamp: currentTime + logCount, 
                             action: 'UPDATE', 
-                            path: p, 
-                            data: payload 
+                            path: p 
                         };
                         logCount++;
                     }
@@ -1286,17 +1282,29 @@
     nhaCT: nhaCT_orig, namCT: namCT_orig, chiNhanhSD: globalChiNhanh 
 };
 
-                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG
+                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG (ĐÃ CẬP NHẬT LOGIC MỚI NHẤT)
                     let matchedLot = allLots.find(lot => {
-                        if(lot.lc !== globalLoaiChai || lot.nx !== nhaCT_id) return false;
+                        // 1. Trùng loại chai
+                        if(lot.lc !== globalLoaiChai) return false;
+                        
+                        // 2. Trùng năm chế tạo (Cho phép xê dịch +- 1 năm)
                         let yearLot = lot.ns.split('-')[1];
                         let yearChai = namCT_orig.split('/')[1];
-                        if(yearChai !== yearLot) return false;
-                        if (trungTamId !== 'tt1') {
-                            let chaiMaHieu = (maHieu || "").trim().toLowerCase();
-                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                        if(Math.abs(parseInt(yearChai) - parseInt(yearLot)) > 1) return false;
+                        
+                        // 3. Xét maHieu và nhaCT theo ưu tiên
+                        let chaiMaHieu = (maHieu || "").trim().toLowerCase();
+                        let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+
+                        if (trungTamId !== 'tt1' && chaiMaHieu !== "") {
+                            // Có maHieu -> Bắt buộc trùng maHieu (BỎ QUA xét nhaCT)
                             if (chaiMaHieu !== lotMaHieu) return false;
+                        } else {
+                            // Không có maHieu (hoặc nhánh tt1) -> Bắt buộc trùng nhaCT
+                            if (lot.nx !== nhaCT_id) return false;
                         }
+
+                        // 4. Trùng Serial nằm lọt giữa serialMin và serialMax
                         return window.isSerialMatch(serial, lot.serialMin, lot.serialMax);
                     });
                     if (matchedLot) {
@@ -1312,8 +1320,7 @@
                     updates[`System/Changelog/${clKeyChai}`] = {
                         timestamp: parseInt(batchTimestamp) + validCount,
                         action: 'PUT',
-                        path: dataPath,
-                        data: chaiData
+                        path: dataPath
                     };
                     
                     validCount++;
@@ -1673,17 +1680,29 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                         }
                     }
 
-                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG
+                    // ÁNH XẠ LÔ NGUỒN TỰ ĐỘNG (ĐÃ CẬP NHẬT LOGIC MỚI NHẤT)
                     let matchedLot = allLots.find(lot => {
-                        if(lot.lc !== loaiChai || lot.nx !== d.nhaCT_id) return false;
+                        // 1. Trùng loại chai
+                        if(lot.lc !== loaiChai) return false;
+                        
+                        // 2. Trùng năm chế tạo (Cho phép xê dịch +- 1 năm)
                         let yearLot = lot.ns.split('-')[1];
                         let yearChai = d.namCT_orig.split('/')[1];
-                        if(yearChai !== yearLot) return false;
-                        if (trungTamId !== 'tt1') {
-                            let chaiMaHieu = (d.maHieu || "").trim().toLowerCase();
-                            let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+                        if(Math.abs(parseInt(yearChai) - parseInt(yearLot)) > 1) return false;
+                        
+                        // 3. Xét maHieu và nhaCT theo ưu tiên
+                        let chaiMaHieu = (d.maHieu || "").trim().toLowerCase();
+                        let lotMaHieu = (lot.maHieu || "").trim().toLowerCase();
+
+                        if (trungTamId !== 'tt1' && chaiMaHieu !== "") {
+                            // Có maHieu -> Bắt buộc trùng maHieu (BỎ QUA xét nhaCT)
                             if (chaiMaHieu !== lotMaHieu) return false;
+                        } else {
+                            // Không có maHieu (hoặc nhánh tt1) -> Bắt buộc trùng nhaCT
+                            if (lot.nx !== d.nhaCT_id) return false;
                         }
+
+                        // 4. Trùng Serial nằm lọt giữa serialMin và serialMax
                         return window.isSerialMatch(d.serial, lot.serialMin, lot.serialMax);
                     });
                     if (matchedLot) {
@@ -1699,8 +1718,7 @@ sourceStructureUpdates[`Tonghop/Thongtinnguon/${loaiChai}/${nCT_id}/${nhCT_id}/_
                     updates[`System/Changelog/${clKeyChai}`] = {
                         timestamp: parseInt(batchTimestamp) + opCount, // Tịnh tiến thời gian
                         action: 'PUT',
-                        path: dataPath,
-                        data: chaiObj
+                        path: dataPath
                     };
 
                     opCount++;
