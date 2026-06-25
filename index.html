@@ -3151,16 +3151,16 @@ window.closeModal = async function(id) {
         window.globalBangSoLieu = null;
 
         const bangSoLieuConfig = [
-            { stt: 1, label: "Tổng số chai được chế tạo 5 năm trước", key: "1tscdct5nt", tooltip: "abc1" },
-            { stt: 2, label: "Số chai thuê được chế tạo 5 năm trước", key: "2sctdct5nt", isChaithue: true, tooltip: "abc2" },
-            { stt: 3, label: "Tổng số chai đến hạn kiểm định trong năm", key: "3tscdhkdtn", tooltip: "abc3" },
+            { stt: 1, label: "Tổng số chai mới đến kỳ tái kiểm định đầu tiên", key: "1tscdct5nt", tooltip: "Tổng số chai được chế tạo 5 năm trước" },
+            { stt: 2, label: "Số chai thuê mới đến kỳ tái kiểm định đầu tiên", key: "2sctdct5nt", isChaithue: true, tooltip: "Số chai thuê được chế tạo 5 năm trước" },
+            { stt: 3, label: "Tổng số chai đến hạn kiểm định trong năm", key: "3tscdhkdtn", tooltip: "Bao gồm số chai cũ được kiểm định kỳ trước, nay đến hạn và chai mới đến kỳ tái kiểm định đầu tiên" },
             { stt: 4, label: "Tổng số chai được kiểm định trong năm", key: "4tscdkdtn", tooltip: "abc4" },
-            { stt: 5, label: "Số chai chế tạo 5 năm trước được kiểm định trong năm", key: "5scct5ntdkdtn", tooltip: "abc5" },
-            { stt: 6, label: "Tỷ lệ chai chế tạo 5 năm trước được kiểm định trong năm", key: "6tlcct5ntdkdtn", isPercent: true, tooltip: "abc6" },
-            { stt: 7, label: "Số chai thuê chế tạo 5 năm trước được kiểm định trong năm", key: "7sctct5ntdkdtn", isChaithue: true, tooltip: "abc7" },
-            { stt: 8, label: "Tỷ lệ chai thuê chế tạo 5 năm trước được kiểm định trong năm", key: "8tlctct5ntdkdtn", isPercent: true, tooltip: "abc8" },
-            { stt: 9, label: "Số chai mới được tái kiểm định lần đầu trong năm", key: "9scmdtkdldtn", tooltip: "abc9" },
-            { stt: 10, label: "Số chai thuê được tái kiểm định lần đầu trong năm", key: "91sctdtkdldtn", isChaithue: true, tooltip: "Đây là số chai thuộc diện chai thuê lần đầu được quay về kiểm định kể từ khi được đưa ra thị trường. Số lượng tạm tính là những chai dưới 9 năm kể từ ngày sản xuất" }
+            { stt: 5, label: "Số chai mới quay về tái kiểm định lần đầu đúng kỳ 5 năm", key: "5scct5ntdkdtn", tooltip: "Chai được chế tạo thời điểm 5 năm trước được kiểm định trong năm" },
+            { stt: 6, label: "Tỷ lệ chai mới quay về tái kiểm định lần đầu đúng kỳ 5 năm", key: "6tlcct5ntdkdtn", isPercent: true, tooltip: "...6" },
+            { stt: 7, label: "Số chai thuê mới quay về tái kiểm định lần đầu đúng kỳ 5 năm", key: "7sctct5ntdkdtn", isChaithue: true, tooltip: "...7" },
+            { stt: 8, label: "Tỷ lệ chai thuê mới quay về tái kiểm lần đầu đúng kỳ 5 năm", key: "8tlctct5ntdkdtn", isPercent: true, tooltip: "...8" },
+            { stt: 9, label: "Số chai mới được tái kiểm định lần đầu trong năm", key: "9scmdtkdldtn", tooltip: "Đây là số chai lần đầu được quay về kiểm định kể từ khi được đưa ra sử dụng. Thời điểm chết tạo lâu nhất là 9 năm mà chưa tái kiểm định lần nào." },
+            { stt: 10, label: "Số chai thuê được tái kiểm định lần đầu trong năm", key: "91sctdtkdldtn", isChaithue: true, tooltip: "Đây là số chai thuộc diện chai thuê lần đầu được quay về kiểm định kể từ khi được đưa ra thị trường. Thời điểm chết tạo lâu nhất là 9 năm mà chưa tái kiểm định lần nào." }
         ];
 
         window.fetchAndRenderBangSoLieu = async function() {
@@ -3200,9 +3200,7 @@ window.closeModal = async function(id) {
     const parentContainer = container.parentElement;
 
     // 1. ĐO CHIỀU RỘNG THỰC TẾ KHÔNG BỊ BIẾN DẠNG
-    
-
-
+  
 container.style.width = '0px';
     const availableWidth = parentContainer.clientWidth || 885; 
 
@@ -4126,7 +4124,7 @@ window.addEventListener('resize', function() {
                         let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
                         let targetVer = 'v' + rawTimeStr.slice(0, -5);
                         
-                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi tính toán.`;
+                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi sử dụng.`;
                     }
                    // ---------------------------------------------
 
@@ -4149,7 +4147,7 @@ window.addEventListener('resize', function() {
                         let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
                         let targetVer = 'v' + rawTimeStr.slice(0, -5);
                         
-                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi tính toán.`;
+                        msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi sử dụng.`;
                     }
                     // ---------------------------------------------
 
@@ -4211,10 +4209,10 @@ window.addEventListener('resize', function() {
         };
 		
 		// =========================================================================
-        // QUY TRÌNH TỰ ĐỘNG: CẮT CHANGELOG - ÉP KHO OFFLINE - THIẾT LẬP CHỐT CHẶN
+        // QUY TRÌNH TỰ ĐỘNG: CẮT CHANGELOG - (TÙY CHỌN: ÉP KHO OFFLINE) - THIẾT LẬP CHỐT CHẶN
         // =========================================================================
         window.preparePruneChangelog = async function() {
-            let daysInput = prompt("BƯỚC 1: Nhập số ngày lùi về để cắt Changelog (Khuyến nghị: 200, 300 ngày).\n\nMọi thay đổi cũ hơn số ngày này sẽ BỊ XÓA khỏi Server. Các máy khách cũ sẽ bị ép tải lại CSDL toàn cục:", "200");
+            let daysInput = prompt("BƯỚC 1: Nhập số ngày lùi về để cắt Changelog (Khuyến nghị: 200, 300 ngày).\n\nMọi thay đổi cũ hơn số ngày này sẽ BỊ XÓA khỏi Server. Các máy khách quá cũ sẽ bị ép tải lại CSDL toàn cục:", "200");
             if (!daysInput) return;
             let days = parseInt(daysInput);
             if (isNaN(days) || days < 30) {
@@ -4222,71 +4220,70 @@ window.addEventListener('resize', function() {
                 return;
             }
 
-            if (!confirm(`CẢNH BÁO TỐI CAO: Bạn sắp XÓA VĨNH VIỄN nhật ký cũ hơn ${days} ngày.\n\nTiến trình tự động bao gồm:\n1. Nâng cấp File Offline hiện tại lên phiên bản mới.\n2. Thiết lập chốt chặn ép tất cả các máy phải cập nhật.\n3. Xóa sổ Changelog quá hạn trên Firebase.\n4. Tải file Offline về máy bạn.\n\nNhấn OK để BẮT ĐẦU (Vui lòng không đóng trình duyệt).`)) {
+            if (!confirm(`CẢNH BÁO TỐI CAO: Bạn sắp XÓA VĨNH VIỄN nhật ký cũ hơn ${days} ngày.\n\nTiến trình sẽ tự động:\n1. Thiết lập chốt chặn ép các máy quá cũ phải cập nhật lại dữ liệu.\n2. Xóa sổ Changelog quá hạn trên Firebase.\n3. (Nếu hệ thống đang dùng File Offline) Tự động nâng cấp và xuất file Offline mới.\n\nNhấn OK để BẮT ĐẦU (Vui lòng không đóng trình duyệt).`)) {
                 return;
             }
 
-            // Mượn thẻ logArea để hiển thị tiến trình
             const logArea = document.getElementById('logArea');
             function sysLog(msg) { logArea.innerHTML += `<div style="color: #dc3545; font-weight: bold;">[HỆ THỐNG] ${msg}</div>`; logArea.scrollTop = logArea.scrollHeight; }
 
             sysLog(`Đang khởi động tiến trình Dọn dẹp Changelog (Lùi ${days} ngày)...`);
 
             try {
-                // 1. Tính toán mốc thời gian
                 const cutoffTime = Date.now() - (days * 24 * 60 * 60 * 1000);
 
-                // 2. Lấy dữ liệu Offline đã được Hot-patch dưới máy Admin
+                // KIỂM TRA XEM HỆ THỐNG CÓ ĐANG SỬ DỤNG KHO OFFLINE KHÔNG?
                 let existingOffline = window.localOfflineData || await getFromLocalCache('offline_archive_db');
-                if (!existingOffline || !existingOffline.data) {
-                    alert("Lỗi: Máy bạn chưa có File Offline hoặc chưa đồng bộ xong! Hãy tải trang, chờ web chạy xong bảng Thống kê rồi thử lại.");
-                    return;
-                }
-                sysLog("Đã nạp Kho Offline cục bộ để chuẩn bị xuất bản...");
+                let hasOfflineData = (existingOffline && existingOffline.data && Object.keys(existingOffline.data).length > 0);
+                
+                let serverUpdates = {};
+                let shortVersionId = '';
 
-                // 3. Tìm các log cũ cần xóa trên Server
+                if (hasOfflineData) {
+                    sysLog("Phát hiện hệ thống có dùng Kho Offline. Đang chuẩn bị nâng cấp phiên bản...");
+                    let exportTime = Date.now();
+                    shortVersionId = 'v' + String(exportTime).slice(0, -5);
+                    let newArchiveId = `ARCHIVE_${shortVersionId}`;
+
+                    let changelogEntry = {
+                        timestamp: exportTime,
+                        action: 'REQUIRE_OFFLINE_ARCHIVE',
+                        tuNam: existingOffline.metadata.tuNam || 1999,
+                        denNam: existingOffline.metadata.denNam || 2099,
+                        archiveId: newArchiveId,
+                        path: 'System/OfflineConfig'
+                    };
+
+                    existingOffline.changelog = changelogEntry;
+                    if(!existingOffline.metadata) existingOffline.metadata = {};
+                    existingOffline.metadata.version = shortVersionId;
+
+                    serverUpdates[`System/OfflineConfig/latestArchive`] = changelogEntry;
+                    serverUpdates[`System/OfflineConfig/minRequiredArchive`] = newArchiveId;
+                } else {
+                    sysLog("Hệ thống hiện KHÔNG lưu trữ dữ liệu Offline (100% dữ liệu đang Online). Bỏ qua bước tạo file Offline!");
+                }
+
+                // TÌM VÀ CẮT CHANGELOG
                 sysLog("Đang truy vấn các bản ghi Changelog quá hạn trên Server...");
-    //--đã có trên đầu--          import { query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+       //đã có trên đầu         import { query, orderByChild, endAt } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
                 const logQuery = query(ref(db, 'System/Changelog'), orderByChild('timestamp'), endAt(cutoffTime));
                 const snapLogs = await get(logQuery);
                 
-                let serverUpdates = {};
                 let deleteCount = 0;
-                
                 if (snapLogs.exists()) {
                     let oldLogs = snapLogs.val();
                     for (let key in oldLogs) {
-                        serverUpdates[`System/Changelog/${key}`] = null; // Lệnh xóa
+                        serverUpdates[`System/Changelog/${key}`] = null; 
                         deleteCount++;
                     }
                 }
                 sysLog(`Phát hiện ${deleteCount} bản ghi Changelog nằm trong diện cần xóa.`);
 
-                // 4. Tạo mã phiên bản Offline mới (Rút gọn 5 số)
-                let exportTime = Date.now();
-                let shortVersionId = 'v' + String(exportTime).slice(0, -5);
-                let newArchiveId = `ARCHIVE_${shortVersionId}`;
+                // CẮM CHỐT CHẶN MIN_SYNC_TIME
+                serverUpdates[`System/Config/minSyncTime`] = cutoffTime; 
 
-                let changelogEntry = {
-                    timestamp: exportTime,
-                    action: 'REQUIRE_OFFLINE_ARCHIVE',
-                    tuNam: existingOffline.metadata.tuNam || 1999,
-                    denNam: existingOffline.metadata.denNam || 2099,
-                    archiveId: newArchiveId,
-                    path: 'System/OfflineConfig'
-                };
-
-                // Nhúng cờ phiên bản mới vào ruột File Offline
-                existingOffline.changelog = changelogEntry;
-                if(!existingOffline.metadata) existingOffline.metadata = {};
-                existingOffline.metadata.version = shortVersionId;
-
-                // 5. Nạp lệnh Cập nhật Chốt chặn Server
-                serverUpdates[`System/OfflineConfig/latestArchive`] = changelogEntry;
-                serverUpdates[`System/OfflineConfig/minRequiredArchive`] = newArchiveId; // Bật cờ "Cập nhật Cứng"
-                serverUpdates[`System/Config/minSyncTime`] = cutoffTime; // Cắm chốt chặn Online
-
-                // 6. Thực thi lên Firebase (Cắt nhỏ gói dữ liệu để tránh kẹt)
+                // THỰC THI LÊN FIREBASE
                 sysLog(`Đang đẩy lệnh xóa và thiết lập chốt chặn lên Server...`);
                 let keys = Object.keys(serverUpdates);
                 let chunk = {}; let count = 0; let promises = [];
@@ -4298,14 +4295,18 @@ window.addEventListener('resize', function() {
                 if (count > 0) promises.push(update(ref(db), chunk));
                 await Promise.all(promises);
 
-                // 7. Xuất File Offline mới cho Admin tải về
-                sysLog("Đóng gói thành công! Đang tạo file tải xuống...");
-                const jsonString = JSON.stringify(existingOffline);
-                const blob = new Blob([jsonString], { type: "application/json" });
-                const fileName = `PVGAS_OfflineData_${shortVersionId}.json`;
-                saveAs(blob, fileName);
-
-                alert(`HOÀN TẤT XÓA CHANGELOG CŨ VÀ XUẤT FILE!\n\n1. Đã xóa ${deleteCount} dòng rác Changelog cũ hơn ${days} ngày.\n2. Cắm chốt thời gian minSyncTime: ${new Date(cutoffTime).toLocaleDateString('vi-VN')}\n3. Cập nhật cứng bản Offline mới nhất: [ ${shortVersionId} ]\n\n* Vui lòng gửi File Offline vừa tải về cho các đơn vị! Trang web sẽ tự tải lại ngay bây giờ.`);
+                // NẾU CÓ OFFLINE THÌ XUẤT FILE CHO ADMIN
+                if (hasOfflineData) {
+                    sysLog("Đóng gói thành công! Đang tạo file tải xuống...");
+                    const jsonString = JSON.stringify(existingOffline);
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const fileName = `PVGAS_OfflineData_${shortVersionId}.json`;
+                    saveAs(blob, fileName);
+                    
+                    alert(`HOÀN TẤT DỌN DẸP!\n\n1. Đã xóa ${deleteCount} dòng rác Changelog cũ hơn ${days} ngày.\n2. Cắm chốt thời gian minSyncTime: ${new Date(cutoffTime).toLocaleDateString('vi-VN')}\n3. Cập nhật cứng bản Offline mới nhất: [ ${shortVersionId} ]\n\n* Vui lòng gửi File Offline vừa tải về cho các đơn vị! Trang web sẽ tự tải lại ngay bây giờ.`);
+                } else {
+                    alert(`HOÀN TẤT DỌN DẸP!\n\n1. Đã xóa ${deleteCount} dòng rác Changelog cũ hơn ${days} ngày.\n2. Cắm chốt thời gian minSyncTime: ${new Date(cutoffTime).toLocaleDateString('vi-VN')}\n\n* Do hệ thống không dùng dữ liệu Offline, các máy trễ đồng bộ sẽ tự động lấy lại CSDL Online đầy đủ mà không cần nạp file. Trang web sẽ tự tải lại ngay bây giờ.`);
+                }
                 
                 window.location.reload();
 
