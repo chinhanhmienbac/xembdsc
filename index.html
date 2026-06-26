@@ -61,16 +61,18 @@
         .btn-recreate-row:hover { background-color: #218838; }
 		
 		.sort-icon { cursor: pointer; color: #999; margin-left: 5px; font-size: 12px; }
-		.sort-icon:hover { color: #000; 
-		
+		.sort-icon:hover { color: #000; }
+	/*	Đoạn này làm bảng lũy kế chia thanh trượt theo từng loại chai
 		.table-responsive { overflow-x: auto; white-space: nowrap; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
         .col-hidden { display: none; }
         .input-inline { width: 100%; max-width: 75px; padding: 4px; text-align: center; border: 1px solid #007bff; border-radius: 3px; font-weight: bold; }
-        
+     */   
         /* Ẩn nút tăng giảm (spinner) của ô nhập số */
         .input-inline::-webkit-outer-spin-button,
         .input-inline::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .input-inline[type=number] { -moz-appearance: textfield; }
+		
+		
     </style>
 </head>
 <body>
@@ -3117,9 +3119,17 @@
                         }
 
                         if (window.isEditingLuyKe && row.editable) {
-                            // Cải tiến: onwheel="this.blur()" chặn lăn chuột; event.key==='Enter' this.blur() giúp gõ Enter là thoát ô nhập
-                            html += `<td style="${tdStyle}"><input type="number" class="input-inline" id="edit_${lc}_${row.key}_${y}" value="${val}" onkeydown="if(event.key==='ArrowUp' || event.key==='ArrowDown') event.preventDefault(); if(event.key==='Enter') this.blur();" onwheel="this.blur();"></td>`;
-                        } else {
+    // Giữ nguyên hiển thị số 0 bằng value="${val}"
+    // Bổ sung các sự kiện onfocus, onmouseup và onblur để xử lý chọn toàn bộ văn bản khi click lần đầu
+    html += `<td style="${tdStyle}">
+        <input type="number" class="input-inline" id="edit_${lc}_${row.key}_${y}" value="${val}" 
+        onkeydown="if(event.key==='ArrowUp' || event.key==='ArrowDown') event.preventDefault(); if(event.key==='Enter') this.blur();" 
+        onwheel="this.blur();"
+        onfocus="this.select();"
+        onmouseup="if(this.dataset.focused !== 'true') { this.select(); this.dataset.focused = 'true'; }"
+        onblur="this.dataset.focused = 'false';">
+    </td>`;
+						} else {
                             html += `<td style="${tdStyle}">${valStr}</td>`;
                         }
                     }
@@ -3222,6 +3232,65 @@
                 alert("Đã lưu và lan truyền tính toán luỹ kế thành công!");
             }
         }
+		// ==========================================
+// THUẬT TOÁN XỬ LÝ DÁN DỮ LIỆU TỪ EXCEL VÀO BẢNG
+// ==========================================
+window.handleExcelPaste = function(e, lc, startRowKey, startYear) {
+    // Ngăn chặn hành vi dán mặc định của trình duyệt (chỉ dán vào 1 ô)
+    e.preventDefault();
+    
+    // Lấy dữ liệu văn bản từ Clipboard
+    let pasteData = (e.clipboardData || window.clipboardData).getData('text');
+    if (!pasteData) return;
+
+    // Excel phân tách các hàng bằng ký tự xuống dòng
+    let rows = pasteData.split(/\r\n|\n|\r/);
+    
+    // Khai báo thứ tự các hàng cho phép nhập liệu từ trên xuống dưới
+    // Điều này giúp thuật toán biết khi đi xuống dưới thì ID hàng tiếp theo là gì
+    const editableRowKeys = ['chaiGiao', 'chaiThueGiao'];
+    let startRowIndex = editableRowKeys.indexOf(startRowKey);
+    
+    if (startRowIndex === -1) return; 
+
+    // Duyệt qua từng hàng được copy từ Excel
+    for (let i = 0; i < rows.length; i++) {
+        let rowStr = rows[i].trim();
+        if (!rowStr && i === rows.length - 1) continue; // Bỏ qua dòng trống thừa ở cuối cùng
+        
+        // Excel phân tách các cột bằng khoảng trắng Tab
+        let cells = rowStr.split('\t'); 
+        
+        let targetRowKey = editableRowKeys[startRowIndex + i];
+        if (!targetRowKey) break; // Nếu dữ liệu copy có nhiều hàng hơn bảng thì dừng lại ở hàng cuối cùng
+
+        // Duyệt qua từng cột trong hàng đó
+        for (let j = 0; j < cells.length; j++) {
+            // Xử lý chuỗi số: Loại bỏ khoảng trắng, dấu phẩy nghìn, dấu chấm nghìn (để tránh lỗi NaN)
+            let cellValue = cells[j].replace(/[^\d]/g, ''); // Chỉ lấy các ký tự số (0-9)
+            if (cellValue === '') continue; 
+
+            // Xác định tọa độ ô đích
+            let targetYear = startYear + j;
+            let targetInputId = `edit_${lc}_${targetRowKey}_${targetYear}`;
+            let targetInput = document.getElementById(targetInputId);
+            
+            // Nếu tìm thấy ô nhập liệu, tiến hành gán giá trị
+            if (targetInput) {
+                targetInput.value = parseInt(cellValue, 10);
+                
+                // Trực quan: Nháy màu xanh nhạt báo hiệu ô đã nhận dữ liệu dán thành công
+                let originalBg = targetInput.style.backgroundColor;
+                targetInput.style.transition = 'background-color 0.3s';
+                targetInput.style.backgroundColor = '#d4edda'; // Xanh lá cây nhạt
+                setTimeout(() => { 
+                    targetInput.style.backgroundColor = originalBg; 
+                }, 600);
+            }
+        }
+    }
+};
+		
 		
      // ==========================================
         // QUẢN LÝ BẢNG SỐ LIỆU (DASHBOARD)
