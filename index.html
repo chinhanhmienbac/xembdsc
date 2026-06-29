@@ -62,11 +62,12 @@
 		
 		.sort-icon { cursor: pointer; color: #999; margin-left: 5px; font-size: 12px; }
 		.sort-icon:hover { color: #000; }
-	/*	Đoạn này làm bảng lũy kế chia thanh trượt theo từng loại chai
+	/*	Đoạn này làm bảng lũy kế chia thanh trượt theo từng loại chai 
 		.table-responsive { overflow-x: auto; white-space: nowrap; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .col-hidden { display: none; }
-        .input-inline { width: 100%; max-width: 75px; padding: 4px; text-align: center; border: 1px solid #007bff; border-radius: 3px; font-weight: bold; }
-     */   
+    */   
+		.col-hidden { display: none; }
+	    .input-inline { width: 100%; max-width: 75px; padding: 4px; text-align: center; border: 1px solid #007bff; border-radius: 3px; font-weight: bold; }
+      
         /* Ẩn nút tăng giảm (spinner) của ô nhập số */
         .input-inline::-webkit-outer-spin-button,
         .input-inline::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -3075,7 +3076,7 @@
         window.renderLuyKeChiTiet = function() {
             const types = ['V12', 'V45', 'Com'];
             const currentYear = new Date().getFullYear();
-            const startYear = 2005;
+            const startYear = 2003;
             
             let html = '';
             types.forEach(lc => {
@@ -3119,17 +3120,16 @@
                         }
 
                         if (window.isEditingLuyKe && row.editable) {
-    // Giữ nguyên hiển thị số 0 bằng value="${val}"
-    // Bổ sung các sự kiện onfocus, onmouseup và onblur để xử lý chọn toàn bộ văn bản khi click lần đầu
     html += `<td style="${tdStyle}">
         <input type="number" class="input-inline" id="edit_${lc}_${row.key}_${y}" value="${val}" 
         onkeydown="if(event.key==='ArrowUp' || event.key==='ArrowDown') event.preventDefault(); if(event.key==='Enter') this.blur();" 
         onwheel="this.blur();"
         onfocus="this.select();"
         onmouseup="if(this.dataset.focused !== 'true') { this.select(); this.dataset.focused = 'true'; }"
-        onblur="this.dataset.focused = 'false';">
+        onblur="this.dataset.focused = 'false';"
+        onpaste="window.handleExcelPaste(event, '${lc}', '${row.key}', ${y})">
     </td>`;
-						} else {
+} else {
                             html += `<td style="${tdStyle}">${valStr}</td>`;
                         }
                     }
