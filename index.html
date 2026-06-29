@@ -1761,7 +1761,7 @@
             }
 
             // TÍNH TOÁN LAN TRUYỀN LŨY KẾ
-            const startYear = 2005; const currentYear = new Date().getFullYear();
+            const startYear = 2003; const currentYear = new Date().getFullYear();
             for(let cn in luyKeData) {
                 if (!cn || cn.trim() === "") continue; // Safeguard
                 for(let lc in luyKeData[cn]) {
@@ -3042,7 +3042,7 @@
                     let luyKeVo = dataLC[currentYear] ? dataLC[currentYear].luyKeVo || 0 : 0;
                     let luyKeVoThue = dataLC[currentYear] ? dataLC[currentYear].luyKeVoThue || 0 : 0;
                     let tongHuy = 0;
-                    for (let y = 2005; y <= currentYear; y++) tongHuy += (dataLC[y] ? dataLC[y].chaiHuy || 0 : 0);
+                    for (let y = 2003; y <= currentYear; y++) tongHuy += (dataLC[y] ? dataLC[y].chaiHuy || 0 : 0);
 
                     // Sử dụng .toLocaleString() để định dạng số hàng nghìn theo chuẩn máy tính
                     html += `<tr>
@@ -3175,7 +3175,7 @@
                 }
 
                 const currentYear = new Date().getFullYear();
-                const startYear = 2005;
+                const startYear = 2003;
                
                 if (!window.thongTinLuyKe[cn]) window.thongTinLuyKe[cn] = {};
 
