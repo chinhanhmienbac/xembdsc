@@ -80,7 +80,7 @@
 
     <div class="layout-container">
         <div class="col-card col-left">
-            <div style="text-align: center; margin-bottom: 20px;">
+            <div style="text-align: center; margin-bottom: 10px;">
                 <img src="PVGLPG.gif" alt="Logo PVGLPG" style="width: 150px; height: auto;">
             </div>
 
@@ -91,8 +91,10 @@
             <button class="secondary-btn" onclick="window.openHistoryModal()">Xem lịch sử đã nhập</button>
             <button class="info-btn" onclick="window.openSourceChoiceModal()">Thông tin nguồn</button>
             <button class="warning-btn" onclick="window.recalculateStats()">Tính toán lại Thống kê</button>
-			<button id="btnOfflineExport" class="danger-btn" style="display:none; margin-top: 0; margin-bottom: 5px; background-color: #856404; padding: 10px; color: white; border: 1px solid #ffeeba;" onclick="window.openOfflineExportModal()">Tách data Offline</button>
-			<button id="btnPruneChangelog" class="btn-action" style="background-color: #dc3545; display: none; margin-left: 10px;" onclick="window.preparePruneChangelog()">Dọn dẹp Changelog</button>
+		<div style="display: flex; gap: 1px; align-items: center; margin-top: 8px; margin-bottom: 8px;">
+			<button id="btnOfflineExport" class="danger-btn" style="background-color: #856404; display:none; padding: 8px 3px; color: white; border: 1px solid #ffeeba;" onclick="window.openOfflineExportModal()">Tách OfflineData</button>
+			<button id="btnPruneChangelog" class="btn-action" style="background-color: #dc3545; display: none; padding: 8px 3px; " onclick="window.preparePruneChangelog()">Dọn Changelog</button>
+		</div>
 			
 			<h3 style="margin-top: 10px;">Nhật ký</h3>
             <div id="logArea"><i>Sẵn sàng...</i></div>
@@ -1073,6 +1075,13 @@
                 let statusHtml = item.isHuy ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
                 let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${item.trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
                 
+                // --- KIỂM TRA QUYỀN ĐỂ VẼ NÚT XÓA ---
+                let currentUserEmail = auth.currentUser ? auth.currentUser.email.toLowerCase() : "";
+                let deleteBtnHtml = (currentUserEmail === 'fulladmin@pvgaslpg.com.vn') 
+                    ? `<button class="btn-action btn-del" onclick="window.deleteHistorySession('${item.trungTamId}', '${item.timeStamp}')">Xóa</button>` 
+                    : ``;
+                // ------------------------------------
+                
                 let cnName = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD)?.ten || "Không xác định";
                 let ttName = danhSachTrungTam.find(t => t.id === item.trungTamId)?.ten || "N/A";
 
@@ -1084,7 +1093,7 @@
                     <td style="color: #6f42c1; font-weight: bold; font-size:13px;">${ttName}</td>
                     <td style="font-size:13px;">${cnName}</td>
                     <td>${statusHtml}</td>
-                    <td>${recreateBtnHtml}</td>
+                    <td>${recreateBtnHtml} ${deleteBtnHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1098,6 +1107,8 @@
                 </tr>`;
             }
         }
+		
+		
 
         window.sortHistory = function(col) {
             if (!window.filteredHistoryData || window.filteredHistoryData.length === 0) return;
@@ -1124,6 +1135,14 @@
                 const tr = document.createElement('tr');
                 let statusHtml = item.isHuy ? '<span style="color:#dc3545;font-weight:bold;">Đã hủy</span>' : '<span style="color:#28a745;font-weight:bold;">Kiểm định</span>';
                 let recreateBtnHtml = `<button class="btn-action btn-recreate-row" onclick="window.recreateSession('${item.trungTamId}', '${item.timeStamp}', ${item.isHuy?true:false})">Excel</button>`;
+                
+                // --- KIỂM TRA QUYỀN ĐỂ VẼ NÚT XÓA ---
+                let currentUserEmail = auth.currentUser ? auth.currentUser.email.toLowerCase() : "";
+                let deleteBtnHtml = (currentUserEmail === 'fulladmin@pvgaslpg.com.vn') 
+                    ? `<button class="btn-action btn-del" onclick="window.deleteHistorySession('${item.trungTamId}', '${item.timeStamp}')">Xóa</button>` 
+                    : ``;
+                // ------------------------------------
+                
                 let cnName = danhSachChiNhanh.find(c => c.id === item.chiNhanhSD)?.ten || "Không xác định";
                 let ttName = danhSachTrungTam.find(t => t.id === item.trungTamId)?.ten || "N/A";
 
@@ -1135,11 +1154,104 @@
                     <td style="color: #6f42c1; font-weight: bold; font-size:13px;">${ttName}</td>
                     <td style="font-size:13px;">${cnName}</td>
                     <td>${statusHtml}</td>
-                    <td>${recreateBtnHtml}</td>
+                    <td>${recreateBtnHtml} ${deleteBtnHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
+		window.deleteHistorySession = async function(ttId, timeStamp) {
+            if (!window.checkPermission('admin')) return alert("Tài khoản của bạn không có quyền thực hiện thao tác xóa!");
+            if(!confirm("CẢNH BÁO: Xóa phiên nhập liệu này sẽ XÓA TOÀN BỘ số vỏ chai đã nhập trong phiên. Bạn có chắc chắn muốn xóa?")) return;
+
+            let session = window.currentHistoryData.find(x => x.trungTamId === ttId && x.timeStamp == timeStamp);
+            if(!session) return alert("Không tìm thấy dữ liệu phiên nhập trong Cache!");
+
+            let updates = {};
+            let currentTime = Date.now();
+            let logCount = 0;
+
+            // 1. Lập lệnh Xóa "cái vỏ" Lịch Sử
+            let sessionPath = `${ttId}/LichSuNhap/${timeStamp}`;
+            updates[sessionPath] = null;
+            let clKeySession = push(child(ref(db), 'System/Changelog')).key;
+            updates[`System/Changelog/${clKeySession}`] = {
+                timestamp: currentTime + logCount++,
+                action: 'DELETE',
+                path: sessionPath
+            };
+
+            // 2. Lập lệnh Xóa tất cả các vỏ chai thuộc phiên này
+            let paths = session.paths || [];
+            if (!Array.isArray(paths)) paths = Object.values(paths);
+
+            for (let p of paths) {
+                updates[p] = null;
+                let clKey = push(child(ref(db), 'System/Changelog')).key;
+                updates[`System/Changelog/${clKey}`] = {
+                    timestamp: currentTime + logCount++,
+                    action: 'DELETE',
+                    path: p
+                };
+            }
+
+            const loading = document.getElementById('historyLoading');
+            loading.style.display = 'block';
+            loading.innerText = `Đang tiến hành xóa vỏ chai và đồng bộ dữ liệu...`;
+
+            try {
+                // 3. Đẩy lệnh Xóa lên Server (Gói nhỏ chống nghẽn)
+                let keys = Object.keys(updates);
+                let chunk = {}; let count = 0; let promises = [];
+                for (let k of keys) { 
+                    chunk[k] = updates[k]; 
+                    count++; 
+                    if (count >= 1000) { promises.push(update(ref(db), chunk)); chunk = {}; count = 0; } 
+                }
+                if (count > 0) promises.push(update(ref(db), chunk));
+                await Promise.all(promises);
+
+                // 4. Ép Xóa trong Local Cache (Dữ liệu Online)
+                let localCache = await getFromLocalCache('full_db_snapshot');
+                if(localCache && localCache.data) {
+                    applyLogToCache(localCache.data, sessionPath, 'DELETE', null);
+                    for (let p of paths) {
+                        applyLogToCache(localCache.data, p, 'DELETE', null);
+                    }
+                    localCache.lastSyncTime = currentTime + logCount;
+                    await saveToLocalCache('full_db_snapshot', localCache);
+                }
+
+                // 5. FIX LỖI: Vá nóng Kho Offline (Dữ liệu Offline Flat key)
+                let offlineCache = await getFromLocalCache('offline_archive_db');
+                if (offlineCache && offlineCache.data) {
+                    let isOfflineChanged = false;
+                    
+                    if (offlineCache.data[sessionPath] !== undefined) {
+                        delete offlineCache.data[sessionPath];
+                        isOfflineChanged = true;
+                    }
+                    
+                    for (let p of paths) {
+                        if (offlineCache.data[p] !== undefined) {
+                            delete offlineCache.data[p];
+                            isOfflineChanged = true;
+                        }
+                    }
+
+                    if (isOfflineChanged) {
+                        await saveToLocalCache('offline_archive_db', offlineCache);
+                        window.localOfflineData = offlineCache; // Cập nhật luôn RAM
+                    }
+                }
+
+                alert("Đã xóa phiên nhập liệu thành công! Hãy bấm [Tính toán lại Thống kê] ở màn hình chính để cập nhật lại số liệu báo cáo.");
+                await loadHistoryTable();
+            } catch(err) {
+                console.error("Lỗi xóa session:", err);
+                alert("Lỗi hệ thống khi xóa: " + err.message);
+                loading.style.display = 'none';
+            }
+        };
 		// --- HÀM MỚI: XUẤT BÁO CÁO THEO ĐÚNG DỮ LIỆU ĐANG LỌC TRÊN GIAO DIỆN ---
         window.exportFilteredHistoryToExcel = async function() {
             if (!window.filteredHistoryData || window.filteredHistoryData.length === 0) { 
@@ -1493,29 +1605,34 @@
                         // 1. Luôn vá dữ liệu vào CSDL Online mặc định
                         applyLogToCache(localCache.data, log.path, finalAction, finalData);
                         
-                        // 2. CƠ CHẾ HOT-PATCH: Vá nóng trực tiếp vào Kho Offline
+                        // 2. CƠ CHẾ HOT-PATCH: Vá nóng trực tiếp vào Kho Offline (Kiến trúc Flat Key)
                         if (window.localOfflineData && window.localOfflineData.data) {
-                            let keys = log.path.split('/');
-                            let curr = window.localOfflineData.data;
-                            let isInOffline = true;
-                            
-                            for (let i = 0; i < keys.length - 1; i++) {
-                                if (!curr[keys[i]]) { isInOffline = false; break; }
-                                curr = curr[keys[i]];
-                            }
-                            
-                            if (isInOffline) {
-                                let lastKey = keys[keys.length - 1];
-                                if (finalAction === 'DELETE') {
-                                    delete curr[lastKey]; 
-                                } else if (finalAction === 'UPDATE') {
-                                    if (!curr[lastKey]) curr[lastKey] = {};
-                                    // Thay thế đè nguyên node bằng dữ liệu mới nhất
-                                    Object.assign(curr[lastKey], finalData); 
-                                } else {
-                                    curr[lastKey] = finalData;
+                            // Trường hợp xóa
+                            if (finalAction === 'DELETE') {
+                                // Xóa đích danh (ví dụ xóa cái vỏ Lịch Sử)
+                                if (window.localOfflineData.data[log.path] !== undefined) {
+                                    delete window.localOfflineData.data[log.path];
+                                    isOfflineChanged = true;
                                 }
-                                isOfflineChanged = true;
+                                // Xóa quét (Xóa hàng loạt vỏ chai nằm bên trong thư mục cha)
+                                let prefix = log.path + '/';
+                                for (let flatKey in window.localOfflineData.data) {
+                                    if (flatKey.startsWith(prefix)) {
+                                        delete window.localOfflineData.data[flatKey];
+                                        isOfflineChanged = true;
+                                    }
+                                }
+                            } 
+                            // Trường hợp thêm/sửa
+                            else if (finalAction === 'UPDATE' || finalAction === 'PUT' || finalAction === 'SET') {
+                                if (window.localOfflineData.data[log.path] !== undefined) {
+                                    if (finalAction === 'UPDATE') {
+                                        Object.assign(window.localOfflineData.data[log.path], finalData);
+                                    } else {
+                                        window.localOfflineData.data[log.path] = finalData;
+                                    }
+                                    isOfflineChanged = true;
+                                }
                             }
                         }
 
@@ -1761,7 +1878,7 @@
             }
 
             // TÍNH TOÁN LAN TRUYỀN LŨY KẾ
-            const startYear = 2003; const currentYear = new Date().getFullYear();
+            const startYear = 2000; const currentYear = new Date().getFullYear();
             for(let cn in luyKeData) {
                 if (!cn || cn.trim() === "") continue; // Safeguard
                 for(let lc in luyKeData[cn]) {
@@ -2370,6 +2487,19 @@
 
             await update(ref(db), updates); 
             
+            // --- FIX LỖI ĐỒNG BỘ: ÉP LOCAL CACHE NHẬN DIỆN LÔ MỚI NGAY LẬP TỨC ---
+            let localCache = await getFromLocalCache('full_db_snapshot');
+            if (localCache && localCache.data) {
+                if (oldPathStr) {
+                    const op = JSON.parse(oldPathStr);
+                    const oldActualPath = `Tonghop/Thongtinnguon/${op.lc}/${op.ns}/${op.nx}/DanhSachLot/${op.lid}`;
+                    applyLogToCache(localCache.data, oldActualPath, 'DELETE', null);
+                }
+                applyLogToCache(localCache.data, newPath, 'PUT', lotData);
+                await saveToLocalCache('full_db_snapshot', localCache);
+            }
+            // ---------------------------------------------------------------------
+
             // GHI NHẬN LÔ VỪA TẠO/SỬA ĐỂ TỰ ĐỘNG CHẠY KHI ĐÓNG MODAL
             window.dirtyLots.push({ lc, ns, nx, lid, ...lotData });
             
@@ -2473,11 +2603,23 @@
             
             if(Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
+                
+                // --- FIX LỖI ĐỒNG BỘ EXCEL: ÉP LOCAL CACHE NHẬN DIỆN HÀNG LOẠT LÔ MỚI ---
+                let localCache = await getFromLocalCache('full_db_snapshot');
+                if (localCache && localCache.data) {
+                    for(let lot of window.dirtyLots) {
+                        let path = `Tonghop/Thongtinnguon/${lot.lc}/${lot.ns}/${lot.nx}/DanhSachLot/${lot.lid}`;
+                        let payload = { tenLo: lot.tenLo, chaiThue: lot.chaiThue, soLuong: lot.soLuong, maHieu: lot.maHieu, serialMin: lot.serialMin, serialMax: lot.serialMax, xuatXuong: lot.xuatXuong, linkHS: lot.linkHS };
+                        applyLogToCache(localCache.data, path, 'PUT', payload);
+                    }
+                    await saveToLocalCache('full_db_snapshot', localCache);
+                }
+                // -----------------------------------------------------------------------
+
                 let msg = "Nhập dữ liệu thành công!";
                 if(errorCount > 0) msg += ` (Bỏ qua ${errorCount} dòng do Mã Nhà CT không đúng)`;
                 alert(msg); loadLotsTable();
             } else alert("Không có dữ liệu hợp lệ để nhập.");
-            e.target.value = "";
         }
 
         // --- HÀM TÁI TẠO FILE TỪ CSDL HOẶC OFFLINE CACHE ---
@@ -3042,7 +3184,7 @@
                     let luyKeVo = dataLC[currentYear] ? dataLC[currentYear].luyKeVo || 0 : 0;
                     let luyKeVoThue = dataLC[currentYear] ? dataLC[currentYear].luyKeVoThue || 0 : 0;
                     let tongHuy = 0;
-                    for (let y = 2003; y <= currentYear; y++) tongHuy += (dataLC[y] ? dataLC[y].chaiHuy || 0 : 0);
+                    for (let y = 2000; y <= currentYear; y++) tongHuy += (dataLC[y] ? dataLC[y].chaiHuy || 0 : 0);
 
                     // Sử dụng .toLocaleString() để định dạng số hàng nghìn theo chuẩn máy tính
                     html += `<tr>
@@ -3076,7 +3218,7 @@
         window.renderLuyKeChiTiet = function() {
             const types = ['V12', 'V45', 'Com'];
             const currentYear = new Date().getFullYear();
-            const startYear = 2003;
+            const startYear = 2000;
             
             let html = '';
             types.forEach(lc => {
@@ -3175,7 +3317,7 @@
                 }
 
                 const currentYear = new Date().getFullYear();
-                const startYear = 2003;
+                const startYear = 2000;
                
                 if (!window.thongTinLuyKe[cn]) window.thongTinLuyKe[cn] = {};
 
@@ -4267,9 +4409,9 @@ window.addEventListener('resize', function() {
                     // --- CẬP NHẬT GIAO DIỆN HIỂN THỊ PHIÊN BẢN (RÚT GỌN 5 SỐ CUỐI) ---
                     let msgParagraph = document.querySelector('#offlineRequireModal p');
                     if (msgParagraph) {
-                        // Tách lấy dải số thời gian và cắt bỏ 5 chữ số ở đuôi
+                        // Tách lấy dải số thời gian và tự động kiểm tra độ dài để tránh cắt 2 lần
                         let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
-                        let targetVer = 'v' + rawTimeStr.slice(0, -5);
+                        let targetVer = rawTimeStr.length > 10 ? ('v' + rawTimeStr.slice(0, -5)) : ('v' + rawTimeStr);
                         
                         msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi sử dụng.`;
                     }
@@ -4290,9 +4432,9 @@ window.addEventListener('resize', function() {
                     // --- CẬP NHẬT GIAO DIỆN HIỂN THỊ PHIÊN BẢN (RÚT GỌN 5 SỐ CUỐI) ---
                     let msgParagraph = document.querySelector('#offlineRequireModal p');
                     if (msgParagraph) {
-                        // Tách lấy dải số thời gian và cắt bỏ 5 chữ số ở đuôi
+                        // Tách lấy dải số thời gian và tự động kiểm tra độ dài để tránh cắt 2 lần
                         let rawTimeStr = window.offlineArchiveConfig.archiveId.replace('ARCHIVE_v', '').replace('ARCHIVE_', '');
-                        let targetVer = 'v' + rawTimeStr.slice(0, -5);
+                        let targetVer = rawTimeStr.length > 10 ? ('v' + rawTimeStr.slice(0, -5)) : ('v' + rawTimeStr);
                         
                         msgParagraph.innerHTML = `Hệ thống phát hiện có bản cập nhật Dữ liệu Offline (Cold Archive) phiên bản <b style="color: #dc3545;">[ ${targetVer} ]</b> từ Server. Để đảm bảo số liệu thống kê đầy đủ, bạn cần nạp file gốc mới nhất trước khi sử dụng.`;
                     }
@@ -4389,8 +4531,9 @@ window.addEventListener('resize', function() {
                 if (hasOfflineData) {
                     sysLog("Phát hiện hệ thống có dùng Kho Offline. Đang chuẩn bị nâng cấp phiên bản...");
                     let exportTime = Date.now();
-                    shortVersionId = 'v' + String(exportTime).slice(0, -5);
-                    let newArchiveId = `ARCHIVE_${shortVersionId}`;
+                    let fullVersionId = 'v' + String(exportTime); // Lấy ID dài nguyên bản
+                    shortVersionId = 'v' + String(exportTime).slice(0, -5); // Bản ngắn chỉ dùng làm tên file
+                    let newArchiveId = `ARCHIVE_${fullVersionId}`; // Lưu ID nguyên bản lên Server
 
                     let changelogEntry = {
                         timestamp: exportTime,
