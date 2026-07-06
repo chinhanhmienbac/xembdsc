@@ -1509,7 +1509,7 @@
             const btn = document.getElementById('btnCalculateStats');
             //--
 
-			if(!confirm("Hệ thống sẽ đồng bộ dữ liệu qua Nhật ký thay đổi (Changelog). Tiếp tục?")) return;
+			addLog("Bắt đầu tiến trình tự động đồng bộ dữ liệu...");
             
             const centers = danhSachTrungTam.map(tt => tt.id);
             addLog("Đang đọc Local Cache...");
@@ -4257,11 +4257,22 @@ window.addEventListener('resize', function() {
                 }
 
               
+                // --- TÍCH HỢP LOGIC "ĐÓNG GÓI LẠI" (REPACKAGE) VÀO LUỒNG CHÍNH ---
+                let hasOldOfflineData = Object.keys(oldData).length > 0;
+
                 if (matchCount === 0) {
-                    statusDiv.innerHTML = "<span style='color: #dc3545;'>Không tìm thấy dữ liệu kiểm định nào thuộc khoảng thời gian này!</span>";
-                    btnConfirm.disabled = false;
-                    return;
+                    if (!hasOldOfflineData) {
+                        // Kịch bản A: Server trống trơn VÀ Máy không có Kho Offline -> Dừng tiến trình
+                        statusDiv.innerHTML = "<span style='color: #dc3545;'>Không tìm thấy dữ liệu thuộc khoảng thời gian này và máy không có Kho Offline!</span>";
+                        btnConfirm.disabled = false;
+                        return;
+                    } else {
+                        // Kịch bản B (Gộp luồng): Server không có dữ liệu (do đã xóa), NHƯNG máy đang giữ Kho Offline 
+                        // -> Tự động chuyển sang chế độ ĐÓNG GÓI LẠI
+                        statusDiv.innerHTML = "<span style='color: #17a2b8; font-weight: bold;'>Không có dữ liệu mới trên Server. Tự động chuyển chế độ: ĐÓNG GÓI LẠI Kho Offline hiện hành...</span>";
+                    }
                 }
+                // ----------------------------------------------------------------
 
                 // 4. KÍCH HOẠT CHẾ ĐỘ PHÂN QUYỀN PHIÊN BẢN (MỀM / CỨNG)
                 const clKey = push(child(ref(db), 'System/Changelog')).key;
