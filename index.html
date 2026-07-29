@@ -487,18 +487,19 @@
                     <thead>
                         <tr>
                             <th style="width: 4%;">STT</th>
-                            <th id="th-ttkd" style="width: 19%;">TTKĐ<span class="filter-btn" onclick="window.showFilterPopup(event, 'ttkd')">▼</span></th>
-                            <th id="th-loaiChai" style="width: 8%;">Loại chai<span class="filter-btn" onclick="window.showFilterPopup(event, 'loaiChai')">▼</span></th>
-                            <th id="th-cheTao" style="width: 8%;">Chế tạo<span class="filter-btn" onclick="window.showFilterPopup(event, 'cheTao')">▼</span></th>
-                            <th id="th-nhaCT" style="width: 7%;">Nhà CT<span class="filter-btn" onclick="window.showFilterPopup(event, 'nhaCT')">▼</span></th>
+                            <th id="th-ttkd" style="width: 18%;">TTKĐ<span class="filter-btn" onclick="window.showFilterPopup(event, 'ttkd')">▼</span></th>
+                            <th id="th-loaiChai" style="width: 5%;">Loại<span class="filter-btn" onclick="window.showFilterPopup(event, 'loaiChai')">▼</span></th>
+                            <th id="th-cheTao" style="width: 7%;">Chế tạo<span class="filter-btn" onclick="window.showFilterPopup(event, 'cheTao')">▼</span></th>
+                            <th id="th-nhaCT" style="width: 6%;">NhàCT<span class="filter-btn" onclick="window.showFilterPopup(event, 'nhaCT')">▼</span></th>
                             <th style="width: 4%;">Mã</th>
                             <th id="th-serial" style="width: 8%;">Serial<span class="filter-btn" title="Sắp xếp tăng/giảm dần" onclick="window.toggleSerialSort(event)">↕</span></th>
                             <th style="width: 4%;">KL</th>
                             <th id="th-kiemDinh" style="width: 8%;">Kiểm định<span class="filter-btn" onclick="window.showFilterPopup(event, 'kiemDinh')">▼</span></th>
                             <th id="th-thue" style="width: 6%;">Thuê<span class="filter-btn" onclick="window.showFilterPopup(event, 'thue')">▼</span></th>
-                            <th id="th-huy" style="width: 6%;">Hủy<span class="filter-btn" onclick="window.showFilterPopup(event, 'huy')">▼</span></th>
+                            <th id="th-hanKD" style="width: 7%;">Hạn KĐ<span class="filter-btn" onclick="window.showFilterPopup(event, 'hanKD')">▼</span></th>
+                            <th id="th-huy" style="width: 5%;">Hủy<span class="filter-btn" onclick="window.showFilterPopup(event, 'huy')">▼</span></th>
 							<th id="th-lot" style="width: 5%;">Lot<span class="filter-btn" onclick="window.showFilterPopup(event, 'lot')">▼</span></th>
-                            <th id="th-chiNhanh" style="width: 16%;">Chi nhánh<span class="filter-btn" onclick="window.showFilterPopup(event, 'chiNhanh')">▼</span></th>
+                            <th id="th-chiNhanh" style="width: 17%;">Chi nhánh<span class="filter-btn" onclick="window.showFilterPopup(event, 'chiNhanh')">▼</span></th>
                         </tr>
                     </thead>
                     <tbody id="chiTietTableBody"></tbody>
@@ -3695,7 +3696,8 @@ window.addEventListener('resize', function() {
         window.activeFilters = {
             ttkd: '', loaiChai: '', nhaCT: '', thue: '', huy: '', lot: '', chiNhanh: '',
             cheTao: { month: '', year: '' },
-            kiemDinh: { month: '', year: '' }
+            kiemDinh: { month: '', year: '' },
+            hanKD: { month: '', year: '' } // Bổ sung lọc dạng Ngày/Tháng cho Hạn KĐ
         };
         window.currentFilterCol = '';
         window.serialSortOrder = ''; 
@@ -3758,7 +3760,7 @@ window.addEventListener('resize', function() {
                 let localCache = await getFromLocalCache('full_db_snapshot');
                 if (!localCache || !localCache.data) {
                     loading.style.display = 'none';
-                    tbody.innerHTML = '<tr><td colspan="13" style="color:red; text-align:center; font-style:italic;">Chưa có dữ liệu Local Cache. Vui lòng chạy "Thống kê" trước!</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="13" style="color:red; text-align:center; font-style:italic;">Chưa có dữ liệu tại máy tính này. Vui lòng đăng nhập trước!</td></tr>';
                     return;
                 }
 
@@ -3798,6 +3800,7 @@ window.addEventListener('resize', function() {
                                         nhaCT: tenNhaCT, ma: chai.maHieu || '', serial: chai.serial || '', kl: chai.khoiLuong || '',
                                         kiemDinh: kD,
                                         thue: chai.chaiThue ? '<span style="color:#28a745; font-weight:bold;">Có</span>' : '<span style="color:#6c757d;"></span>',
+                                        hanKD: chai.nextDate || '', // Gắn dữ liệu nextDate vào bảng
                                         huy: chai.voHuy ? '<span style="color:#dc3545; font-weight:bold;">Hủy</span>' : '<span style="color:#6c757d;"></span>',
                                         lot: hasLot,
                                         chiNhanh: tenCN
@@ -3853,9 +3856,9 @@ window.addEventListener('resize', function() {
         };
    // Reset toàn bộ
        window.resetAllFilters = function(resetGlobalDates = true) {
-            window.activeFilters = { ttkd: '', loaiChai: '', nhaCT: '', thue: '', huy: '', lot: '', chiNhanh: '', cheTao: { month: '', year: '' }, kiemDinh: { month: '', year: '' } };
+            window.activeFilters = { ttkd: '', loaiChai: '', nhaCT: '', thue: '', huy: '', lot: '', chiNhanh: '', cheTao: { month: '', year: '' }, kiemDinh: { month: '', year: '' }, hanKD: { month: '', year: '' } };
             
-            ['ttkd', 'loaiChai', 'cheTao', 'nhaCT', 'kiemDinh', 'thue', 'huy', 'lot', 'chiNhanh'].forEach(col => {
+            ['ttkd', 'loaiChai', 'cheTao', 'nhaCT', 'kiemDinh', 'thue', 'hanKD', 'huy', 'lot', 'chiNhanh'].forEach(col => {
                 document.getElementById(`th-${col}`).classList.remove('th-filtered');
             });
             
@@ -3889,7 +3892,7 @@ window.addEventListener('resize', function() {
             popup.style.top = (rect.bottom - modalRect.top + 5) + 'px'; popup.style.left = (rect.left - modalRect.left) + 'px';
             popup.style.display = 'block';
 
-            if (col === 'cheTao' || col === 'kiemDinh') {
+            if (col === 'cheTao' || col === 'kiemDinh' || col === 'hanKD') {
                 normalDiv.style.display = 'none'; dateDiv.style.display = 'block';
 
                 let monthHtml = '<option value="">- All -</option>';
@@ -3931,10 +3934,10 @@ window.addEventListener('resize', function() {
 
         window.processFilters = function() {
             // 1. Đổi màu tiêu đề
-            ['ttkd', 'loaiChai', 'cheTao', 'nhaCT', 'kiemDinh', 'thue', 'huy', 'lot', 'chiNhanh'].forEach(col => {
+            ['ttkd', 'loaiChai', 'cheTao', 'nhaCT', 'kiemDinh', 'thue', 'hanKD', 'huy', 'lot', 'chiNhanh'].forEach(col => {
                 let th = document.getElementById(`th-${col}`);
                 let isFiltered = false;
-                if (col === 'cheTao' || col === 'kiemDinh') { if (window.activeFilters[col].month !== '' || window.activeFilters[col].year !== '') isFiltered = true; } 
+                if (col === 'cheTao' || col === 'kiemDinh' || col === 'hanKD') { if (window.activeFilters[col].month !== '' || window.activeFilters[col].year !== '') isFiltered = true; } 
                 else { if (window.activeFilters[col] !== '') isFiltered = true; }
                 if (isFiltered) th.classList.add('th-filtered'); else th.classList.remove('th-filtered');
             });
@@ -3952,7 +3955,7 @@ window.addEventListener('resize', function() {
                     let filterVal = window.activeFilters[col];
                     let itemVal = item[col];
 
-                    if (col === 'cheTao' || col === 'kiemDinh') {
+                    if (col === 'cheTao' || col === 'kiemDinh' || col === 'hanKD') {
                         if (filterVal.month || filterVal.year) {
                             if (!itemVal) return false;
                             let parts = itemVal.split(/[-/]/);
@@ -4049,6 +4052,7 @@ window.addEventListener('resize', function() {
                     <td>${row.kl}</td>
                     <td style="color:#007bff; font-weight:bold;">${row.kiemDinh}</td>
                     <td>${row.thue}</td>
+                    <td style="color:purple;">${row.hanKD}</td>
                     <td>${row.huy}</td>
                     <td style="font-weight:bold; color:#28a745; text-align:center;">${row.lot}</td>
                     <td>${row.chiNhanh}</td>
@@ -4081,7 +4085,7 @@ window.addEventListener('resize', function() {
             document.querySelector('#chiTietModal .history-table-container').scrollTop = 0;
         };
 
-        // HÀM XUẤT DỮ LIỆU ĐANG LỌC RA EXCEL (Đã thêm cột Lot)
+        // HÀM XUẤT DỮ LIỆU ĐANG LỌC RA EXCEL (Đã thêm Hạn KĐ)
         window.exportChiTietExcel = async function() {
             if (window.filteredChiTietData.length === 0) {
                 alert("Không có dữ liệu để xuất Excel!"); return;
@@ -4094,15 +4098,15 @@ window.addEventListener('resize', function() {
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet('DuLieu_ChiTiet');
                 
-                // Thêm "Lot" vào Header Excel
-                ws.addRow(['STT', 'TTKĐ', 'Loại chai', 'Chế tạo', 'Nhà CT', 'Mã', 'Serial', 'KL', 'Kiểm định', 'Thuê', 'Hủy', 'Lot', 'Chi nhánh']);
+                // Thêm "Hạn KĐ" vào Header Excel
+                ws.addRow(['STT', 'TTKĐ', 'Loại chai', 'Chế tạo', 'Nhà CT', 'Mã', 'Serial', 'KL', 'Kiểm định', 'Thuê', 'Hạn KĐ', 'Hủy', 'Lot', 'Chi nhánh']);
                 ws.getRow(1).font = { bold: true };
                 ws.getRow(1).alignment = { horizontal: 'center' };
                 
                 ws.columns = [
-                    { width: 8 }, { width: 12 }, { width: 12 }, { width: 12 }, 
-                    { width: 25 }, { width: 15 }, { width: 15 }, { width: 10 }, 
-                    { width: 15 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 20 } // Bổ sung độ rộng cột thứ 12 (Lot)
+                    { width: 6 }, { width: 30 }, { width: 8 }, { width: 12 }, 
+                    { width: 8 }, { width: 8 }, { width: 12 }, { width: 10 }, 
+                    { width: 15 }, { width: 10 }, { width: 15 }, { width: 10 }, { width: 10 }, { width: 25 }
                 ];
                 
                 window.filteredChiTietData.forEach((row, index) => {
@@ -4111,14 +4115,14 @@ window.addEventListener('resize', function() {
                     
                     ws.addRow([
                         index + 1, row.ttkd, row.loaiChai, row.cheTao, row.nhaCT,
-                        row.ma, row.serial, row.kl, row.kiemDinh, thueText, huyText, row.lot, row.chiNhanh // Xuất dữ liệu Lot
+                        row.ma, row.serial, row.kl, row.kiemDinh, thueText, row.hanKD, huyText, row.lot, row.chiNhanh
                     ]);
                 });
                 
                 if (window.duplicateFilterState === 1) {
                     ws.addRow([]); 
-                    // Chú ý: Vì bảng có 13 cột nên đẩy text tổng số xuống cuối cho cân đối
-                    let sumRow = ws.addRow(['', '', '', '', '', '', `Tổng số chai tái kiểm nhiều lần): ${window.duplicateGroupCount} chai`, '', '', '', '', '', '']);
+                    // Chú ý: Vì bảng nay có 14 cột nên đẩy text tổng số lùi lại 1 bậc cho cân đối
+                    let sumRow = ws.addRow(['', '', '', '', '', '', `Tổng số chai tái kiểm nhiều lần): ${window.duplicateGroupCount} chai`, '', '', '', '', '', '', '']);
                     sumRow.getCell(7).font = { bold: true, color: { argb: 'FFFF0000' } };
                 }
                 
