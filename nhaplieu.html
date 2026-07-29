@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -807,12 +808,13 @@
                         if (newThoiDiem) updates[`${p}/recentCheck`] = newThoiDiem;
                         updates[`${p}/chiNhanhSD`] = newChiNhanh;
                         
-                        // --- GHI NHẬT KÝ CHANGELOG ---
+                        // --- GHI NHẬT KÝ CHANGELOG CHO VỎ CHAI (Có đính kèm data để vá nóng Cache) ---
                         const clKey = push(child(ref(db), 'System/Changelog')).key;
                         updates[`System/Changelog/${clKey}`] = { 
                             timestamp: currentTime + logCount, 
                             action: 'UPDATE', 
-                            path: p 
+                            path: p,
+                            data: newThoiDiem ? { recentCheck: newThoiDiem, chiNhanhSD: newChiNhanh } : { chiNhanhSD: newChiNhanh }
                         };
                         logCount++;
                     }
@@ -847,6 +849,23 @@
                         updates[`${trungTamId}/LichSuNhap/${timeStamp}/stats`] = newStats;
                     }
                 }
+
+                // --- BỔ SUNG GHI NHẬT KÝ CHANGELOG CHO VỎ LỊCH SỬ ---
+                let sessionUpdateData = {
+                    thoiDiemKD: newThoiDiem || oldThoiDiem,
+                    chiNhanhSD: newChiNhanh
+                };
+                if (updates[`${trungTamId}/LichSuNhap/${timeStamp}/stats`]) {
+                    sessionUpdateData.stats = updates[`${trungTamId}/LichSuNhap/${timeStamp}/stats`];
+                }
+                const clKeySession = push(child(ref(db), 'System/Changelog')).key;
+                updates[`System/Changelog/${clKeySession}`] = {
+                    timestamp: currentTime + logCount++,
+                    action: 'UPDATE',
+                    path: `${trungTamId}/LichSuNhap/${timeStamp}`,
+                    data: sessionUpdateData
+                };
+                // -----------------------------------------------------
 
                 // Chunk update (Chia nhỏ 400 file đẩy lên 1 lúc)
                 let keys = Object.keys(updates); let chunk = {}; let count = 0; let promises = [];
@@ -1070,7 +1089,18 @@
                         }
                     }
 
-                    delUpdates[`${trungTamId}/LichSuNhap/${timeStamp}`] = null;
+                    // --- BỔ SUNG GHI NHẬT KÝ CHANGELOG XÓA VỎ LỊCH SỬ ---
+                    let sessionPath = `${trungTamId}/LichSuNhap/${timeStamp}`;
+                    delUpdates[sessionPath] = null;
+                    
+                    const clKeySession = push(child(ref(db), 'System/Changelog')).key;
+                    delUpdates[`System/Changelog/${clKeySession}`] = {
+                        timestamp: currentTime + logCount++,
+                        action: 'DELETE',
+                        path: sessionPath
+                    };
+                    // -----------------------------------------------------
+
                     await update(ref(db), delUpdates);
                     alert("Đã xóa thành công lô dữ liệu!"); 
                     loadHistoryTable(); 
